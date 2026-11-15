@@ -1,0 +1,9 @@
+{
+  // Static site: Astro pre-renders everything into ./dist and Cloudflare serves it as static assets.
+  // No "main" entry and no Astro adapter are needed.
+  "name": "rebirth-origin",
+  "compatibility_date": "2026-11-16",
+  "assets": {
+    "directory": "./dist"
+  }
+}

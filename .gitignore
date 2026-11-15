@@ -5,3 +5,18 @@ dist/
 docs/shots/
 docs/ref/
 docs/journey/shots/
+
+# local env and secrets
+.env
+.env.*
+!.env.example
+
+# Cloudflare / Wrangler
+.wrangler/
+.dev.vars*
+
+# logs and editor files
+npm-debug.log*
+*.log
+.vscode/
+.idea/
