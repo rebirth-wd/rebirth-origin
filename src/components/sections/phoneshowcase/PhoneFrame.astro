@@ -1,0 +1,84 @@
+---
+// PhoneFrame — generic, brand-free phone (CSS only, vector-crisp at any DPR).
+// Same visual family / proportions as the site's other phones (540 x 1100 artboard, metal rim, black bezel,
+// pill camera island). Width comes from the parent / class; height follows the aspect ratio.
+// The screen is a size container: content inside can use cqw units (100cqw = screen width).
+// Slot content fills the screen. `status` draws a white status bar above the content.
+interface Props { class?: string; status?: boolean; label?: string; [k: string]: any }
+const { class: cls = '', status = true, label, ...rest } = Astro.props;
+---
+<div class:list={['pf', cls]} {...rest} role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : 'true'}>
+  <span class="pf-btn pf-l1"></span><span class="pf-btn pf-l2"></span><span class="pf-btn pf-l3"></span><span class="pf-btn pf-r1"></span>
+  <div class="pf-body">
+    <div class="pf-screen" data-pf-screen>
+      <slot />
+      {status && (
+        <div class="pf-status" data-pf-status>
+          <span class="pf-time">9:41</span>
+          <span class="pf-icons">
+            <svg viewBox="0 0 18 11" aria-hidden="true"><rect x="0" y="7" width="3" height="4" rx="0.8"/><rect x="5" y="5" width="3" height="6" rx="0.8"/><rect x="10" y="2.6" width="3" height="8.4" rx="0.8"/><rect x="15" y="0" width="3" height="11" rx="0.8"/></svg>
+            <svg viewBox="0 0 16 11" aria-hidden="true"><path d="M8 10.6 5.6 8.2a3.4 3.4 0 0 1 4.8 0z"/><path d="M3.4 6a6.5 6.5 0 0 1 9.2 0l-1.3 1.3a4.7 4.7 0 0 0-6.6 0z"/><path d="M1.1 3.7a9.7 9.7 0 0 1 13.8 0l-1.3 1.3a7.9 7.9 0 0 0-11.2 0z"/></svg>
+            <svg viewBox="0 0 26 12" aria-hidden="true"><rect x="0.6" y="0.6" width="22" height="10.8" rx="3.2" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1.1"/><rect x="2.4" y="2.4" width="16.5" height="7.2" rx="1.8"/><rect x="23.8" y="3.8" width="1.6" height="4.4" rx="0.8" fill-opacity=".45"/></svg>
+          </span>
+        </div>
+      )}
+      <span class="pf-home"></span>
+    </div>
+    <span class="pf-island"></span>
+    <span class="pf-glass"></span>
+    <span class="pf-dim" data-pf-dim></span>
+  </div>
+</div>
+
+<style>
+  /* Artboard 540 x 1100 (like assistant/Phone.astro). --u = one artboard unit. */
+  .pf { position: relative; aspect-ratio: 540 / 1100; container-type: inline-size; --u: calc(100cqw / 540); }
+  .pf-body {
+    position: absolute; left: calc(var(--u) * 11); right: calc(var(--u) * 11); top: calc(var(--u) * 11); bottom: calc(var(--u) * 11);
+    border-radius: calc(var(--u) * 97);
+    background: #000;
+    /* metal rim: dark edge, bright highlight, steel, then black bezel (all crisp CSS rings) */
+    box-shadow:
+      inset 0 0 0 calc(var(--u) * 1.5) #2c2d2e,
+      inset 0 0 0 calc(var(--u) * 3) #58595b,
+      inset 0 0 0 calc(var(--u) * 4.4) #8d8e90,
+      inset 0 0 0 calc(var(--u) * 5.6) #c9cacb,
+      inset 0 0 0 calc(var(--u) * 7) #3d3d3e,
+      inset 0 0 0 calc(var(--u) * 10) #1c1c1c,
+      0 calc(var(--u) * 40) calc(var(--u) * 70) rgba(0,0,0,.55);
+  }
+  .pf-screen {
+    position: absolute; left: calc(var(--u) * 19); top: calc(var(--u) * 17); width: calc(var(--u) * 480); height: calc(var(--u) * 1048);
+    border-radius: calc(var(--u) * 80); overflow: hidden; background: #050505;
+    container-type: inline-size; isolation: isolate;
+    /* clip transformed children to the rounded screen reliably */
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
+  }
+  .pf-island {
+    position: absolute; left: 50%; top: calc(var(--u) * 35); width: calc(var(--u) * 148); height: calc(var(--u) * 42);
+    transform: translateX(-50%); border-radius: 999px; background: #000; z-index: 4;
+    box-shadow: inset 0 0 0 1px #121212;
+  }
+  .pf-island::after { /* lens */
+    content: ''; position: absolute; right: calc(var(--u) * 14); top: 50%; width: calc(var(--u) * 12); height: calc(var(--u) * 12);
+    transform: translateY(-50%); border-radius: 50%; background: radial-gradient(circle at 40% 40%, #3a3f9a, #15183f 60%, #07070d);
+  }
+  .pf-glass { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 5;
+    background: linear-gradient(125deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,0) 28%, rgba(255,255,255,0) 72%, rgba(255,255,255,.03) 100%); }
+  .pf-dim { position: absolute; inset: 0; border-radius: inherit; background: #000; opacity: 0; pointer-events: none; z-index: 6; }
+  .pf-btn { position: absolute; width: calc(var(--u) * 4); border-radius: 2px; background: linear-gradient(90deg, #444 0%, #6c6c70 50%, #3a3a3c 100%); }
+  .pf-l1, .pf-l2, .pf-l3 { left: calc(var(--u) * 8); }
+  .pf-l1 { top: calc(var(--u) * 234); height: calc(var(--u) * 46); }
+  .pf-l2 { top: calc(var(--u) * 321); height: calc(var(--u) * 69); }
+  .pf-l3 { top: calc(var(--u) * 422); height: calc(var(--u) * 76); }
+  .pf-r1 { right: calc(var(--u) * 8); top: calc(var(--u) * 347); height: calc(var(--u) * 125); }
+
+  /* status bar (inside the screen, so cqw = screen width) */
+  .pf-status { position: absolute; inset: 0 0 auto 0; height: 11cqw; z-index: 20; display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2cqw 7.5cqw 0 10cqw; color: #fff; pointer-events: none; }
+  .pf-time { font-family: var(--font-sans); font-weight: 600; font-size: 3.5cqw; letter-spacing: -0.02em; }
+  .pf-icons { display: flex; align-items: center; gap: 1.3cqw; }
+  .pf-icons svg { height: 2.4cqw; width: auto; fill: currentColor; }
+  .pf-icons svg:last-child { height: 2.6cqw; }
+  .pf-home { position: absolute; left: 50%; bottom: 1.6cqw; width: 34cqw; height: 1.15cqw; transform: translateX(-50%); border-radius: 99px; background: rgba(255,255,255,.85); z-index: 20; pointer-events: none; }
+</style>

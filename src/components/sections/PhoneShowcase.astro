@@ -1,0 +1,81 @@
+---
+// PhoneShowcase — act 3 of the space journey, and the "App Design" service block.
+// Markup + CSS render the FINAL composed state (what no-JS / reduced-motion visitors see: three phones in a row,
+// title + tagline above). The automatic sequence is driven by ./phoneshowcase/controller.ts:
+//   import { initPhoneShowcase } from '@/components/sections/phoneshowcase/controller';
+//   const sc = initPhoneShowcase(root); sc.play(); sc.reset(); sc.dogRect();
+// The root fills its positioned parent (position:absolute; inset:0). Pass `flow` to render it as an ordinary
+// in-flow block (min-height 100svh) instead.
+import PhoneFrame from './phoneshowcase/PhoneFrame.astro';
+import FeedScreen from './phoneshowcase/FeedScreen.astro';
+import CameraScreen from './phoneshowcase/CameraScreen.astro';
+import DataScreen from './phoneshowcase/DataScreen.astro';
+interface Props { class?: string; flow?: boolean }
+const { class: cls = '', flow = false } = Astro.props;
+const headline = ['Apps', 'people'];
+---
+<section class:list={['ps', { 'ps--flow': flow }, cls]} data-phoneshowcase aria-labelledby="ps-title">
+  <div class="ps-glow" aria-hidden="true"></div>
+  <div class="ps-inner">
+    <header class="ps-copy">
+      <p class="ps-eyebrow font-mono" data-ps-text>App Design</p>
+      <h2 id="ps-title" class="ps-title font-display">
+        {headline.map((w) => <><span class="ps-w" data-ps-word>{w}</span>{' '}</>)}<span class="ps-w" data-ps-word><em>keep</em></span>{' '}<span class="ps-w" data-ps-word>opening.</span>
+      </h2>
+      <p class="ps-tag font-sans" data-ps-text>Mobile interfaces designed around how your customers actually tap, scroll and come back.</p>
+    </header>
+
+    <div class="ps-stage" data-ps-stage>
+      <div class="ps-slot ps-slot--l" data-ps-side="left">
+        <PhoneFrame class="ps-phone" label="Phone showing a camera app with face filters"><CameraScreen /></PhoneFrame>
+      </div>
+      <div class="ps-slot ps-slot--c" data-ps-center>
+        <PhoneFrame class="ps-phone" label="Phone showing a social feed post being liked"><FeedScreen /></PhoneFrame>
+      </div>
+      <div class="ps-slot ps-slot--r" data-ps-side="right">
+        <PhoneFrame class="ps-phone" label="Phone showing an analytics app with charts"><DataScreen /></PhoneFrame>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Phone width: limited by viewport width, by the height left under the copy, and a cap. Gap = 12% of a phone
+     so the side phones' slide distance is a constant 112% of their own width at every size. */
+  .ps {
+    --pw: min(21vw, calc((100vh - 330px) * 0.491), 330px);
+    position: absolute; inset: 0; overflow: hidden; background: #050505; color: #fff;
+  }
+  @supports (height: 100svh) { .ps { --pw: min(21vw, calc((100svh - 330px) * 0.491), 330px); } }
+  .ps--flow { position: relative; inset: auto; min-height: 100vh; min-height: 100svh; }
+  .ps-glow { position: absolute; left: 50%; bottom: -10%; width: min(1100px, 120vw); height: 70%; transform: translateX(-50%); pointer-events: none;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(132,125,255,.16) 0%, rgba(132,125,255,.05) 45%, rgba(132,125,255,0) 70%); }
+  .ps-inner { position: relative; height: 100%; min-height: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: clamp(22px, 3.2vh, 40px); padding: 96px 24px 28px; box-sizing: border-box; }
+  .ps-copy { text-align: center; max-width: 760px; }
+  .ps-eyebrow { margin: 0 0 14px; font-size: 12px; line-height: 18px; font-weight: 500; letter-spacing: 2.4px; text-transform: uppercase; color: rgba(255,255,255,.42); }
+  .ps-title { margin: 0; font-weight: 360; font-size: clamp(38px, 4.6vw, 68px); line-height: 1.06; letter-spacing: -0.01em; color: #fafafa; }
+  .ps-title em { font-style: italic; }
+  .ps-w { display: inline-block; }
+  .ps-tag { margin: 16px auto 0; max-width: 520px; font-size: 16px; line-height: 24px; font-weight: 300; color: rgba(255,255,255,.6); }
+
+  .ps-stage { position: relative; display: flex; justify-content: center; align-items: center; gap: calc(var(--pw) * var(--gap, 0.12)); flex: none; }
+  .ps-slot { position: relative; width: var(--pw); flex: none; }
+  .ps-slot--c { z-index: 3; }
+  .ps-slot--l, .ps-slot--r { z-index: 1; }
+  .ps-slot :global(.ps-phone) { width: 100%; }
+
+  @media (max-width: 767px) {
+    /* side phones peek in from the screen edges (same size as the centre phone) */
+    .ps { --pw: min(45vw, calc((100vh - 380px) * 0.491)); --gap: 0.08; }
+    @supports (height: 100svh) { .ps { --pw: min(45vw, calc((100svh - 380px) * 0.491)); } }
+    .ps-inner { padding: 92px 20px 24px; gap: 24px; }
+    .ps-eyebrow { margin-bottom: 10px; }
+    .ps-tag { font-size: 15px; line-height: 22px; max-width: 330px; margin-top: 12px; }
+  }
+
+  /* JS-armed, before play(): hidden and inert (the controller sets the t=0 poses). */
+  .ps[data-ps-armed] { visibility: hidden; pointer-events: none; }
+  /* off-screen / hidden tab: CSS animations inside (gradient drift, star twinkle) pause with the timeline */
+  .ps[data-ps-paused] :global(*) { animation-play-state: paused !important; }
+</style>

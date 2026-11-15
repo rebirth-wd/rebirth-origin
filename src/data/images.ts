@@ -83,6 +83,18 @@ export const images = {
     'Daniel Angele',
     'danangele',
   ),
+  // space-journey hero moon (Agent A). NASA, Artemis II lunar flyby: "Cratered lunar surface against a dark sky"
+  // (unsplash.com/photos/cratered-lunar-surface-against-a-dark-sky-p2_PGZ5oLxM, Unsplash License).
+  // ID confirmed from the photo page on 2026-11-16; NOT previewed from the build container (no access), so its
+  // framing is unverified. `avg` is an estimate. SpaceBackdrop layers it over the local moon render only after
+  // it has loaded (screen blend so its black sky drops out); the local render stays as the fallback.
+  moonSurface: photo(
+    '1777277539249-34020e857900',
+    '#1b1b1e',
+    'Cratered lunar surface against a black sky',
+    'NASA',
+    'nasa',
+  ),
 } as const;
 
 export type ImageKey = keyof typeof images;

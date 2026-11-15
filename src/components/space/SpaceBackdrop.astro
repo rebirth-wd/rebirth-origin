@@ -1,0 +1,73 @@
+---
+// Deep space: nebula tint + three tiled SVG star layers (static, crisp at any size) + optional close lunar horizon.
+// No JS required; the only script swaps in an optional Unsplash moon photo after it has loaded.
+import moonLocal from '../../assets/space/moon-surface.webp';
+import { images } from '../../data/images';
+interface Props { moon?: boolean; moonPhoto?: boolean; class?: string }
+// moonPhoto: layer the Unsplash lunar photo (images.moonSurface) over the local render once it has loaded.
+const { moon = false, moonPhoto = true, class: cls = '' } = Astro.props;
+const photo = images.moonSurface;
+
+// seeded RNG so the sky is identical on every build
+let seed = 1337;
+const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+const layer = (tile: number, count: number, rMin: number, rMax: number, tintChance: number) => {
+  let c = '';
+  for (let i = 0; i < count; i++) {
+    const x = (rnd() * tile).toFixed(1), y = (rnd() * tile).toFixed(1);
+    const r = (rMin + Math.pow(rnd(), 3) * (rMax - rMin)).toFixed(2);
+    const o = (0.35 + rnd() * 0.65).toFixed(2);
+    const t = rnd();
+    const fill = t < tintChance ? '#ffd6ef' : t < tintChance * 2 ? '#cfe0ff' : '#fff';
+    c += `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" fill-opacity="${o}"/>`;
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${tile}" height="${tile}" viewBox="0 0 ${tile} ${tile}">${c}</svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+};
+const s1 = layer(613, 150, 0.35, 0.9, 0.12);   // dust
+const s2 = layer(1109, 70, 0.6, 1.4, 0.15);     // mid
+const s3 = layer(1777, 28, 1.0, 2.1, 0.2);      // bright (twinkle layer)
+const style = `--stars-1:${s1};--stars-2:${s2};--stars-3:${s3}`;
+---
+<div class:list={['rb-space', cls]} data-space style={style}>
+  <div class="rb-space__nebula"></div>
+  <div class="rb-space__stars rb-space__stars--1"></div>
+  <div class="rb-space__stars rb-space__stars--2"></div>
+  <div class="rb-space__stars rb-space__stars--3"></div>
+  {moon && (
+    <div class="rb-space__moon" data-moon>
+      <img class="rb-space__moon-local" src={moonLocal.src} width={moonLocal.width} height={moonLocal.height} alt="" decoding="async" />
+      {moonPhoto && (
+        <img class="rb-space__moon-photo" src={photo.src} srcset={`${photo.srcSmall} 900w, ${photo.src} 2000w`} sizes="100vw"
+          alt="" decoding="async" fetchpriority="low" onload="this.parentNode.classList.add('has-photo')" />
+      )}
+    </div>
+  )}
+</div>
+
+<style is:global>
+  .rb-space { position: absolute; inset: 0; overflow: hidden; background: #04030b; pointer-events: none; contain: strict; }
+  .rb-space__nebula {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(55% 45% at 18% 22%, rgba(168, 85, 247, 0.16), transparent 70%),
+      radial-gradient(45% 40% at 82% 30%, rgba(59, 130, 246, 0.13), transparent 70%),
+      radial-gradient(60% 50% at 60% 75%, rgba(236, 72, 153, 0.09), transparent 70%),
+      radial-gradient(120% 90% at 50% 40%, #0b0820 0%, #04030b 70%);
+  }
+  .rb-space__stars { position: absolute; inset: 0; background-repeat: repeat; }
+  .rb-space__stars--1 { background-image: var(--stars-1); opacity: 0.7; }
+  .rb-space__stars--2 { background-image: var(--stars-2); background-position: 211px 97px; }
+  .rb-space__stars--3 { background-image: var(--stars-3); background-position: 503px 331px; animation: rb-twinkle 7s ease-in-out infinite alternate; }
+  @keyframes rb-twinkle { 0% { opacity: 1; } 50% { opacity: 0.55; } 100% { opacity: 0.9; } }
+  .rb-space__moon { position: absolute; left: -6%; right: -6%; bottom: 0; height: 40%; }
+  .rb-space__moon img { position: absolute; left: 0; bottom: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0%; }
+  .rb-space__moon-local { transition: opacity 1.2s ease; }
+  .rb-space__moon-photo {
+    opacity: 0; transition: opacity 1.2s ease; mix-blend-mode: screen; object-position: 50% 100% !important;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 25%); mask-image: linear-gradient(to bottom, transparent, #000 25%);
+  }
+  .rb-space__moon.has-photo .rb-space__moon-photo { opacity: 1; }
+  .rb-space__moon.has-photo .rb-space__moon-local { opacity: 0.35; }
+  @media (prefers-reduced-motion: reduce) { .rb-space__stars--3 { animation: none; } }
+</style>

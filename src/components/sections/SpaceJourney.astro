@@ -1,0 +1,149 @@
+---
+// SpaceJourney: one pinned 100svh stage carrying the hero (act 1), section 2 + the dog (act 2), the light (beam +
+// flash) and Agent C's phone showcase (act 3). Master timeline + camera maths: ./spacejourney/journey.ts.
+// Plan / numbers: docs/journey/PLAN-B.md. Without JS or with prefers-reduced-motion the same markup renders as three
+// ordinary stacked blocks (hero on space, section 2 on the gradient, the showcase in its final state).
+import HeroContent from './spacejourney/HeroContent.astro';
+import Section2 from './spacejourney/Section2.astro';
+import Astronaut from '../space/Astronaut.astro';
+import Dog from '../space/Dog.astro';
+import SpaceBackdrop from '../space/SpaceBackdrop.astro';
+import PhoneShowcase from './PhoneShowcase.astro';
+import smoke from '../../assets/space/smoke-pink.webp';
+---
+<script is:inline>
+  // JS + motion allowed → the pinned stage. Otherwise (no JS / reduced motion) three ordinary stacked blocks.
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('sj-motion');
+</script>
+
+<section data-section="SpaceJourney" class="sj relative z-[1]" data-sj>
+  <div class="sj-stage" data-sj-stage>
+    <!-- ================= act 1: space + moon, the two figures, hero content ================= -->
+    <div class="sj-act sj-act1" data-sj-act1>
+      <div class="sj-l sj-space" data-sj-space>
+        <SpaceBackdrop moon moonPhoto={false} />
+      </div>
+      <!-- one camera layer per figure (identical transform). At rest the left figure is behind the hero copy and the
+           right one in front of the hero phone; once the copy has gone the left one (the zoom target) is lifted up. -->
+      <div class="sj-l sj-world sj-world-left" data-sj-world="left" aria-hidden="true">
+        <div class="sj-fig sj-fig-left" data-sj-fig="left">
+          <Astronaut who="left" />
+          <!-- smoke-pink.webp: exactly the left box's chest window; JS moves it into the torso part so it follows the
+               figure's idle motion pixel for pixel, then cross-fades it in before the screen is all smoke -->
+          <img class="sj-smoke" data-sj-smoke src={smoke.src} width={smoke.width} height={smoke.height} alt="" decoding="async" />
+        </div>
+      </div>
+      <div class="sj-l sj-hero" data-sj-hero>
+        <HeroContent />
+      </div>
+      <div class="sj-l sj-world sj-world-right" data-sj-world="right" aria-hidden="true">
+        <div class="sj-fig sj-fig-right" data-sj-fig="right">
+          <Astronaut who="right" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= act 2: gradient, section 2, the dog in open space ================= -->
+    <div class="sj-act sj-act2" data-sj-act2>
+      <div class="sj-l sj-space2" data-sj-space2 aria-hidden="true">
+        <SpaceBackdrop moonPhoto={false} />
+      </div>
+      <div class="sj-l sj-dogwrap" data-sj-dogwrap aria-hidden="true">
+        <div class="sj-dogbox" data-sj-dogbox><Dog /></div>
+      </div>
+      <div class="sj-l sj-grad rb-gradient-field" data-sj-grad aria-hidden="true"></div>
+      <div class="sj-l sj-s2" data-sj-s2>
+        <Section2 />
+      </div>
+    </div>
+
+    <!-- ================= act 3: Agent C's phone showcase (started by the flash) ================= -->
+    <div class="sj-act sj-act3" data-sj-showcase>
+      <PhoneShowcase />
+    </div>
+
+    <!-- ================= light: beam, bloom, flash ================= -->
+    <div class="sj-l sj-fx" data-sj-fx aria-hidden="true">
+      <div class="sj-bloom" data-sj-bloom></div>
+      <div class="sj-beam" data-sj-beam></div>
+      <div class="sj-l sj-flash" data-sj-flash></div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .sj { background: #03040a; }
+  .sj-l { position: absolute; inset: 0; }
+  .sj-stage { position: relative; isolation: isolate; }
+
+  /* ---------- fallback (no JS / reduced motion): three stacked blocks ---------- */
+  .sj-act1 { position: relative; min-height: 100vh; min-height: 100svh; overflow: hidden; }
+  .sj-act1 .sj-hero { position: relative; inset: auto; min-height: 100vh; min-height: 100svh; }
+  .sj-world { pointer-events: none; }
+  .sj-fig { position: absolute; }
+  /* static hero pose: head-first towards each other, clear of the copy */
+  .sj-fig-left { left: -1%; top: 6%; width: min(21vw, 400px); transform: rotate(56deg); }
+  .sj-fig-right { right: 2%; bottom: 3%; width: min(13.8vw, 262px); transform: rotate(-26deg); }
+  .sj-smoke { display: none; }
+  .sj-act2 { position: relative; display: flex; align-items: center; min-height: 90vh; min-height: 90svh; overflow: hidden; padding: 18vh 0; }
+  .sj-space2, .sj-dogwrap, .sj-fx { display: none; }
+  .sj-s2 { position: relative; inset: auto; width: 100%; }
+  .sj-act3 { position: relative; height: 100vh; height: 100svh; overflow: hidden; }
+  @media (max-width: 767px) {
+    .sj-fig-left { left: -10%; top: 7%; width: 34vw; }
+    .sj-fig-right { right: -5%; bottom: 0; width: 20vw; }
+  }
+
+  /* ---------- pinned stage (JS + motion) ---------- */
+  :global(html.sj-motion) .sj-stage { height: 100vh; height: 100svh; overflow: hidden; }
+  :global(html.sj-motion) .sj-act { position: absolute; inset: 0; min-height: 0; padding: 0; display: block; }
+  :global(html.sj-motion) .sj-act1 .sj-hero { position: absolute; inset: 0; min-height: 0; }
+  :global(html.sj-motion) .sj-fig { left: 0; top: 0; right: auto; bottom: auto; transform: none; transform-origin: 50% 50%; }
+  :global(html.sj-motion) .sj-smoke { display: block; position: absolute; z-index: 99; max-width: none; opacity: 0; pointer-events: none;
+    /* feathered edges (10% per side, matches FEATHER in journey.ts) so the overlay melts into the figure */
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent), linear-gradient(180deg, transparent, #000 10%, #000 90%, transparent);
+    -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent), linear-gradient(180deg, transparent, #000 10%, #000 90%, transparent);
+    mask-composite: intersect; }
+  :global(html.sj-motion) .sj-space2,
+  :global(html.sj-motion) .sj-dogwrap,
+  :global(html.sj-motion) .sj-fx { display: block; }
+  :global(html.sj-motion) .sj-s2 { position: absolute; inset: 0; display: flex; align-items: center; }
+  /* layers that start hidden; the master timeline takes over with autoAlpha */
+  :global(html.sj-motion) .sj-act2,
+  :global(html.sj-motion) .sj-space2,
+  :global(html.sj-motion) .sj-dogwrap,
+  :global(html.sj-motion) .sj-grad,
+  :global(html.sj-motion) .sj-s2 { visibility: hidden; }
+  :global(html.sj-motion) .sj-world { transform-origin: 0 0; }
+  :global(html.sj-motion) .sj-act1 { z-index: 0; }
+  :global(html.sj-motion) .sj-act2 { z-index: 1; }
+  :global(html.sj-motion) .sj-act3 { z-index: 2; }
+  :global(html.sj-motion) .sj-fx { z-index: 3; }
+  :global(html.sj-motion) .sj-world-left { z-index: 1; }
+  :global(html.sj-motion) .sj-hero { z-index: 2; }
+  :global(html.sj-motion) .sj-world-right { z-index: 3; }
+
+  .sj-fx { pointer-events: none; }
+  .sj-dogbox { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .sj-dogbox > :global([data-dog]) { width: 100%; }
+
+  /* beam: a thin bright core with a soft coloured halo; scaleX grows from the centre */
+  .sj-beam {
+    position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,244,255,.85) 14%, #fff 50%, rgba(255,244,255,.85) 86%, rgba(255,255,255,0) 100%);
+    box-shadow: 0 0 4px 1px rgba(255,255,255,.95), 0 0 18px 3px rgba(240,190,255,.7), 0 0 52px 9px rgba(170,150,255,.4);
+    transform: scaleX(0); opacity: 0;
+  }
+  /* bloom: a soft horizontal band of light that swells vertically out of the beam */
+  .sj-bloom {
+    position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(250,236,255,.5) 34%, #fff 50%, rgba(250,236,255,.5) 66%, rgba(255,255,255,0) 100%);
+    transform: scaleY(0.02); opacity: 0;
+  }
+  .sj-flash { background: #fffdfe; opacity: 0; }
+</style>
+
+<script>
+  import { initSpaceJourney } from './spacejourney/journey';
+  document.querySelectorAll<HTMLElement>('[data-sj]').forEach((root) => initSpaceJourney(root));
+</script>

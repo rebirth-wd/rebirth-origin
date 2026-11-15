@@ -1,0 +1,40 @@
+---
+// Agent B preview: SpaceJourney followed by two tall dummy sections with their own ScrollTrigger reveals,
+// to prove that content after the pin still animates at the right scroll positions.
+import Base from '@/layouts/Base.astro';
+import Navbar from '@/components/sections/Navbar.astro';
+import SpaceJourney from '@/components/sections/SpaceJourney.astro';
+---
+<Base title="Preview: space journey">
+  <Navbar />
+  <SpaceJourney />
+  {[1, 2].map((n) => (
+    <section class="dummy relative min-h-[150svh] px-8 py-[20svh]" data-dummy={n} style={`background:${n === 1 ? '#07080d' : '#0b0d14'}`}>
+      <div class="mx-auto max-w-[900px]">
+        <p class="font-mono text-xs tracking-[0.2em] text-white/40 uppercase">Dummy section {n}</p>
+        {[0, 1, 2].map((i) => (
+          <div class="dummy-reveal mt-[22svh] rounded-2xl border border-white/10 bg-white/[0.04] p-10" data-reveal={`${n}-${i}`}>
+            <h2 class="font-display text-5xl text-white">Reveal {n}.{i}</h2>
+            <p class="mt-4 text-white/60">Fades up when its top crosses 85% of the viewport.</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  ))}
+</Base>
+
+<style>
+  html.js-reveal .dummy-reveal { opacity: 0; transform: translateY(80px); }
+</style>
+<script is:inline>document.documentElement.classList.add('js-reveal');</script>
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(ScrollTrigger);
+  document.querySelectorAll<HTMLElement>('.dummy-reveal').forEach((el) => {
+    gsap.to(el, {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none reverse', onToggle: (s) => { el.dataset.revealed = String(s.isActive); } },
+    });
+  });
+</script>
