@@ -1,0 +1,45 @@
+---
+// Section 2 of the journey: the certificate section's content restaged centred on the moving gradient.
+// Each `[data-sj-s2-item]` fades in one after another (driven by the SpaceJourney master timeline).
+import Laurel from '../certificate/Laurel.astro';
+
+const badges = [
+  { value: '2-3', caption: ['Build days'], w: 195 },
+  { value: '<2s', caption: ['Load speed'], w: 176 },
+  { value: '100%', caption: ['Client', 'satisfaction'], w: 163 },
+  { value: '39k+', caption: ['Astro users'], w: 170 },
+];
+---
+<div class="sj2 mx-auto w-full max-w-[1200px] px-8 max-[479px]:px-4">
+  <div class="mx-auto max-w-[680px] text-center">
+    <h2 class="sj2-heading mb-[24.6px] font-display text-[56px] leading-[1.1] font-[400] tracking-[-0.012em] text-white
+               max-[991px]:text-[44px] max-[479px]:text-[34px]" data-sj-s2-item>
+      Websites in Bundaberg <br class="max-[479px]:hidden" />just got an <em class="italic">upgrade</em>.
+    </h2>
+    <p class="sj2-sub mx-auto max-w-[420px] font-sans text-[17px] leading-[26px] font-[350] text-white/85" data-sj-s2-item>
+      Hosting, backups, security, and updates — managed for you, every month.
+    </p>
+  </div>
+  <ul class="sj2-list mx-auto mt-12 flex flex-wrap items-center justify-center gap-6 max-[991px]:gap-4 max-[767px]:max-w-[475px] max-[479px]:mt-8 max-[479px]:max-w-[390px]" role="list">
+    {badges.map((b) => (
+      <li class="sj2-badge flex h-[75px] items-center justify-between px-[6px] text-white" data-sj-s2-item
+          style={`--w:${b.w}px;--k1:${Math.min(1, 148 / b.w).toFixed(4)};--k2:${Math.min(1, 120 / b.w).toFixed(4)}`}>
+        <Laurel class="h-[70px] w-auto shrink-0 text-white/90" />
+        <div class="flex flex-col items-center text-center">
+          <span class="font-display text-[23px] leading-none font-[450] tracking-[-0.01em]">{b.value}</span>
+          <span class="mt-[9px] font-mono text-[10px] leading-[13px] font-[500] tracking-[0.07em] uppercase">
+            {b.caption.map((c, i) => <>{i > 0 && <br />}{c}</>)}
+          </span>
+        </div>
+        <Laurel flip class="h-[70px] w-auto shrink-0 text-white/90" />
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  .sj2-heading, .sj2-sub { text-shadow: 0 1px 24px rgba(40, 10, 80, .28); }
+  .sj2-badge { width: var(--w); filter: drop-shadow(0 1px 10px rgba(40, 10, 80, .25)); }
+  @media (max-width: 991px) { .sj2-badge { zoom: var(--k1); } }
+  @media (max-width: 479px) { .sj2-badge { zoom: var(--k2); } }
+</style>

@@ -1,0 +1,160 @@
+---
+// FeedScreen — generic social feed (invented app "moments", invented handles; no real brands).
+// Five posts of identical height in one list: P1 (dog in space), P2 (earthrise), P3 (ringed planet),
+// then copies of P1 and P2 so the feed loop can wrap seamlessly (see feed loop in controller.ts).
+// Static (no-JS / reduced-motion) state: list scrolled to P2, P2 liked.
+import SpaceArt from './SpaceArt.astro';
+import Icon from './Icon.astro';
+
+type Post = { key: string; art: 'dog' | 'moon' | 'ring'; handle: string; place: string; likes: number; caption: string; comments: [string, string][]; ago: string; ring: string };
+const base: Post[] = [
+  { key: 'p1', art: 'dog', handle: 'luna.and.lou', place: 'Low orbit', likes: 1204, caption: 'Day 212 up here. Still a very good boy.', comments: [['mira.kade', 'the little helmet!!'], ['tomas.r', 'best thing on my feed today']], ago: '2 HOURS AGO', ring: 'a' },
+  { key: 'p2', art: 'moon', handle: 'two.in.orbit', place: 'Sea of Tranquility', likes: 862, caption: 'Earthrise from the cheap seats.', comments: [['jo.weaver', 'wallpaper for a year'], ['ali.santos', 'how is this real']], ago: '5 HOURS AGO', ring: 'b' },
+  { key: 'p3', art: 'ring', handle: 'nightshift.studio', place: 'Somewhere far', likes: 2318, caption: 'Ring day. New colourway dropping soon.', comments: [['dev.okoro', 'that gradient though'], ['sam.lee', 'need this as a print']], ago: '9 HOURS AGO', ring: 'c' },
+];
+const posts = [...base, { ...base[0], key: 'p1b' }, { ...base[1], key: 'p2b' }];
+const fmt = (n: number) => n.toLocaleString('en-US');
+---
+<div class="fd" data-ps-feed>
+  <div class="fd-list" data-ps-feedlist>
+    {posts.map((p, i) => (
+      <article class:list={['fd-post', { 'is-liked': p.key === 'p2' }]} data-ps-post={p.key}>
+        <header class="fd-ph" data-ps-chrome>
+          <span class={`fd-av fd-av-${p.ring}`}><span></span></span>
+          <span class="fd-ph-t"><b>{p.handle}</b><small>{p.place}</small></span>
+          <Icon name="dots" class="fd-dots" />
+        </header>
+        <div class="fd-photo" data-ps-photo>
+          {p.art === 'dog' && <SpaceArt class="fd-art" data-ps-dogart={i === 0 ? '' : undefined} />}
+          {p.art === 'moon' && (
+            <svg class="fd-art" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <defs>
+                <radialGradient id={`fdm-sky-${p.key}`} cx="0.7" cy="0.25" r="0.9"><stop offset="0" stop-color="#16163a" /><stop offset="0.55" stop-color="#07081a" /><stop offset="1" stop-color="#020208" /></radialGradient>
+                <linearGradient id={`fdm-earth-${p.key}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4fa3" /><stop offset="0.5" stop-color="#8b5cf6" /><stop offset="1" stop-color="#2563eb" /></linearGradient>
+                <radialGradient id={`fdm-moon-${p.key}`} cx="0.2" cy="0.05" r="1"><stop offset="0" stop-color="#d9d6e3" /><stop offset="0.35" stop-color="#8d8a9c" /><stop offset="0.8" stop-color="#2e2c3a" /><stop offset="1" stop-color="#14131b" /></radialGradient>
+              </defs>
+              <rect width="100" height="100" fill={`url(#fdm-sky-${p.key})`} />
+              <g fill="#fff">
+                <circle cx="8" cy="12" r=".35" /><circle cx="22" cy="30" r=".25" /><circle cx="35" cy="9" r=".4" /><circle cx="48" cy="22" r=".25" />
+                <circle cx="90" cy="8" r=".3" /><circle cx="94" cy="44" r=".35" /><circle cx="14" cy="48" r=".3" /><circle cx="56" cy="44" r=".22" /><circle cx="80" cy="54" r=".28" />
+              </g>
+              <circle cx="70" cy="34" r="13" fill="#8b5cf6" opacity=".18" />
+              <circle cx="70" cy="34" r="10" fill={`url(#fdm-earth-${p.key})`} />
+              <path d="M70 24a10 10 0 0 1 0 20a6.5 10 0 0 0 0-20z" fill="#04040c" opacity=".55" />
+              <circle cx="38" cy="196" r="128" fill={`url(#fdm-moon-${p.key})`} />
+              <g fill="#000" opacity=".22">
+                <ellipse cx="18" cy="80" rx="5" ry="1.4" /><ellipse cx="40" cy="74" rx="3" ry=".9" /><ellipse cx="62" cy="88" rx="7" ry="2" />
+                <ellipse cx="30" cy="93" rx="4" ry="1.2" /><ellipse cx="82" cy="96" rx="5" ry="1.5" /><ellipse cx="8" cy="90" rx="2.4" ry=".7" />
+              </g>
+              <g fill="#fff" opacity=".18">
+                <ellipse cx="17.5" cy="79.4" rx="4.4" ry=".6" /><ellipse cx="61" cy="87.2" rx="6" ry=".8" /><ellipse cx="29.6" cy="92.5" rx="3.4" ry=".5" />
+              </g>
+            </svg>
+          )}
+          {p.art === 'ring' && (
+            <svg class="fd-art" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <defs>
+                <radialGradient id={`fdr-sky-${p.key}`} cx="0.3" cy="0.7" r="0.9"><stop offset="0" stop-color="#1d1238" /><stop offset="0.6" stop-color="#090717" /><stop offset="1" stop-color="#030208" /></radialGradient>
+                <linearGradient id={`fdr-pl-${p.key}`} x1="0.1" y1="0.1" x2="0.9" y2="0.9"><stop offset="0" stop-color="#ff7ab8" /><stop offset="0.45" stop-color="#a855f7" /><stop offset="1" stop-color="#1e3a8a" /></linearGradient>
+                <linearGradient id={`fdr-ring-${p.key}`} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#93c5fd" stop-opacity=".1" /><stop offset="0.5" stop-color="#e9d5ff" stop-opacity=".9" /><stop offset="1" stop-color="#f472b6" stop-opacity=".15" /></linearGradient>
+                <clipPath id={`fdr-back-${p.key}`}><rect x="0" y="0" width="100" height="50" /></clipPath>
+                <clipPath id={`fdr-front-${p.key}`}><rect x="0" y="50" width="100" height="50" /></clipPath>
+              </defs>
+              <rect width="100" height="100" fill={`url(#fdr-sky-${p.key})`} />
+              <g fill="#fff"><circle cx="10" cy="14" r=".35" /><circle cx="84" cy="12" r=".3" /><circle cx="90" cy="70" r=".35" /><circle cx="16" cy="86" r=".3" /><circle cx="70" cy="90" r=".25" /><circle cx="28" cy="40" r=".22" /></g>
+              <g transform="rotate(-18 50 50)">
+                <ellipse cx="50" cy="50" rx="38" ry="9" fill="none" stroke={`url(#fdr-ring-${p.key})`} stroke-width="2.2" clip-path={`url(#fdr-back-${p.key})`} />
+              </g>
+              <circle cx="50" cy="50" r="21" fill={`url(#fdr-pl-${p.key})`} />
+              <path d="M50 29a21 21 0 0 1 0 42a14 21 0 0 0 0-42z" fill="#05030d" opacity=".4" />
+              <g transform="rotate(-18 50 50)">
+                <ellipse cx="50" cy="50" rx="38" ry="9" fill="none" stroke={`url(#fdr-ring-${p.key})`} stroke-width="2.2" clip-path={`url(#fdr-front-${p.key})`} />
+              </g>
+            </svg>
+          )}
+          <span class="fd-ripple" data-ps-ripple></span>
+          <svg class="fd-big" data-ps-bigheart viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.2s-8.1-4.9-10.1-10C.6 7.7 2.8 3.9 6.6 3.9c2.3 0 3.9 1.3 5.4 3.2 1.5-1.9 3.1-3.2 5.4-3.2 3.8 0 6 3.8 4.7 7.3-2 5.1-10.1 10-10.1 10z" /></svg>
+        </div>
+        <div class="fd-actions" data-ps-chrome>
+          <span class="fd-heart" data-ps-heart><Icon name="heart" class="fd-ic fd-heart-o" data-ps-heart-o /><Icon name="heartfill" class="fd-ic fd-heart-f" data-ps-heart-f /></span>
+          <Icon name="comment" class="fd-ic" /><Icon name="share" class="fd-ic" />
+          <span class="fd-dots-c"><i class="on"></i><i></i><i></i></span>
+          <Icon name="save" class="fd-ic fd-save" />
+        </div>
+        <div class="fd-meta">
+          <p class="fd-likes" data-ps-chrome><span class="fd-count"><span class="fd-c-old" data-ps-c-old>{fmt(p.likes)}</span><span class="fd-c-new" data-ps-c-new>{fmt(p.likes + 1)}</span></span> likes</p>
+          <p class="fd-cap" data-ps-chrome><b>{p.handle}</b> {p.caption}</p>
+          {p.comments.map(([u, t]) => <p class="fd-cm" data-ps-chrome><b>{u}</b> {t}</p>)}
+          <p class="fd-ago" data-ps-chrome>{p.ago}</p>
+        </div>
+      </article>
+    ))}
+  </div>
+
+  <div class="fd-top" data-ps-feedtop>
+    <span class="fd-logo">moments</span>
+    <span class="fd-top-ic"><Icon name="heart" class="fd-ic" /><Icon name="share" class="fd-ic" /></span>
+  </div>
+  <nav class="fd-tabs" data-ps-feedtabs aria-hidden="true">
+    <svg viewBox="0 0 24 24" class="fd-ic"><path d="M3.5 10.6 12 3.6l8.5 7v9.9h-5.6v-6h-5.8v6H3.5z" fill="#fff" stroke="none"/></svg>
+    <svg viewBox="0 0 24 24" class="fd-ic"><circle cx="10.6" cy="10.6" r="6.6"/><path d="m15.6 15.6 5 5"/></svg>
+    <svg viewBox="0 0 24 24" class="fd-ic"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><path d="M12 8v8M8 12h8"/></svg>
+    <svg viewBox="0 0 24 24" class="fd-ic"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><path d="m10.2 8.8 5 3.2-5 3.2z"/></svg>
+    <span class="fd-me"></span>
+  </nav>
+</div>
+
+<style>
+  /* All sizes in cqw (100cqw = phone screen width; screen height = 218.33cqw). Post height is fixed so the
+     list can scroll by exact yPercent steps (5 posts -> 20% per post). */
+  .fd { position: absolute; inset: 0; background: #000; color: #fff; font-family: var(--font-sans); font-weight: 400; }
+  .fd-list { position: absolute; left: 0; right: 0; top: 23cqw; transform: translateY(-20%); z-index: 1; }
+  .fd-post { position: relative; height: 158cqw; }
+  .fd-ph { display: flex; align-items: center; gap: 2.6cqw; height: 13cqw; padding: 0 3.4cqw; }
+  .fd-av { width: 8.4cqw; height: 8.4cqw; border-radius: 50%; padding: .55cqw; flex: none; }
+  .fd-av span { display: block; width: 100%; height: 100%; border-radius: 50%; border: .55cqw solid #000; }
+  .fd-av-a { background: linear-gradient(45deg, #f472b6, #a855f7, #3b82f6); } .fd-av-a span { background: radial-gradient(circle at 35% 30%, #c4b5fd, #4c1d95); }
+  .fd-av-b { background: linear-gradient(45deg, #fb7185, #8b5cf6); } .fd-av-b span { background: radial-gradient(circle at 60% 35%, #93c5fd, #1e3a8a); }
+  .fd-av-c { background: linear-gradient(45deg, #a855f7, #60a5fa); } .fd-av-c span { background: radial-gradient(circle at 40% 40%, #f9a8d4, #7e22ce); }
+  .fd-ph-t { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+  .fd-ph-t b { font-weight: 600; font-size: 3.3cqw; letter-spacing: -0.01em; }
+  .fd-ph-t small { font-size: 2.7cqw; color: rgba(255,255,255,.62); }
+  .fd :global(.fd-dots) { margin-left: auto; width: 4.6cqw; height: 4.6cqw; }
+  .fd-photo { position: relative; width: 100cqw; height: 100cqw; overflow: hidden; background: #03040a; z-index: 2; }
+  .fd-photo :global(.fd-art) { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .fd-ripple { position: absolute; left: 50%; top: 52%; width: 30cqw; height: 30cqw; margin: -15cqw 0 0 -15cqw; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.35) 0%, rgba(255,255,255,.12) 55%, rgba(255,255,255,0) 70%); opacity: 0; pointer-events: none; }
+  .fd-big { position: absolute; left: 50%; top: 50%; width: 30cqw; height: 30cqw; margin: -15cqw 0 0 -15cqw; fill: #fff; opacity: 0; pointer-events: none;
+    transform: scale(0); filter: drop-shadow(0 1cqw 2.4cqw rgba(0,0,0,.35)); }
+  .fd-actions { display: flex; align-items: center; gap: 3.6cqw; height: 11cqw; padding: 0 3.6cqw; position: relative; }
+  .fd :global(.fd-ic) { width: 6.2cqw; height: 6.2cqw; fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; overflow: visible; }
+  .fd-heart { position: relative; width: 6.2cqw; height: 6.2cqw; flex: none; }
+  .fd-heart :global(svg) { position: absolute; inset: 0; }
+  .fd :global(.fd-heart-f) { fill: #ff3d6e; stroke: none; transform: scale(0); transform-origin: 50% 55%; }
+  .fd-post.is-liked :global(.fd-heart-f) { transform: none; }
+  .fd-post.is-liked :global(.fd-heart-o) { opacity: 0; }
+  .fd :global(.fd-save) { margin-left: auto; }
+  .fd-dots-c { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; gap: .9cqw; }
+  .fd-dots-c i { width: 1.25cqw; height: 1.25cqw; border-radius: 50%; background: rgba(255,255,255,.3); }
+  .fd-dots-c i.on { background: #6ea8ff; }
+  .fd-meta { padding: 0 3.6cqw; }
+  .fd-meta p { margin: 0; font-size: 3.15cqw; line-height: 1.45; letter-spacing: -0.005em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fd-meta b { font-weight: 600; }
+  .fd-likes { font-weight: 600; display: flex; gap: .9cqw; }
+  .fd-count { position: relative; display: inline-block; overflow: hidden; height: 1.45em; vertical-align: top; }
+  .fd-c-old { display: block; }
+  .fd-c-new { position: absolute; left: 0; top: 0; transform: translateY(100%); opacity: 0; }
+  .fd-post.is-liked .fd-c-old { transform: translateY(-100%); opacity: 0; }
+  .fd-post.is-liked .fd-c-new { transform: none; opacity: 1; }
+  .fd-cap { margin-top: .4cqw !important; }
+  .fd-cm { color: rgba(255,255,255,.86); }
+  .fd-cm b { color: #fff; }
+  .fd-ago { font-size: 2.4cqw !important; color: rgba(255,255,255,.45); letter-spacing: .04em; margin-top: .6cqw !important; }
+
+  .fd-top { position: absolute; left: 0; right: 0; top: 0; height: 23cqw; z-index: 10; background: #000; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 4cqw 2.6cqw 4.2cqw; }
+  .fd-logo { font-family: var(--font-display); font-style: italic; font-weight: 420; font-size: 7.4cqw; line-height: 1; letter-spacing: -0.02em; }
+  .fd-top-ic { display: flex; gap: 4.4cqw; }
+  .fd-tabs { position: absolute; left: 0; right: 0; bottom: 0; height: 15.5cqw; z-index: 10; background: #000; border-top: 1px solid rgba(255,255,255,.08);
+    display: flex; justify-content: space-around; align-items: flex-start; padding: 3cqw 3cqw 0; }
+  .fd-me { width: 6.4cqw; height: 6.4cqw; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fbcfe8, #9333ea 70%); box-shadow: 0 0 0 .5cqw #000, 0 0 0 .9cqw #fff; }
+</style>

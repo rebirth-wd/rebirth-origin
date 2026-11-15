@@ -16,3 +16,23 @@
 }
 html { background:#050505; color:#fff; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
 body { margin:0; font-family:var(--font-sans); font-weight:300; }
+
+/* Shared moving gradient (pink / purple / blue). Cheap: one element, GPU-composited background-position.
+   Used by the space journey as the section-2 backdrop and as the fill of the dog silhouette. */
+@property --rb-grad-shift { syntax: "<percentage>"; inherits: false; initial-value: 0%; }
+.rb-gradient-field {
+  background-color: #7c3aed;
+  background-image:
+    radial-gradient(60% 80% at 15% 20%, #ff4fa3 0%, transparent 60%),
+    radial-gradient(70% 90% at 85% 25%, #3b82f6 0%, transparent 62%),
+    radial-gradient(80% 90% at 50% 100%, #a855f7 0%, transparent 65%),
+    linear-gradient(120deg, #ec4899, #8b5cf6 45%, #2563eb);
+  background-size: 180% 180%, 200% 200%, 220% 220%, 100% 100%;
+  animation: rb-gradient-drift 18s ease-in-out infinite alternate;
+}
+@keyframes rb-gradient-drift {
+  0%   { background-position: 0% 0%, 100% 0%, 50% 100%, 0 0; }
+  50%  { background-position: 60% 40%, 30% 60%, 20% 60%, 0 0; }
+  100% { background-position: 100% 100%, 0% 100%, 80% 30%, 0 0; }
+}
+@media (prefers-reduced-motion: reduce) { .rb-gradient-field { animation: none; } }

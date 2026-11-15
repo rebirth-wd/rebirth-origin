@@ -1,0 +1,45 @@
+---
+// Preview for Agent C's phone showcase (act 3). ?autoplay=1 plays on load; ?seek=2.5 renders a frozen frame at t.
+import Base from '@/layouts/Base.astro';
+import PhoneShowcase from '@/components/sections/PhoneShowcase.astro';
+---
+<Base title="Preview — phone showcase">
+  <main class="pv-stage">
+    <PhoneShowcase />
+    <div class="pv-ui">
+      <button type="button" data-pv="play">Play</button>
+      <button type="button" data-pv="reset">Reset</button>
+      <span data-pv-t>t = –</span>
+    </div>
+  </main>
+</Base>
+
+<style>
+  .pv-stage { position: relative; height: 100vh; height: 100svh; overflow: hidden; background: #050505; }
+  .pv-ui { position: fixed; left: 16px; bottom: 16px; z-index: 1000; display: flex; gap: 8px; align-items: center; font-family: var(--font-mono); font-size: 12px; }
+  .pv-ui button { font: inherit; text-transform: uppercase; letter-spacing: .1em; padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.06); color: #fff; cursor: pointer; }
+  .pv-ui span { color: rgba(255,255,255,.4); min-width: 80px; }
+  :global(html.pv-clean) .pv-ui { display: none; }
+</style>
+
+<script>
+  import { initPhoneShowcase } from '@/components/sections/phoneshowcase/controller';
+  const root = document.querySelector<HTMLElement>('[data-phoneshowcase]')!;
+  const sc = initPhoneShowcase(root);
+  (window as any).__ps = sc;
+  const params = new URLSearchParams(location.search);
+  if (params.has('clean')) document.documentElement.classList.add('pv-clean');
+  let t0 = 0;
+  const label = document.querySelector<HTMLElement>('[data-pv-t]')!;
+  const tick = () => { if (t0) label.textContent = `t = ${((performance.now() - t0) / 1000).toFixed(1)}s`; requestAnimationFrame(tick); };
+  tick();
+  const play = () => { t0 = performance.now(); sc.play(); };
+  document.querySelector('[data-pv="play"]')!.addEventListener('click', play);
+  document.querySelector('[data-pv="reset"]')!.addEventListener('click', () => { t0 = 0; label.textContent = 't = –'; sc.reset(); });
+  (window as any).__psPlay = play;
+  const go = () => {
+    if (params.has('seek')) sc.seek!(parseFloat(params.get('seek')!));
+    else if (params.get('autoplay') === '1') play();
+  };
+  document.fonts?.ready ? document.fonts.ready.then(go) : go();
+</script>

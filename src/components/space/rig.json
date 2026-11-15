@@ -1,0 +1,414 @@
+{
+ "left": {
+  "width": 2034,
+  "height": 1557,
+  "source_box": [
+   63,
+   60,
+   741,
+   579
+  ],
+  "scale": 3.0,
+  "parts": [
+   {
+    "name": "torso",
+    "parent": null,
+    "z": 2,
+    "file": "astronaut-left-torso.webp",
+    "box": [
+     913,
+     91,
+     1844,
+     889
+    ],
+    "pivot": [
+     1371.0,
+     570.0
+    ],
+    "css": {
+     "left": 44.887,
+     "top": 5.845,
+     "width": 45.772,
+     "height": 51.252,
+     "ox": 49.19,
+     "oy": 60.03
+    }
+   },
+   {
+    "name": "arm-back",
+    "parent": "torso",
+    "z": 1,
+    "file": "astronaut-left-arm-back.webp",
+    "box": [
+     778,
+     37,
+     1397,
+     388
+    ],
+    "pivot": [
+     1287.0,
+     234.0
+    ],
+    "css": {
+     "left": -14.501,
+     "top": -6.767,
+     "width": 66.488,
+     "height": 43.985,
+     "ox": 82.23,
+     "oy": 56.13
+    }
+   },
+   {
+    "name": "arm-reach-upper",
+    "parent": "torso",
+    "z": 4,
+    "file": "astronaut-left-arm-reach-upper.webp",
+    "box": [
+     1518,
+     545,
+     1857,
+     929
+    ],
+    "pivot": [
+     1605.0,
+     570.0
+    ],
+    "css": {
+     "left": 64.984,
+     "top": 56.892,
+     "width": 36.412,
+     "height": 48.12,
+     "ox": 25.66,
+     "oy": 6.51
+    }
+   },
+   {
+    "name": "arm-reach-lower",
+    "parent": "arm-reach-upper",
+    "z": 5,
+    "file": "astronaut-left-arm-reach-lower.webp",
+    "box": [
+     1612,
+     730,
+     1997,
+     1087
+    ],
+    "pivot": [
+     1791.0,
+     798.0
+    ],
+    "css": {
+     "left": 27.729,
+     "top": 48.177,
+     "width": 113.569,
+     "height": 92.969,
+     "ox": 46.49,
+     "oy": 19.05
+    }
+   },
+   {
+    "name": "leg-a-upper",
+    "parent": "torso",
+    "z": 0,
+    "file": "astronaut-left-leg-a-upper.webp",
+    "box": [
+     581,
+     486,
+     1189,
+     1037
+    ],
+    "pivot": [
+     1167.0,
+     666.0
+    ],
+    "css": {
+     "left": -35.661,
+     "top": 49.499,
+     "width": 65.306,
+     "height": 69.048,
+     "ox": 96.38,
+     "oy": 32.67
+    }
+   },
+   {
+    "name": "leg-a-lower",
+    "parent": "leg-a-upper",
+    "z": 0,
+    "file": "astronaut-left-leg-a-lower.webp",
+    "box": [
+     37,
+     763,
+     839,
+     1325
+    ],
+    "pivot": [
+     711.0,
+     918.0
+    ],
+    "css": {
+     "left": -89.474,
+     "top": 50.272,
+     "width": 131.908,
+     "height": 101.996,
+     "ox": 84.04,
+     "oy": 27.58
+    }
+   },
+   {
+    "name": "leg-b-upper",
+    "parent": "torso",
+    "z": 1,
+    "file": "astronaut-left-leg-b-upper.webp",
+    "box": [
+     824,
+     739,
+     1388,
+     1260
+    ],
+    "pivot": [
+     1245.0,
+     828.0
+    ],
+    "css": {
+     "left": -9.56,
+     "top": 81.203,
+     "width": 60.58,
+     "height": 65.288,
+     "ox": 74.65,
+     "oy": 17.08
+    }
+   },
+   {
+    "name": "leg-b-lower",
+    "parent": "leg-b-upper",
+    "z": 1,
+    "file": "astronaut-left-leg-b-lower.webp",
+    "box": [
+     297,
+     989,
+     1088,
+     1520
+    ],
+    "pivot": [
+     987.0,
+     1110.0
+    ],
+    "css": {
+     "left": -93.44,
+     "top": 47.985,
+     "width": 140.248,
+     "height": 101.919,
+     "ox": 87.23,
+     "oy": 22.79
+    }
+   }
+  ],
+  "chest": [
+   69.91,
+   22.35
+  ],
+  "hand": [
+   98.08,
+   63.2
+  ],
+  "headAngle": -32.5,
+  "handInPart": [
+   99.48,
+   71.15
+  ]
+ },
+ "right": {
+  "width": 1335,
+  "height": 1683,
+  "source_box": [
+   703,
+   179,
+   1148,
+   740
+  ],
+  "scale": 3.0,
+  "parts": [
+   {
+    "name": "torso",
+    "parent": null,
+    "z": 2,
+    "file": "astronaut-right-torso.webp",
+    "box": [
+     205,
+     37,
+     944,
+     1070
+    ],
+    "pivot": [
+     681.0,
+     663.0
+    ],
+    "css": {
+     "left": 15.356,
+     "top": 2.198,
+     "width": 55.356,
+     "height": 61.378,
+     "ox": 64.41,
+     "oy": 60.6
+    }
+   },
+   {
+    "name": "arm-reach-upper",
+    "parent": "torso",
+    "z": 4,
+    "file": "astronaut-right-arm-reach-upper.webp",
+    "box": [
+     183,
+     394,
+     542,
+     723
+    ],
+    "pivot": [
+     477.0,
+     498.0
+    ],
+    "css": {
+     "left": -2.977,
+     "top": 34.56,
+     "width": 48.579,
+     "height": 31.849,
+     "ox": 81.89,
+     "oy": 31.61
+    }
+   },
+   {
+    "name": "arm-reach-lower",
+    "parent": "arm-reach-upper",
+    "z": 5,
+    "file": "astronaut-right-arm-reach-lower.webp",
+    "box": [
+     37,
+     464,
+     352,
+     733
+    ],
+    "pivot": [
+     267.0,
+     567.0
+    ],
+    "css": {
+     "left": -40.669,
+     "top": 21.277,
+     "width": 87.744,
+     "height": 81.763,
+     "ox": 73.02,
+     "oy": 38.29
+    }
+   },
+   {
+    "name": "arm-other",
+    "parent": "torso",
+    "z": 3,
+    "file": "astronaut-right-arm-other.webp",
+    "box": [
+     177,
+     569,
+     616,
+     854
+    ],
+    "pivot": [
+     546.0,
+     693.0
+    ],
+    "css": {
+     "left": -3.789,
+     "top": 51.5,
+     "width": 59.405,
+     "height": 27.59,
+     "ox": 84.05,
+     "oy": 43.51
+    }
+   },
+   {
+    "name": "legs-upper",
+    "parent": "torso",
+    "z": 1,
+    "file": "astronaut-right-legs-upper.webp",
+    "box": [
+     589,
+     862,
+     961,
+     1330
+    ],
+    "pivot": [
+     726.0,
+     873.0
+    ],
+    "css": {
+     "left": 51.962,
+     "top": 79.864,
+     "width": 50.338,
+     "height": 45.305,
+     "ox": 36.83,
+     "oy": 2.35
+    }
+   },
+   {
+    "name": "shin-a",
+    "parent": "legs-upper",
+    "z": 0,
+    "file": "astronaut-right-shin-a.webp",
+    "box": [
+     661,
+     1026,
+     1298,
+     1523
+    ],
+    "pivot": [
+     741.0,
+     1233.0
+    ],
+    "css": {
+     "left": 19.355,
+     "top": 35.043,
+     "width": 171.237,
+     "height": 106.197,
+     "ox": 12.56,
+     "oy": 41.65
+    }
+   },
+   {
+    "name": "shin-b",
+    "parent": "legs-upper",
+    "z": 1,
+    "file": "astronaut-right-shin-b.webp",
+    "box": [
+     618,
+     1193,
+     1216,
+     1646
+    ],
+    "pivot": [
+     711.0,
+     1278.0
+    ],
+    "css": {
+     "left": 7.796,
+     "top": 70.726,
+     "width": 160.753,
+     "height": 96.795,
+     "ox": 15.55,
+     "oy": 18.76
+    }
+   }
+  ],
+  "chest": [
+   45.39,
+   26.92
+  ],
+  "hand": [
+   4.72,
+   36.54
+  ],
+  "headAngle": -126.0,
+  "handInPart": [
+   8.25,
+   56.13
+  ]
+ }
+}

@@ -1,0 +1,81 @@
+---
+// Agent A preview: backdrop + moon, both rigged astronauts with idle motion and a --reach slider, the dog at
+// several sizes, the smoke texture.
+import Base from '@/layouts/Base.astro';
+import SpaceBackdrop from '@/components/space/SpaceBackdrop.astro';
+import Astronaut from '@/components/space/Astronaut.astro';
+import Dog from '@/components/space/Dog.astro';
+import smoke from '@/assets/space/smoke-pink.webp';
+import rig from '@/components/space/rig.json';
+// rotate each box so its head points at the other figure (top-left -> bottom-right diagonal ~ 32deg)
+const leftRot = 30 - rig.left.headAngle;            // head towards bottom-right
+const rightRot = -150 - rig.right.headAngle;        // head towards top-left
+// source arrangement (hands clasped at --reach:1): both boxes at the same scale, offsets from rig.json
+const L = rig.left, Rr = rig.right, sc = L.scale;
+const spanW = (Math.max(L.source_box[2], Rr.source_box[2]) - L.source_box[0]) * sc;
+const spanH = (Math.max(L.source_box[3], Rr.source_box[3]) - Math.min(L.source_box[1], Rr.source_box[1])) * sc;
+const top0 = Math.min(L.source_box[1], Rr.source_box[1]);
+const pct = (v: number, t: number) => (v / t * 100).toFixed(3) + '%';
+const leftBox = `left:0;top:${pct((L.source_box[1] - top0) * sc, spanH)};width:${pct(L.width, spanW)}`;
+const rightBox = `left:${pct((Rr.source_box[0] - L.source_box[0]) * sc, spanW)};top:${pct((Rr.source_box[1] - top0) * sc, spanH)};width:${pct(Rr.width, spanW)}`;
+---
+<Base>
+  <main class="bg-black text-white">
+    <section class="relative h-[100svh] overflow-hidden" id="hero">
+      <SpaceBackdrop moon />
+      <div class="pv-left" style={`--rot:${leftRot}deg`}><Astronaut who="left" /></div>
+      <div class="pv-right" style={`--rot:${rightRot}deg`}><Astronaut who="right" /></div>
+      <label class="absolute left-4 bottom-4 z-10 flex items-center gap-3 rounded bg-black/60 px-3 py-2 font-mono text-xs">
+        --reach <input id="reach" type="range" min="0" max="1" step="0.01" value="0" /> <output id="reachOut">0</output>
+      </label>
+    </section>
+
+    <section class="relative h-[100svh] overflow-hidden" id="clasp">
+      <SpaceBackdrop />
+      <p class="absolute left-4 top-4 z-10 rounded bg-black/60 px-3 py-2 font-mono text-xs">source arrangement, --reach: 1 (hands meet)</p>
+      <div class="absolute left-1/2 top-1/2 w-[80vw] -translate-x-1/2 -translate-y-1/2" style={`aspect-ratio:${spanW}/${spanH}`}>
+        <div class="absolute" style={leftBox}><Astronaut who="left" class="pv-clasp" /></div>
+        <div class="absolute" style={rightBox}><Astronaut who="right" class="pv-clasp" /></div>
+      </div>
+    </section>
+
+    <section class="relative h-[100svh] overflow-hidden" id="dogs">
+      <SpaceBackdrop />
+      <div class="relative z-10 flex h-full flex-wrap items-center justify-center gap-10 p-10">
+        <div style="width:260px"><Dog /></div>
+        <div style="width:520px"><Dog /></div>
+        <div style="width:900px" class="pv-dot"><Dog class="pv-dotdog" /></div>
+      </div>
+    </section>
+
+    <section class="relative h-[100svh] overflow-hidden" id="dogbig">
+      <SpaceBackdrop />
+      <!-- dog covering a 1440x900 viewport: 4600px wide (3.2x viewport), centred on its --body point -->
+      <div class="pv-dogbig"><Dog /></div>
+    </section>
+
+    <section class="relative h-[100svh] overflow-hidden" id="smoke">
+      <img src={smoke.src} alt="" class="absolute inset-0 h-full w-full object-cover" />
+      <p class="absolute left-4 top-4 rounded bg-black/60 px-3 py-2 font-mono text-xs">smoke-pink.webp {smoke.width}×{smoke.height}</p>
+    </section>
+  </main>
+</Base>
+
+<style>
+  .pv-left { position: absolute; left: -4%; top: 2%; width: min(44vw, 820px); transform: rotate(var(--rot)); z-index: 2; }
+  .pv-right { position: absolute; right: 2%; bottom: 2%; width: min(28vw, 540px); transform: rotate(var(--rot)); z-index: 2; }
+  .pv-dogbig { position: absolute; width: 4600px; left: 50%; top: 50%; transform: translate(-41.82%, -41.41%); }
+  :global(.pv-dotdog)::after { content: ''; position: absolute; left: var(--body-x); top: var(--body-y); width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: #0f0; z-index: 3; }
+  .pv-dogbig :global(.rb-dog)::after { content: ''; position: absolute; left: var(--body-x); top: var(--body-y); width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: #0f0; }
+</style>
+
+<script>
+  import { setReach } from '@/components/space/astronaut';
+  const input = document.getElementById('reach') as HTMLInputElement;
+  const out = document.getElementById('reachOut')!;
+  document.querySelectorAll<HTMLElement>('.pv-clasp').forEach((el) => setReach(el, 1));
+  input.addEventListener('input', () => {
+    out.textContent = input.value;
+    document.querySelectorAll<HTMLElement>('#hero [data-astronaut]').forEach((el) => setReach(el, +input.value));
+  });
+</script>
