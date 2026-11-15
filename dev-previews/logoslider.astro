@@ -1,0 +1,12 @@
+---
+import Base from "@/layouts/Base.astro";
+import LogoSlider from "@/components/sections/LogoSlider.astro";
+// spacer = same document offset as the reference (section at y 1684)
+---
+<Base>
+  <div class="bg-[#050505]"><!-- ref body bg rgb(5,5,5); token requested -->
+  <div class="h-[1684px]" aria-hidden="true"></div>
+  <LogoSlider />
+  <div class="h-[1200px]" aria-hidden="true"></div>
+  </div>
+</Base>

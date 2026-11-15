@@ -1,0 +1,85 @@
+---
+// Row 2 infographic (ref: .solution-slider-content — a 310×136 score card above a 494×180 vertically-masked
+// column of glass pills, 46px tall on a 54px pitch; ref scrolls the pills, here a static frame).
+const chips = ['Performance', 'Accessibility', 'Best Practices', 'SEO', 'Performance'];
+---
+<div class="tcs flex max-w-full flex-col items-center justify-start" aria-label="Lighthouse scores">
+  <div class="tcs-card">
+    <div class="flex items-center gap-[10px]">
+      <span class="tcs-icon" aria-hidden="true">
+        <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <path d="M10 2.5a7.5 7.5 0 1 0 7.5 7.5" /><path d="M12.5 2.9A7.5 7.5 0 0 1 17.1 7.5H12.5z" />
+          <path d="M5.2 14.2 9 10.4V6" />
+        </svg>
+      </span>
+      <span class="text-[14px] leading-[20px] text-white/90">Lighthouse</span>
+    </div>
+    <div class="mt-[23px] flex gap-[4px]" aria-hidden="true">
+      <span class="tcs-seg bg-[rgb(252,74,74)]/25"></span>
+      <span class="tcs-seg bg-[rgb(242,140,37)]/25"></span>
+      <span class="tcs-seg bg-[rgb(221,197,17)]/25"></span>
+      <span class="tcs-seg bg-[rgb(4,155,143)]/25"></span>
+      <span class="tcs-seg tcs-seg-on"></span>
+    </div>
+    <div class="mt-[26px] flex items-center justify-between text-[13px] leading-[16px]">
+      <span class="text-[rgb(0,190,110)]">90+</span>
+      <span class="text-white/80">Out of the box</span>
+    </div>
+  </div>
+
+  <div class="tcs-list" aria-label="Lighthouse categories">
+    <ul class="tcs-track" role="list">
+      {chips.map((c, i) => (
+        <li class={`tcs-chip ${i === 0 || i === 4 ? 'tcs-chip-edge' : ''}`} aria-hidden={i === 0 || i === 4 ? 'true' : undefined}>
+          <span class="tcs-dot"></span>
+          <span class="tcs-chip-t">{c} · 90+</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</div>
+
+<style>
+  .tcs-card {
+    position: relative; z-index: 1; width: 310px; height: 136px; padding: 16px; border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+      radial-gradient(120% 140% at 100% 100%, rgba(0, 156, 90, 0.22) 0%, rgba(0, 156, 90, 0.06) 55%, rgba(0, 156, 90, 0) 80%),
+      rgba(255, 255, 255, 0.04);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+    font-family: var(--font-sans); font-weight: 400;
+  }
+  .tcs-icon {
+    display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 7px;
+    background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.9);
+  }
+  .tcs-seg { flex: 1; height: 3px; border-radius: 99px; }
+  .tcs-seg-on { background: rgb(0, 190, 110); box-shadow: 0 0 6px rgba(0, 190, 110, 0.6); }
+
+  .tcs-list {
+    position: relative; width: 494px; max-width: 100%; height: 180px; overflow: hidden;
+    -webkit-mask-image: linear-gradient(rgba(7,7,7,0) 0%, #070707 30%, #070707 70%, rgba(7,7,7,0) 100%);
+            mask-image: linear-gradient(rgba(7,7,7,0) 0%, #070707 30%, #070707 70%, rgba(7,7,7,0) 100%);
+  }
+  /* pitch 54 (46 + 8); centre chip sits at the list's vertical centre (top 67) */
+  .tcs-track { position: absolute; left: 0; right: 0; top: -41px; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .tcs-chip {
+    display: flex; align-items: center; gap: 12px; width: max-content; max-width: 100%; margin: 0 auto;
+    padding: 12px 16px; border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    box-shadow: inset 2px 2px 8px rgba(255, 255, 255, 0.2), inset -1px -1px 2px rgba(255, 255, 255, 0.2);
+  }
+  .tcs-chip-t { font-family: var(--font-sans); font-size: 14px; font-weight: 300; line-height: 142%; letter-spacing: -0.01em; color: #fff; }
+  .tcs-dot {
+    width: 4px; height: 4px; border-radius: 100%; flex: none;
+    background-color: rgb(0, 156, 90); box-shadow: rgb(0, 156, 90) 0 0 9px 2px;
+    animation: tcs-pulse 2s ease infinite;
+  }
+  @keyframes tcs-pulse {
+    0% { box-shadow: rgb(0, 156, 90) 0 0 0 0; }
+    70% { box-shadow: rgba(0, 156, 90, 0) 0 0 16px 8px; }
+    100% { box-shadow: rgba(0, 156, 90, 0) 0 0 0 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .tcs-dot { animation: none; } }
+</style>

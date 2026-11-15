@@ -1,0 +1,14 @@
+---
+import Base from "@/layouts/Base.astro";
+import Certificate from "@/components/sections/Certificate.astro";
+import LogoSlider from "@/components/sections/LogoSlider.astro";
+// 1170px black spacer = same document offset as the reference (section at y 1186 incl. its 16px margin)
+---
+<Base>
+  <div class="bg-[#050505]"><!-- ref body bg rgb(5,5,5); token requested -->
+  <div class="h-[1170px]" aria-hidden="true"></div>
+  <Certificate />
+  <LogoSlider />
+  <div class="h-[1200px]" aria-hidden="true"></div>
+  </div>
+</Base>

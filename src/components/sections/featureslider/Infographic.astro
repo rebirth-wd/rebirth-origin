@@ -1,0 +1,209 @@
+---
+// Static product infographic for one FeatureSlider card.
+// Same box size as the reference card art (328 x h, scaled to the card's inner width),
+// same style: white/4% panel, 16px radius, mono uppercase header, white/8% dividers.
+interface Props { kind: 'lighthouse' | 'commits' | 'deploy' | 'vitals' | 'waterfall'; h: number }
+const { kind, h } = Astro.props;
+const rings = ['Performance', 'Accessibility', 'Best Practices', 'SEO'];
+const commits = [
+  { msg: 'Update hero copy', hash: 'a1f3c9e', head: true },
+  { msg: 'Revert: Add pricing table', hash: '7d2b0e4', revert: true },
+  { msg: 'Add contact section', hash: 'c48e21b' },
+  { msg: 'Optimise images', hash: '3b90f6d' },
+];
+const vitals = [
+  { k: 'LCP', name: 'Largest Contentful Paint' },
+  { k: 'INP', name: 'Interaction to Next Paint' },
+  { k: 'CLS', name: 'Cumulative Layout Shift' },
+];
+const fall = [
+  { k: 'HTML', l: 0, w: 22, c: '#4F9DFF' },
+  { k: 'CSS', l: 18, w: 20, c: '#8B7CF6' },
+  { k: 'Font', l: 30, w: 24, c: '#E0A93B' },
+  { k: 'Image', l: 38, w: 34, c: '#2EBD6B' },
+];
+---
+<div class="fs-ig" style={`aspect-ratio:328/${h}`} aria-hidden="true">
+  {kind !== 'waterfall' && (
+    <div class="fs-ig-head">
+      <span class="fs-ig-label">{({ lighthouse: 'Lighthouse report', commits: 'Commit history', deploy: 'Deployments', vitals: 'Core Web Vitals' } as Record<string, string>)[kind]}</span>
+      <span class="fs-ig-spark"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 0c.5 4.2 3.3 7 8 8-4.7 1-7.5 3.8-8 8-.5-4.2-3.3-7-8-8 4.7-1 7.5-3.8 8-8Z" fill="#8B7CF6"/></svg></span>
+    </div>
+  )}
+
+  {kind === 'lighthouse' && (
+    <div class="fs-ig-grid">
+      {rings.map((r) => (
+        <div class="fs-ig-cell">
+          <span class="fs-ig-ring">
+            <svg viewBox="0 0 56 56" width="100%" height="100%">
+              <circle cx="28" cy="28" r="25" fill="rgba(46,189,107,.08)" stroke="rgba(255,255,255,.08)" stroke-width="3"/>
+              <circle cx="28" cy="28" r="25" fill="none" stroke="#2EBD6B" stroke-width="3" stroke-linecap="round" stroke-dasharray="148 157" transform="rotate(-90 28 28)"/>
+            </svg>
+            <b>90+</b>
+          </span>
+          <span class="fs-ig-cap">{r}</span>
+          <span class="fs-ig-mono fs-green">90–100</span>
+        </div>
+      ))}
+    </div>
+  )}
+
+  {kind === 'commits' && (
+    <>
+      <ul class="fs-ig-commits">
+        {commits.map((c, i) => (
+          <li>
+            <span class={`fs-ig-node${c.head ? ' is-head' : ''}${i === commits.length - 1 ? ' is-last' : ''}`}></span>
+            <span class="fs-ig-cmsg"><span>{c.msg}</span><span class="fs-ig-hash">{c.hash}</span></span>
+            {c.head && <span class="fs-ig-pill fs-green-pill">HEAD</span>}
+            {c.revert && <span class="fs-ig-pill">Revert</span>}
+          </li>
+        ))}
+      </ul>
+      <div class="fs-ig-table">
+        <div><span>Branch</span><b class="fs-ig-mono-v">main</b></div>
+        <div><span>Backed up</span><b>Every change</b></div>
+      </div>
+    </>
+  )}
+
+  {kind === 'deploy' && (
+    <div class="fs-ig-deploy">
+      <div class="fs-ig-status">
+        <span class="fs-ig-big">Production</span>
+        <span class="fs-ig-chip"><i></i>Deployed</span>
+      </div>
+      <div class="fs-ig-table fs-ig-table-3">
+        <div><span>Branch</span><b class="fs-ig-mono-v">main</b></div>
+        <div><span>Network</span><b>Cloudflare edge</b></div>
+        <div><span>Pages</span><b>Pre-rendered</b></div>
+      </div>
+      <div class="fs-ig-progress">
+        <div class="fs-ig-progress-row"><span>Deploy</span><span class="fs-ig-mono fs-green">100%</span></div>
+        <div class="fs-ig-bar"><i style="width:100%"></i></div>
+      </div>
+    </div>
+  )}
+
+  {kind === 'vitals' && (
+    <ul class="fs-ig-vitals">
+      {vitals.map((v, i) => (
+        <li>
+          <div class="fs-ig-vrow">
+            <span class="fs-ig-vk">{v.k}<small>{v.name}</small></span>
+            <span class="fs-ig-pill fs-green-pill">GOOD</span>
+          </div>
+          <div class="fs-ig-seg"><i class="g"></i><i class="a"></i><i class="r"></i><em style={`left:${[22, 30, 14][i]}%`}></em></div>
+        </li>
+      ))}
+    </ul>
+  )}
+
+  {kind === 'waterfall' && (
+    <div class="fs-ig-fall">
+      <div class="fs-ig-fall-top">
+        <div><span class="fs-ig-cap2">Page load</span><span class="fs-ig-big2">&lt; 1s</span></div>
+        <div class="fs-ig-fall-stats">
+          <div><span class="fs-ig-mono">Pages</span><b>Static</b></div>
+          <div><span class="fs-ig-mono">Served</span><b>Edge</b></div>
+        </div>
+      </div>
+      <div class="fs-ig-rows">
+        {fall.map((f) => (
+          <div class="fs-ig-frow"><span>{f.k}</span><span class="fs-ig-track"><i style={`left:${f.l}%;width:${f.w}%;background:${f.c}`}></i></span></div>
+        ))}
+        <span class="fs-ig-marker"><b>&lt; 1s</b></span>
+      </div>
+      <div class="fs-ig-legend"><span><i style="background:#2EBD6B"></i>Static page</span><span><i style="background:rgba(255,255,255,.5)"></i>Cloudflare edge</span></div>
+    </div>
+  )}
+</div>
+
+<style>
+  .fs-ig { position: relative; width: 100%; border-radius: 16px; background: rgba(255,255,255,.04); overflow: hidden; container-type: inline-size; font-family: var(--font-sans); color: #fff; font-weight: 400; text-align: left; }
+  /* all inner sizes in cqw so the art scales with the card like the reference <img> (328px design width) */
+  .fs-ig { --u: calc(100cqw / 328); font-size: calc(13 * var(--u)); line-height: 1.25; }
+  .fs-ig-head { display: flex; align-items: center; justify-content: space-between; height: calc(62 * var(--u)); padding: 0 calc(14 * var(--u)); border-bottom: 1px solid rgba(255,255,255,.08); }
+  .fs-ig-label { font-family: var(--font-mono); font-size: calc(9.5 * var(--u)); letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.75); font-weight: 400; }
+  .fs-ig-spark { display: grid; place-items: center; width: calc(31 * var(--u)); height: calc(31 * var(--u)); border-radius: calc(7 * var(--u)); background: rgba(255,255,255,.05); }
+  .fs-ig-spark svg { width: calc(12 * var(--u)); height: calc(12 * var(--u)); }
+  .fs-ig-mono { font-family: var(--font-mono); font-size: calc(9.5 * var(--u)); letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.5); }
+  .fs-green { color: #2EBD6B; }
+  .fs-ig-pill { font-family: var(--font-mono); font-size: calc(9 * var(--u)); letter-spacing: .1em; text-transform: uppercase; padding: calc(4 * var(--u)) calc(8 * var(--u)); border-radius: calc(5 * var(--u)); border: 1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.7); white-space: nowrap; }
+  .fs-green-pill { border-color: transparent; background: rgba(0,156,90,.16); color: #2EBD6B; }
+
+  /* lighthouse */
+  .fs-ig-grid { display: grid; grid-template-columns: 1fr 1fr; height: calc(229 * var(--u)); }
+  .fs-ig-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(5 * var(--u)); }
+  .fs-ig-cell:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.08); }
+  .fs-ig-cell:nth-child(-n+2) { border-bottom: 1px solid rgba(255,255,255,.08); }
+  .fs-ig-ring { position: relative; display: grid; place-items: center; width: calc(52 * var(--u)); height: calc(52 * var(--u)); }
+  .fs-ig-ring svg { position: absolute; inset: 0; }
+  .fs-ig-ring b { position: relative; font-weight: 400; font-size: calc(15 * var(--u)); color: #2EBD6B; }
+  .fs-ig-cap { font-size: calc(12.5 * var(--u)); color: rgba(255,255,255,.85); margin-top: calc(3 * var(--u)); }
+
+  /* commits */
+  .fs-ig-commits { list-style: none; margin: 0; padding: calc(8 * var(--u)) calc(14 * var(--u)) 0; }
+  .fs-ig-commits li { position: relative; display: flex; align-items: center; gap: calc(12 * var(--u)); height: calc(50 * var(--u)); }
+  .fs-ig-commits li + li { border-top: 1px solid rgba(255,255,255,.06); }
+  .fs-ig-node { position: relative; flex: none; width: calc(10 * var(--u)); height: calc(10 * var(--u)); border-radius: 50%; border: 1.5px solid rgba(255,255,255,.5); background: #141414; z-index: 1; }
+  .fs-ig-node.is-head { border-color: #2EBD6B; background: #2EBD6B; box-shadow: 0 0 0 calc(4 * var(--u)) rgba(46,189,107,.15); }
+  .fs-ig-node::after { content: ''; position: absolute; left: 50%; top: 100%; width: 1px; height: calc(42 * var(--u)); transform: translateX(-50%); background: rgba(255,255,255,.14); }
+  .fs-ig-node.is-last::after { display: none; }
+  .fs-ig-cmsg { flex: 1; display: flex; flex-direction: column; gap: calc(3 * var(--u)); font-size: calc(13.5 * var(--u)); min-width: 0; }
+  .fs-ig-hash { font-family: var(--font-mono); font-size: calc(10.5 * var(--u)); color: rgba(255,255,255,.4); }
+  .fs-ig-table { margin: calc(12 * var(--u)) calc(14 * var(--u)) 0; border: 1px solid rgba(255,255,255,.08); border-radius: calc(8.5 * var(--u)); }
+  .fs-ig-table > div { display: flex; justify-content: space-between; align-items: center; height: calc(45 * var(--u)); padding: 0 calc(15 * var(--u)); font-size: calc(13.5 * var(--u)); }
+  .fs-ig-table > div + div { border-top: 1px solid rgba(255,255,255,.06); }
+  .fs-ig-table b { font-weight: 400; color: #fff; }
+  .fs-ig-table span { color: rgba(255,255,255,.85); }
+  .fs-ig-mono-v { font-family: var(--font-mono); font-size: calc(12 * var(--u)); }
+
+  /* deploy */
+  .fs-ig-deploy { padding: calc(16 * var(--u)) 0 0; }
+  .fs-ig-status { display: flex; align-items: center; justify-content: space-between; padding: 0 calc(14 * var(--u)); height: calc(40 * var(--u)); }
+  .fs-ig-big { font-size: calc(21 * var(--u)); letter-spacing: -0.01em; }
+  .fs-ig-chip { display: inline-flex; align-items: center; gap: calc(6 * var(--u)); padding: calc(5 * var(--u)) calc(10 * var(--u)); border-radius: calc(6 * var(--u)); background: rgba(0,156,90,.16); color: #2EBD6B; font-size: calc(12 * var(--u)); }
+  .fs-ig-chip i { width: calc(6 * var(--u)); height: calc(6 * var(--u)); border-radius: 50%; background: #2EBD6B; box-shadow: 0 0 calc(6 * var(--u)) #2EBD6B; }
+  .fs-ig-table-3 { margin-top: calc(14 * var(--u)); }
+  .fs-ig-table-3 > div { height: calc(42 * var(--u)); }
+  .fs-ig-progress { padding: calc(16 * var(--u)) calc(14 * var(--u)) 0; }
+  .fs-ig-progress-row { display: flex; justify-content: space-between; align-items: center; font-size: calc(12.5 * var(--u)); color: rgba(255,255,255,.6); margin-bottom: calc(9 * var(--u)); }
+  .fs-ig-bar { height: calc(4 * var(--u)); border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .fs-ig-bar i { display: block; height: 100%; border-radius: inherit; background: #2EBD6B; }
+
+  /* vitals */
+  .fs-ig-vitals { list-style: none; margin: 0; padding: 0 calc(14 * var(--u)); }
+  .fs-ig-vitals li { height: calc(72 * var(--u)); display: flex; flex-direction: column; justify-content: center; gap: calc(10 * var(--u)); }
+  .fs-ig-vitals li + li { border-top: 1px solid rgba(255,255,255,.06); }
+  .fs-ig-vrow { display: flex; justify-content: space-between; align-items: center; }
+  .fs-ig-vk { display: flex; align-items: baseline; gap: calc(8 * var(--u)); font-size: calc(14 * var(--u)); }
+  .fs-ig-vk small { font-size: calc(11.5 * var(--u)); color: rgba(255,255,255,.45); }
+  .fs-ig-seg { position: relative; display: flex; gap: calc(3 * var(--u)); height: calc(5 * var(--u)); }
+  .fs-ig-seg i { display: block; height: 100%; border-radius: 99px; }
+  .fs-ig-seg .g { flex: 5; background: #2EBD6B; }
+  .fs-ig-seg .a { flex: 2; background: rgba(224,169,59,.25); }
+  .fs-ig-seg .r { flex: 2; background: rgba(235,87,87,.25); }
+  .fs-ig-seg em { position: absolute; top: 50%; width: calc(11 * var(--u)); height: calc(11 * var(--u)); border-radius: 50%; background: #fff; border: calc(2.5 * var(--u)) solid #2EBD6B; transform: translate(-50%, -50%); }
+
+  /* waterfall */
+  .fs-ig-fall { padding: calc(14 * var(--u)) calc(14 * var(--u)) 0; height: 100%; display: flex; flex-direction: column; }
+  .fs-ig-fall-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .fs-ig-fall-top > div:first-child { display: flex; flex-direction: column; gap: calc(3 * var(--u)); }
+  .fs-ig-cap2 { font-size: calc(11.5 * var(--u)); color: rgba(255,255,255,.5); }
+  .fs-ig-big2 { font-size: calc(21 * var(--u)); letter-spacing: -0.01em; }
+  .fs-ig-fall-stats { display: flex; gap: calc(16 * var(--u)); padding-left: calc(14 * var(--u)); border-left: 1px solid rgba(255,255,255,.08); }
+  .fs-ig-fall-stats > div { display: flex; flex-direction: column; gap: calc(6 * var(--u)); }
+  .fs-ig-fall-stats .fs-ig-mono { font-size: calc(8.5 * var(--u)); }
+  .fs-ig-fall-stats b { font-weight: 400; font-size: calc(14 * var(--u)); color: #E0A93B; }
+  .fs-ig-rows { position: relative; margin-top: calc(22 * var(--u)); display: flex; flex-direction: column; gap: calc(10 * var(--u)); }
+  .fs-ig-frow { display: flex; align-items: center; gap: calc(10 * var(--u)); font-size: calc(11 * var(--u)); color: rgba(255,255,255,.6); }
+  .fs-ig-frow > span:first-child { width: calc(38 * var(--u)); font-family: var(--font-mono); font-size: calc(9.5 * var(--u)); letter-spacing: .08em; text-transform: uppercase; }
+  .fs-ig-track { position: relative; flex: 1; height: calc(14 * var(--u)); border-radius: calc(4 * var(--u)); background: rgba(255,255,255,.03); }
+  .fs-ig-track i { position: absolute; top: 0; bottom: 0; border-radius: calc(4 * var(--u)); opacity: .85; }
+  .fs-ig-marker { position: absolute; top: calc(-6 * var(--u)); bottom: calc(-26 * var(--u)); left: calc(48 * var(--u) + (100% - 48 * var(--u)) * .76); border-left: 1px dashed rgba(255,255,255,.55); }
+  .fs-ig-marker b { position: absolute; bottom: 0; left: 0; transform: translateX(-50%); font-weight: 400; font-size: calc(11 * var(--u)); padding: calc(3 * var(--u)) calc(7 * var(--u)); border-radius: calc(5 * var(--u)); background: #262626; white-space: nowrap; }
+  .fs-ig-legend { margin-top: auto; padding-bottom: calc(16 * var(--u)); display: flex; justify-content: center; gap: calc(14 * var(--u)); font-size: calc(9.5 * var(--u)); color: rgba(255,255,255,.55); }
+  .fs-ig-legend i { display: inline-block; width: calc(4 * var(--u)); height: calc(4 * var(--u)); border-radius: 50%; margin-right: calc(4 * var(--u)); vertical-align: middle; }
+</style>

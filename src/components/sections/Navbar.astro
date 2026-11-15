@@ -1,0 +1,219 @@
+---
+// Navbar — replica of useorigin.com `.navbar` (fixed glass bar, hover dropdown, mobile panel).
+// Reference behaviour (measured 2026-11-16 at 1680px):
+//  - always fixed at 24px/24px/auto, 56px tall, radius 12, bg rgba(15,16,17,.06) + backdrop blur(24px).
+//    No scroll-dependent change and no load entrance animation on the reference (verified).
+//  - dropdown: pure CSS hover (>=992px), opacity/visibility 0.3s ease-in-out; the "+" does not move on desktop.
+//  - <=991px: hamburger toggles `.active` on the button and the white menu panel (opacity .3s ease-in-out);
+//    the dropdown toggle toggles `.active` (icon rotates 45deg in .2s, list display:block).
+const services = [
+  { label: 'AI Assistant', href: '/ai-tools' },
+  { label: 'Site Maintenance', href: '/ai-tools' },
+  { label: 'Performance', href: '/ai-tools' },
+  { label: 'Lead Capture', href: '/ai-tools' },
+  { label: 'AI in Your Workplace', href: '/ai-tools' },
+];
+const links = [
+  { label: 'About', href: '/about' },
+  { label: 'Blog', href: '/blog' },
+];
+const call = { label: 'Call us', href: 'tel:+61488162040' };
+const cta = { label: 'Start your project', href: '/contact' };
+---
+<header data-section="Navbar" class="rbnav" role="banner">
+  <div class="rbnav-inner">
+    <div class="rbnav-left">
+      <a href="/" class="rbnav-brand" aria-label="Rebirth Web Design home">
+        <!-- original mark: broken ring + spark (20x22, same box as the reference logo) -->
+        <svg class="rbnav-mark" width="20" height="22" viewBox="0 0 20 22" fill="none" aria-hidden="true">
+          <path d="M16.1 5.9A8 8 0 1 0 18 11" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" />
+          <circle cx="17.6" cy="3.4" r="2.2" fill="currentColor" />
+        </svg>
+        <span class="sr-only">Rebirth</span>
+      </a>
+    </div>
+
+    <div class="rbnav-center">
+      <nav class="rbnav-menu" aria-label="Main" data-rbnav-menu>
+        <div class="rbnav-dd">
+          <button type="button" class="rbnav-link rbnav-dd-toggle" aria-haspopup="true" aria-expanded="false" data-rbnav-dd-toggle>
+            <span class="rbnav-dd-label">Services</span>
+            <svg class="rbnav-dd-icon" width="16" height="16" viewBox="0 0 16 17" fill="none" aria-hidden="true">
+              <path d="M2.5 8.5h11M8 3v11" stroke="currentColor" stroke-width="1" stroke-linecap="round" />
+            </svg>
+          </button>
+          <div class="rbnav-dd-wrap" data-rbnav-dd-wrap>
+            <div class="rbnav-dd-list">
+              {services.map((s) => <a href={s.href} class="rbnav-dd-link">{s.label}</a>)}
+            </div>
+          </div>
+        </div>
+        {links.map((l) => <a href={l.href} class="rbnav-link">{l.label}</a>)}
+        <a href={call.href} class="rbnav-link rbnav-mobile-only">{call.label}</a>
+      </nav>
+      <button type="button" class="rbnav-burger" aria-label="Open menu" aria-expanded="false" data-rbnav-burger>
+        <span class="rbnav-bar rbnav-bar-1"></span>
+        <span class="rbnav-bar rbnav-bar-2"></span>
+        <span class="rbnav-bar rbnav-bar-3"></span>
+      </button>
+    </div>
+
+    <div class="rbnav-right">
+      <a href={call.href} class="rbnav-link rbnav-textlink rbnav-desktop-only">{call.label}</a>
+      <a href={cta.href} class="rbnav-btn">
+        <span class="rbnav-btn-label">{cta.label}</span>
+        <svg class="rbnav-btn-icon" width="15" height="24" viewBox="0 0 16 24" fill="none" aria-hidden="true">
+          <path d="M2.5 12h11M9 7.5l4.5 4.5L9 16.5" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<style>
+  .rbnav {
+    position: fixed; inset: 24px 24px auto; z-index: 999;
+    border-radius: 12px;
+    background-color: rgba(15, 16, 17, 0.06);
+    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+    color: #fff; font-size: 16px; line-height: 24px; font-weight: 400;
+  }
+  .rbnav-inner { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 4px 24px; }
+  .rbnav-left { width: 135px; }
+  .rbnav-brand { display: inline-block; vertical-align: top; color: #fff; text-decoration: none; height: 24px; }
+  .rbnav-mark { display: block; margin-top: 2px; width: 20px; height: 22px; }
+  .rbnav-center { flex: 1 1 0%; display: flex; justify-content: center; margin-left: 32px; }
+  .rbnav-menu { position: relative; display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
+
+  .rbnav-link {
+    display: flex; color: #fff; text-decoration: none; text-transform: uppercase;
+    font-family: var(--font-mono); font-size: 12px; font-weight: 400; line-height: 18px; letter-spacing: 0.25px;
+    background-color: rgba(255, 255, 255, 0.04); border: 0; border-radius: 8px; padding: 8px 12px;
+    transition: all 0.3s cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  }
+  .rbnav-link:hover { background-color: rgba(255, 255, 255, 0.16); }
+  .rbnav-textlink, .rbnav-textlink:hover { background-color: transparent; color: #fafafa; }
+  .rbnav-mobile-only { display: none; }
+
+  .rbnav-dd { position: relative; }
+  .rbnav-dd-toggle { position: relative; gap: 12px; cursor: pointer; height: 100%; padding: 8px 32px 8px 12px; font-size: 16px; line-height: 24px; }
+  .rbnav-dd-label { align-self: center; font-size: 12px; font-weight: 500; line-height: 18px; text-transform: uppercase; }
+  .rbnav-dd-icon {
+    position: absolute; top: 0; bottom: 0; right: 0; margin: auto 10px auto 0;
+    transition: all 0.2s cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  }
+  .rbnav-dd-toggle:focus-visible, .rbnav-dd-link:focus-visible {
+    outline: 2px solid rgb(0, 80, 189); outline-offset: 0; border-radius: 5px;
+  }
+  .rbnav-dd-link:focus-visible { color: rgb(0, 80, 189); }
+
+  .rbnav-dd-wrap {
+    position: absolute; top: 100%; left: 50%; transform: translate(-50%);
+    min-width: 150px; margin-top: 8px; padding: 4px; border-radius: 12px; background-color: #fff;
+    font-family: var(--font-mono); letter-spacing: -0.03px;
+    opacity: 0; visibility: hidden;
+    transition: all 0.3s ease-in-out;
+  }
+  .rbnav-dd-list { display: flex; flex-direction: column; align-items: stretch; background: #fff; border-radius: 12px; }
+  .rbnav-dd-link {
+    color: #000; text-decoration: none; text-transform: uppercase; white-space: nowrap;
+    font-size: 12px; font-weight: 500; line-height: 24px; letter-spacing: 0.25px;
+    border-radius: 6px; padding: 7px 15px;
+    transition: all 0.2s cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  }
+  .rbnav-dd-link:hover { color: #000; background-color: rgba(0, 0, 0, 0.08); }
+  @media (min-width: 992px) {
+    .rbnav-dd:hover .rbnav-dd-wrap,
+    .rbnav-dd:focus-within .rbnav-dd-wrap { opacity: 1; visibility: visible; }
+  }
+
+  .rbnav-right { display: flex; justify-content: center; align-items: center; gap: 10px; }
+  .rbnav-btn {
+    display: inline-flex; gap: 4px; color: #000; background-color: #fff; border-radius: 8px; padding: 12px 18px;
+    font-family: var(--font-mono); font-size: 12px; font-weight: 500; line-height: 24px; text-transform: uppercase;
+    text-decoration: none; transition: background-color 0.2s;
+  }
+  .rbnav-btn:hover { background-color: rgba(255, 255, 255, 0.86); }
+  .rbnav-btn-label { letter-spacing: 0.25px; }
+  .rbnav-btn-icon { width: 15px; height: 24px; }
+
+  .rbnav-burger { display: none; }
+
+  /* ---------- tablet / mobile (reference: max-width 991px) ---------- */
+  @media (max-width: 991px) {
+    .rbnav-inner { position: relative; }
+    .rbnav-center { justify-content: flex-end; align-items: center; padding-right: 10px; }
+    .rbnav-menu {
+      position: absolute; top: 100%; left: 0; width: 100%;
+      flex-direction: column; background-color: #fff; border-radius: 12px; padding: 16px 27px;
+      opacity: 0; visibility: hidden; transition: all 0.3s ease-in-out;
+    }
+    .rbnav-menu.active { opacity: 1; visibility: visible; }
+    .rbnav-link { color: #000; text-align: center; justify-content: center; background-color: transparent;
+      padding-left: 0; padding-right: 0; font-weight: 500; }
+    .rbnav-dd { width: 100%; }
+    .rbnav-dd-toggle { gap: 8px; color: #000; justify-content: center; max-width: max-content; margin: 0 auto; padding-right: 12px; padding-left: 12px; }
+    .rbnav-dd-toggle:hover { color: #000; background-color: rgba(0, 0, 0, 0.08); }
+    .rbnav-dd-icon { position: static; margin: auto 0; }
+    .rbnav-dd-toggle.active .rbnav-dd-icon { transform: rotate(45deg); }
+    .rbnav-dd-wrap { position: static; transform: none; margin-top: 0; opacity: 1; visibility: visible; display: none; }
+    .rbnav-dd-wrap.active { display: block; }
+    .rbnav-dd-link { text-align: center; }
+    .rbnav-mobile-only { display: block; }
+    .rbnav-desktop-only { display: none; }
+    .rbnav-btn { justify-content: center; align-items: center; }
+
+    .rbnav-burger {
+      display: block; color: #fff; cursor: pointer; border: 0; background: transparent; border-radius: 8px;
+      padding: 17px 14px; overflow: hidden; transition: all 0.3s ease-in-out;
+    }
+    .rbnav-bar {
+      display: block; pointer-events: none; background-color: currentColor; width: 20px; height: 2px;
+      transform-origin: 0 center; transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    }
+    .rbnav-bar-2 { margin: 4px 0; }
+    .rbnav-burger.active .rbnav-bar-1 { transform: translate(3px, -1px) rotate(45deg); }
+    .rbnav-burger.active .rbnav-bar-2 { opacity: 0; }
+    .rbnav-burger.active .rbnav-bar-3 { transform: translate(3px, 1px) rotate(-45deg); }
+  }
+  @media (max-width: 767px) {
+    .rbnav-brand { padding-left: 10px; }
+  }
+  @media (max-width: 479px) {
+    .rbnav { inset: 16px 16px auto; }
+    .rbnav-inner { padding-left: 4px; }
+    .rbnav-center { justify-content: flex-start; margin-left: 4px; padding-right: 0; }
+    .rbnav-menu { gap: 4px; }
+    .rbnav-burger { padding: 12px 9px; }
+    .rbnav-dd-link { display: flex; justify-content: center; align-items: flex-start; }
+    .rbnav-left { width: auto; }
+    .rbnav-brand { padding-right: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rbnav *, .rbnav *::before, .rbnav *::after { transition: none !important; }
+  }
+</style>
+
+<script>
+  // Mobile navigation (mirrors the reference's initMobileNavigation; only active at <=991px).
+  const menu = document.querySelector<HTMLElement>('[data-rbnav-menu]');
+  const burger = document.querySelector<HTMLButtonElement>('[data-rbnav-burger]');
+  if (menu && burger) {
+    menu.addEventListener('click', (e) => {
+      const toggle = (e.target as HTMLElement).closest<HTMLElement>('[data-rbnav-dd-toggle]');
+      if (!toggle || window.innerWidth > 991) return;
+      const wrap = toggle.nextElementSibling as HTMLElement | null;
+      const isActive = toggle.classList.contains('active');
+      menu.querySelectorAll('[data-rbnav-dd-toggle]').forEach((t) => { t.classList.remove('active'); t.setAttribute('aria-expanded', 'false'); });
+      menu.querySelectorAll('[data-rbnav-dd-wrap]').forEach((w) => w.classList.remove('active'));
+      if (!isActive && wrap) { toggle.classList.add('active'); toggle.setAttribute('aria-expanded', 'true'); wrap.classList.add('active'); }
+    });
+    burger.addEventListener('click', () => {
+      if (window.innerWidth > 991) return;
+      const open = menu.classList.toggle('active');
+      burger.classList.toggle('active', open);
+      burger.setAttribute('aria-expanded', String(open));
+      burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    });
+  }
+</script>

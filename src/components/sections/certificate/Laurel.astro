@@ -1,0 +1,26 @@
+---
+// Original, generic laurel branch (procedurally generated almond leaves along a curve; not traced).
+// Left branch by default; `flip` mirrors it for the right-hand side.
+interface Props { flip?: boolean; class?: string }
+const { flip = false, class: cls = '' } = Astro.props;
+const P0 = [15, 66], P1 = [-5, 38], P2 = [13, 8];
+const pt = (t: number) => [0, 1].map(i => (1 - t) ** 2 * P0[i] + 2 * (1 - t) * t * P1[i] + t * t * P2[i]);
+const tan = (t: number) => { const v = [0, 1].map(i => 2 * (1 - t) * (P1[i] - P0[i]) + 2 * t * (P2[i] - P1[i])); const l = Math.hypot(v[0], v[1]); return [v[0] / l, v[1] / l]; };
+const deg = (t: number) => { const [dx, dy] = tan(t); return (Math.atan2(dx, -dy) * 180) / Math.PI; };
+// almond leaf, base at origin, pointing up
+const leaf = (len: number, w: number) => `M0 0Q${w} ${-len / 2} 0 ${-len}Q${-w} ${-len / 2} 0 0Z`;
+type L = { x: number; y: number; r: number; d: string };
+const leaves: L[] = [];
+const add = (t: number, side: -1 | 1, rot: number, len: number, w: number) => {
+  const [x, y] = pt(t); const [tx, ty] = tan(t);
+  const nx = ty * -side, ny = -tx * -side; // side -1 = outer (left), 1 = inner
+  leaves.push({ x: x + nx * 1.2, y: y + ny * 1.2, r: deg(t) + rot, d: leaf(len, w) });
+};
+[0.02, 0.2, 0.38, 0.56, 0.74, 0.9].forEach((t, i) => add(t, -1, -24, 16 - i * 0.6, 6.6 - i * 0.2));
+[0.1, 0.29, 0.47, 0.65, 0.82].forEach((t, i) => add(t, 1, 40, 13.5 - i * 0.6, 5.6 - i * 0.2));
+---
+<svg class={cls} viewBox="0 0 22 72" width="22" height="72" fill="currentColor" aria-hidden="true" overflow="visible">
+  <g transform={flip ? 'translate(22 0) scale(-1 1)' : undefined}>
+    {leaves.map(l => <path d={l.d} transform={`translate(${l.x.toFixed(2)} ${l.y.toFixed(2)}) rotate(${l.r.toFixed(1)})`} />)}
+  </g>
+</svg>

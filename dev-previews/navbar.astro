@@ -1,0 +1,18 @@
+---
+import Base from "@/layouts/Base.astro";
+import Navbar from "@/components/sections/Navbar.astro";
+---
+<Base>
+  <Navbar />
+  <!-- dummy page body so the fixed bar + backdrop blur can be tested while scrolling -->
+  <main>
+    <div class="h-[1170px] bg-[#1f6aa5]"></div>
+    {Array.from({ length: 6 }).map((_, i) => (
+      <div class="flex h-[600px] items-center justify-center gap-6 bg-black px-6">
+        <div class="h-[420px] w-[380px] rounded-[20px] border border-white/10 bg-[#111214]"></div>
+        <div class="flex h-[420px] w-[380px] items-start justify-center rounded-[20px] border border-white/10 bg-[#111214] pt-10 font-mono text-xs uppercase text-white/60">block {i + 1}</div>
+        <div class="h-[420px] w-[380px] rounded-[20px] border border-white/10 bg-[#1b1c1f]"></div>
+      </div>
+    ))}
+  </main>
+</Base>

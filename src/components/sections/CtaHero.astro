@@ -1,0 +1,107 @@
+---
+// CTA hero — replica of useorigin.com `section.footer-hero.hero.cta-v3`.
+// Reference (measured 2026-11-16 at 1680x848, dpr 2):
+//  - full-bleed bg <img onerror="this.style.display='none'"> object-fit cover (z 0); content wrapper z 10 with linear-gradient(rgba(5,5,5,0), #050505),
+//    padding 17vh 100px 17vh, flex column centred. No parallax on the photo (no style mutations while scrolling).
+//  - h1 Lyon Display 300 96px / 90%, centred, mb 24, first word italic; certificate row (max-height 58) margin 24 0;
+//    white button: radius 8, padding 12px 18px, Roboto Mono 12px 500 uppercase, letter-spacing .25px, arrow 15x24, gap 4,
+//    hover bg rgba(255,255,255,.86) transition background-color .2s.
+//  - entrance (Webflow IX2, once): `.container` opacity 0 -> 1, translateY 100px -> 0, ~1s ease-out-quart,
+//    starts when the container's layout top reaches the viewport bottom.
+//  - <=991: wrapper padding-x 5% · <=767: h1 60px · <=479: h1 40px mb 16, wrapper padding-x 24px.
+// The certificate/award graphic is NOT reproduced (no honest awards). Its 58px row carries the
+// tagline from COPY.md ("Modern websites, built to last.") so the vertical rhythm stays identical.
+import { images } from '@/data/images';
+const img = images.hills;
+---
+<section data-section="CtaHero" class="rbcta" style={`background-color:${img.avg}`}>
+  <img
+    class="rbcta-bg"
+    src={img.src}
+    srcset={`${img.srcSmall} 900w, ${img.src} 2000w`}
+    sizes="100vw"
+    alt=""
+    loading="lazy"
+    decoding="async"
+  />
+  <div class="rbcta-wrap">
+    <div class="rbcta-container" data-rbcta-trigger>
+      <div class="rbcta-inner" data-rbcta-inner>
+        <h2 class="rbcta-h"><em>Start</em> your project</h2>
+        <p class="rbcta-sub">Modern websites, built to last.</p>
+        <a href="tel:+61488162040" class="rbcta-btn">
+          <span class="rbcta-btn-label">Call 0488 162 040</span>
+          <svg class="rbcta-btn-icon" width="15" height="24" viewBox="0 0 16 24" fill="none" aria-hidden="true">
+            <path d="M2.5 12h11M9 7.5l4.5 4.5L9 16.5" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .rbcta { position: relative; z-index: 0; overflow: hidden; color: #fff; }
+  .rbcta-bg { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; display: block; max-width: none; }
+  .rbcta-wrap {
+    position: relative; z-index: 10; width: 100%;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 17vh 100px 17vh;
+    background-image: linear-gradient(rgba(5, 5, 5, 0), rgb(5, 5, 5));
+  }
+  .rbcta-container { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; }
+  .rbcta-inner { text-align: center; max-width: 980px; margin: 0 auto; }
+  .rbcta-h {
+    margin: 0 0 24px; font-family: var(--font-display); font-size: 96px; line-height: 90%;
+    font-weight: 300; color: #fff;
+    position: relative; top: 6px; /* Newsreader sits ~6px higher than Lyon Display in the same 86px line box */
+  }
+  .rbcta-h em { font-style: italic; font-weight: 300; }
+  /* occupies the reference's 58px certificate row (margin 24px 0, collapsing with the h1's 24px) */
+  .rbcta-sub {
+    margin: 24px 0; height: 58px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 12px; line-height: 16px; font-weight: 400;
+    letter-spacing: 0.25px; text-transform: uppercase; color: rgba(255, 255, 255, 0.8);
+  }
+  .rbcta-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 12px 18px; border-radius: 8px; background-color: #fff; color: #000;
+    font-family: var(--font-mono); font-size: 12px; line-height: 24px; font-weight: 500;
+    text-transform: uppercase; text-decoration: none; transition: background-color 0.2s;
+  }
+  .rbcta-btn-label { letter-spacing: 0.25px; }
+  .rbcta-btn-icon { width: 15px; height: 24px; }
+  .rbcta-btn:hover { background-color: rgba(255, 255, 255, 0.86); }
+  .rbcta-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+  @media (max-width: 991px) {
+    .rbcta-wrap { padding-left: 5%; padding-right: 5%; }
+  }
+  @media (max-width: 767px) {
+    .rbcta-h { font-size: 60px; }
+  }
+  @media (max-width: 479px) {
+    .rbcta-wrap { padding-left: 24px; padding-right: 24px; }
+    .rbcta-h { font-size: 40px; margin-bottom: 16px; }
+  }
+</style>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(ScrollTrigger);
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const trigger = document.querySelector<HTMLElement>('[data-rbcta-trigger]');
+    const inner = document.querySelector<HTMLElement>('[data-rbcta-inner]');
+    if (trigger && inner) {
+      gsap.set(inner, { opacity: 0, y: 100 });
+      ScrollTrigger.create({
+        trigger,
+        start: 'top bottom',
+        once: true,
+        onEnter: () => gsap.to(inner, { opacity: 1, y: 0, duration: 1, ease: 'power3.out', overwrite: true }),
+      });
+    }
+  }
+</script>

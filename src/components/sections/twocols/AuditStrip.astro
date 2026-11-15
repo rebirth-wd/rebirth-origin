@@ -1,0 +1,96 @@
+---
+// Row 1 infographic (ref: .analyze-slider — a 492px-wide strip of 262×233 mini dashboard cards, 16px apart,
+// horizontally masked 0→10%→90%→100%; ref slides continuously, here it is a static frame with the middle card centred).
+const checks = [
+  { t: 'Pre-rendered static pages', s: 'Performance', c: '#87cdff' },
+  { t: 'Minimal client JavaScript', s: 'Performance', c: '#ffed6d' },
+  { t: 'Clean, semantic markup', s: 'SEO', c: '#dd90d8' },
+];
+const bar = [
+  ['#87cdff', 56], ['#ffed6d', 28], ['#dd90d8', 18], ['#c0f9bf', 8], ['#ffbb99', 10], ['#bc932f', 18], ['#90ddd8', 15], ['#feafaf', 8],
+] as const;
+---
+<div class="tca-strip" aria-label="Site audit checklist">
+  <div class="tca-track">
+    <!-- left card (only its right edge shows) -->
+    <div class="tca-card" aria-hidden="true">
+      <div class="tca-head">Lighthouse</div>
+      <div class="tca-body">
+        <div class="mt-[22px] text-right text-[16px] leading-[20px] text-white/80">Out of the box</div>
+        <div class="mt-[20px] flex gap-[6px]">
+          <span class="tca-seg bg-[#fc4a4a]/30"></span><span class="tca-seg bg-[#f28c25]/30"></span><span class="tca-seg bg-[#ddc511]/30"></span><span class="tca-seg bg-[#009c5a]/45"></span><span class="tca-seg bg-[#1f6fa8]/50"></span>
+        </div>
+        <div class="mt-[12px] text-right text-[14px] leading-[18px] text-white">90+</div>
+        <div class="mt-[40px] text-[14px] text-white/40">Scores across the board</div>
+      </div>
+    </div>
+
+    <!-- centre card -->
+    <div class="tca-card">
+      <div class="tca-head">Site audit</div>
+      <div class="tca-body">
+        <div class="flex pt-[22px] text-[10px] leading-[16px]">
+          <div class="tca-tab tca-tab-on">Checks passed</div>
+          <div class="tca-tab text-white/80">Fixes applied</div>
+        </div>
+        <div class="mt-[26px] flex gap-[3px] px-[6px]">
+          {bar.map(([c, w]) => <span class="h-[4px] rounded-full" style={`background:${c};flex:${w} 1 0`}></span>)}
+        </div>
+        <ul class="mt-[22px] flex flex-col gap-[6px]" role="list">
+          {checks.map((k) => (
+            <li class="tca-row">
+              <span class="h-[6px] w-[6px] shrink-0 rounded-full" style={`background:${k.c}`}></span>
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-[10px] leading-[13px] text-white">{k.t}</span>
+                <span class="mt-[3px] block text-[8.5px] leading-[11px] text-white/70">{k.s}</span>
+              </span>
+              <span class="text-right">
+                <span class="block text-[10px] leading-[13px] text-white">Passed</span>
+                <span class="mt-[3px] block text-[8.5px] leading-[11px] text-[#009c5a]">✓ Fixed</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+
+    <!-- right card (only its left edge shows) -->
+    <div class="tca-card" aria-hidden="true">
+      <div class="tca-head">Delivery</div>
+      <div class="tca-body">
+        <div class="mt-[14px] text-[22px] leading-[30px] text-white">Edge</div>
+        <div class="mt-[12px] rounded-[6px] border border-white/10 px-[10px] py-[8px] text-[11px] leading-[14px] text-white/70">Served from Cloudflare’s edge</div>
+        <div class="mt-[16px] font-mono text-[9px] tracking-[1.6px] text-white/60 uppercase">Region</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tca-strip {
+    position: relative; display: flex; justify-content: center; align-items: center;
+    width: 100%; max-width: 492px; overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, rgba(7,7,7,0) 0%, #070707 10%, #070707 90%, rgba(7,7,7,0) 100%);
+            mask-image: linear-gradient(90deg, rgba(7,7,7,0) 0%, #070707 10%, #070707 90%, rgba(7,7,7,0) 100%);
+  }
+  .tca-track { display: flex; gap: 16px; flex: none; }
+  .tca-card {
+    flex: none; width: 262px; height: 233px; overflow: hidden; border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
+    font-family: var(--font-sans); font-weight: 400;
+  }
+  .tca-head {
+    height: 63px; display: flex; align-items: center; padding: 0 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: 1.6px; text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .tca-body { padding: 0 12px; }
+  .tca-tab { flex: 1; text-align: center; padding-bottom: 10px; }
+  .tca-tab-on { color: #fff; border-bottom: 1.5px solid #fff; }
+  .tca-row {
+    display: flex; align-items: center; gap: 9px; height: 41px; padding: 0 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 6px; background: rgba(255, 255, 255, 0.02);
+  }
+  .tca-seg { height: 4px; flex: 1; border-radius: 99px; }
+</style>

@@ -1,0 +1,17 @@
+---
+import '@/styles/global.css';
+const { title = 'Rebirth Web Design | High-performance websites in Bundaberg' } = Astro.props;
+---
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Fast, secure, static-first websites built in Bundaberg on a production-grade architecture." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

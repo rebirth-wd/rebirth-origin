@@ -1,0 +1,6 @@
+---
+import Base from "@/layouts/Base.astro";
+import Testimonials from "@/components/sections/Testimonials.astro";
+// 1000px spacer above so the scroll-in entrance can be tested (shot.mjs --y 1000 = section at top)
+---
+<Base><div style="height:1000px" aria-hidden="true"></div><Testimonials /><div style="height:400px" aria-hidden="true"></div></Base>

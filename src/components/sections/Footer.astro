@@ -1,0 +1,204 @@
+---
+// Footer — replica of useorigin.com `footer.footer`.
+// Reference (measured 2026-11-16 at 1680px, dpr 2):
+//  - footer padding 32px 32px 0, z 99, overflow hidden; wrapper max 1400 centred, padding-bottom 24
+//  - top row: flex wrap, gap 60, space-between: newsletter (flex 1, max 400) · 3 link columns (min-width 100) · right block (flex 1)
+//  - titles/body 12px / 141% weight 300, body rgba(255,255,255,.6), titles #fff, margin-top 12
+//  - links 12px/24px rgba(255,255,255,.6), hover #fff, transition .2s cubic-bezier(.455,.03,.515,.955)
+//  - email input: 52px, radius 8, bg gradient #222 -> #131313, padding-left 22, 14px weight 300, no visible border/focus ring;
+//    submit = 50px-wide transparent button at the right with a 15x13 arrow (#fafafa @ .5)
+//  - store / social buttons: gradient #222 -> #131313, radius 8, padding 13, no hover state; rows gap 12, groups mb 24
+//  - logo row, 1px divider rgba(255,255,255,.14) margin 24 auto, legal: Roboto Mono 10px / 135% uppercase rgba(255,255,255,.38)
+//  - no entrance animation (no style/class mutations recorded while scrolling)
+//  - <=767: row gap 30, newsletter flex 0 1 auto · <=479: footer padding-x 16, link columns full width
+// Content: docs/COPY.md §12. No reCAPTCHA. Newsletter form does a harmless GET to /contact?newsletter=true.
+const columns = [
+  { title: 'Pages', links: [
+    { label: 'Home', href: '/' }, { label: 'About', href: '/about' }, { label: 'AI Tools', href: '/ai-tools' },
+    { label: 'Blog', href: '/blog' }, { label: 'Contact', href: '/contact' },
+  ] },
+  { title: 'Legal', links: [{ label: 'Terms', href: '/terms' }, { label: 'Privacy Policy', href: '/privacy' }] },
+  { title: 'Services', links: [
+    { label: 'AI Assistant', href: '/ai-tools' }, { label: 'Site Maintenance', href: '/ai-tools' },
+    { label: 'Performance Tuning', href: '/ai-tools' }, { label: 'Lead Capture', href: '/ai-tools' },
+  ] },
+];
+const socials = [
+  { label: 'Follow Rebirth Web Design on Facebook (opens in new window)', glyph: 'fb', href: 'https://www.facebook.com/rebirthwd' },
+  { label: 'Follow Rebirth Web Design on Instagram (opens in new window)', glyph: 'ig', href: 'https://www.instagram.com/rebirthwd' },
+  { label: 'Subscribe to Rebirth Web Design on YouTube (opens in new window)', glyph: 'yt', href: 'https://www.youtube.com/@ReBirthWebDesign' },
+];
+---
+<footer data-section="Footer" class="rbf">
+  <div class="rbf-site">
+    <div class="rbf-top">
+      <div class="rbf-news">
+        <p class="rbf-t rbf-t--white">Newsletter</p>
+        <p class="rbf-t">Sign up to our newsletter for insights on modern web design, performance, and long-term maintainability.</p>
+        <div class="rbf-formblock">
+          <form class="rbf-form" action="/contact" method="get" aria-label="Newsletter sign-up">
+            <input type="hidden" name="newsletter" value="true" />
+            <div class="rbf-inputwrap">
+              <label class="sr-only" for="rbf-email">Email address</label>
+              <input class="rbf-input" id="rbf-email" type="email" name="email" maxlength="256" placeholder="Enter your email" autocomplete="email" required />
+              <button class="rbf-submit" type="submit" aria-label="Sign up">
+                <svg width="15" height="13" viewBox="0 0 15 13" fill="none" aria-hidden="true">
+                  <path d="M1 6.5h12.5M8 1l5.5 5.5L8 12" stroke="#fafafa" stroke-opacity=".5" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="sr-only">Sign up</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {columns.map((c) => (
+        <div class="rbf-col">
+          <p class="rbf-t rbf-t--white">{c.title}</p>
+          {c.links.map((l) => <a href={l.href} class="rbf-link">{l.label}</a>)}
+        </div>
+      ))}
+
+      <div class="rbf-right">
+        <div class="rbf-group">
+          <p class="rbf-t rbf-t--white">Contact</p>
+          <div class="rbf-row">
+            <a href="tel:+61488162040" class="rbf-btn">
+              <svg class="rbf-glyph" width="11" height="16" viewBox="0 0 11 16" fill="none" aria-hidden="true">
+                <rect x="1" y="1" width="9" height="14" rx="2" stroke="currentColor" stroke-width="1.4" />
+                <path d="M4 12.2h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+              </svg>
+              <span>Call us</span>
+            </a>
+            <a href="/contact" class="rbf-btn">
+              <svg class="rbf-glyph" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="1" y="3" width="14" height="10" rx="1.6" stroke="currentColor" stroke-width="1.4" />
+                <path d="M1.8 4l6.2 4.6L14.2 4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+              </svg>
+              <span>Email us</span>
+            </a>
+          </div>
+        </div>
+        <div class="rbf-group">
+          <p class="rbf-t rbf-t--white">Bundaberg, QLD</p>
+          <div class="rbf-row">
+            <a href="tel:+61488162040" class="rbf-btn" aria-label="Call +61 488 162 040">
+              <span>+61 488 162 040</span>
+            </a>
+          </div>
+          <p class="rbf-t">Websites in Bundaberg just got an upgrade.</p>
+        </div>
+        <div class="rbf-group">
+          <p class="rbf-t rbf-t--white">Follow us</p>
+          <div class="rbf-row">
+            {socials.map((s) => (
+              <a href={s.href} target="_blank" rel="noopener" class="rbf-btn rbf-social" aria-label={s.label}>
+                <span class="rbf-social-glyph" aria-hidden="true">{s.glyph}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+        <div class="rbf-group">
+          <div class="rbf-row rbf-row--links">
+            <a href="tel:+61488162040" class="rbf-link">Call us</a>
+            <a href="/contact" class="rbf-link">Start your project</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <a href="/" class="rbf-brand" aria-label="Rebirth Web Design home">
+        <!-- original mark, same markup as the navbar's (src/components/sections/Navbar.astro) -->
+        <svg class="rbf-mark" width="20" height="22" viewBox="0 0 20 22" fill="none" aria-hidden="true">
+          <path d="M16.1 5.9A8 8 0 1 0 18 11" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" />
+          <circle cx="17.6" cy="3.4" r="2.2" fill="currentColor" />
+        </svg>
+        <span class="rbf-word">Rebirth</span>
+      </a>
+      <div class="rbf-divider"></div>
+      <div class="rbf-legal">
+        © 2026 Rebirth Web Design / Alex Harris. All Rights Reserved.<br /><br />
+        High-performance websites engineered for the modern web. Hosting, backups, security, and updates — managed for you, every month.
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .rbf { position: relative; z-index: 99; overflow: hidden; padding: 32px 32px 0; color: #fff; font-size: 16px; line-height: 24px; }
+  .rbf-site { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding-bottom: 24px; overflow: hidden; }
+  .rbf-top { display: flex; flex-flow: row wrap; justify-content: space-between; gap: 60px; }
+
+  .rbf-t {
+    margin: 12px 0 0; font-family: var(--font-sans); font-size: 12px; line-height: 141%; font-weight: 300;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .rbf-t--white { color: #fff; }
+
+  .rbf-news { flex: 1 1 0%; max-width: 400px; }
+  .rbf-formblock { margin: 12px 0 15px; }
+  .rbf-form { position: relative; margin: 0; }
+  .rbf-inputwrap { position: relative; }
+  .rbf-input {
+    display: block; width: 100%; height: 52px; margin: 0 0 10px; padding: 8px 12px 8px 22px;
+    appearance: none; outline: none; box-shadow: none; border: 0; border-radius: 8px;
+    background-color: #000; background-image: linear-gradient(#222, #131313);
+    font-family: var(--font-sans); font-size: 14px; line-height: 20px; font-weight: 300; color: #fafafa;
+  }
+  .rbf-input::placeholder { color: #999; }
+  .rbf-submit {
+    position: absolute; top: 0; right: 0; bottom: 0; width: 50px; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    border: 0; padding: 0; background: transparent; cursor: pointer; color: inherit;
+  }
+  .rbf-submit:focus-visible, .rbf-input:focus-visible { outline: 1px solid rgba(255, 255, 255, 0.4); outline-offset: 2px; }
+
+  .rbf-col { display: flex; flex-flow: column; min-width: 100px; }
+  .rbf-link {
+    font-family: var(--font-sans); font-size: 12px; line-height: 24px; font-weight: 300;
+    color: rgba(255, 255, 255, 0.6); text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  }
+  .rbf-link:hover, .rbf-link:focus-visible { color: #fff; }
+
+  .rbf-right { flex: 1 1 0%; }
+  .rbf-group { margin-bottom: 24px; }
+  .rbf-row { display: flex; flex-flow: row wrap; justify-content: flex-start; align-items: center; gap: 12px; margin-top: 12px; }
+  .rbf-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 13px;
+    border-radius: 8px; background-image: linear-gradient(#222, #131313);
+    color: #fafafa; text-decoration: none;
+    font-family: var(--font-sans); font-size: 13px; line-height: 16px; font-weight: 500; letter-spacing: -0.01em;
+  }
+  .rbf-btn:focus-visible { outline: 1px solid rgba(255, 255, 255, 0.5); outline-offset: 2px; }
+  .rbf-glyph { display: block; flex: none; }
+  .rbf-social { width: 46px; height: 46px; padding: 13px; }
+  .rbf-social-glyph {
+    display: flex; align-items: center; justify-content: center; width: 20px; height: 20px;
+    font-family: var(--font-mono); font-size: 12px; line-height: 20px; font-weight: 600; letter-spacing: -0.02em;
+    text-transform: lowercase;
+  }
+
+  .rbf-brand { display: flex; width: max-content; align-items: center; gap: 6px; height: 25px; color: #fafafa; text-decoration: none; }
+  .rbf-mark { display: block; }
+  .rbf-word { font-family: var(--font-display); font-size: 29px; line-height: 24px; font-weight: 400; letter-spacing: -0.015em; }
+  .rbf-divider { max-width: 1400px; height: 1px; margin: 24px auto; background-color: rgba(255, 255, 255, 0.14); }
+  .rbf-legal {
+    font-family: var(--font-mono); font-size: 10px; line-height: 135%; font-weight: 400;
+    text-transform: uppercase; color: rgba(255, 255, 255, 0.38);
+  }
+
+  @media (max-width: 991px) {
+    .rbf-site { overflow: visible; }
+  }
+  @media (max-width: 767px) {
+    .rbf-top { gap: 30px; }
+    .rbf-news { flex: 0 1 auto; }
+  }
+  @media (max-width: 479px) {
+    .rbf { padding-left: 16px; padding-right: 16px; }
+    .rbf-site { padding-bottom: 0; }
+    .rbf-col { flex: 0 1 auto; width: 100%; }
+  }
+</style>

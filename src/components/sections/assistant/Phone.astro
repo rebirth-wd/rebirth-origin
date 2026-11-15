@@ -1,0 +1,147 @@
+---
+// Assistant phone — original, generic phone frame + static AI-chat screen, drawn as one inline SVG.
+// Geometry is in the reference's 540 x 1100 artboard units (= CSS px at full size); the SVG scales with
+// its container exactly like the reference's 540px-max animation box. Final composed chat state (static).
+const L = 62;            // chat text left edge
+const VX = 250;          // table value column
+// keyboard geometry (measured from the reference artboard)
+const row1 = 'qwertyuiop'.split('');
+const row2 = 'asdfghjkl'.split('');
+const row3 = 'zxcvbnm'.split('');
+const KH = 48.5;
+const R1 = 750.3, R2 = 812.8, R3 = 876.5, R4 = 940.5;
+const answer = [
+  'A focused prototype can be ready in just a few days.',
+  'Full custom sites typically take 2–4 weeks from kickoff',
+  'to launch, depending on scope and feedback rounds.',
+];
+const table = [
+  ['Prototype', 'A few days'],
+  ['Full custom site', '2–4 weeks'],
+  ['Build days', '2–3'],
+];
+const ROW0 = 306, ROWH = 52;
+---
+<svg class="asst-phone block h-auto w-full" viewBox="0 0 540 1100" xmlns="http://www.w3.org/2000/svg" role="img"
+  aria-label="Phone showing the Rebirth AI assistant answering: How long does it take to build a website?">
+  <defs>
+    <clipPath id="asst-display"><rect x="30" y="28" width="480" height="1048" rx="80" /></clipPath>
+    <clipPath id="asst-viewport"><rect x="42.93" y="153.8" width="454.14" height="364.4" /></clipPath>
+    <linearGradient id="asst-composer" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#131313" /><stop offset="1" stop-color="#0c0c0c" />
+    </linearGradient>
+    <linearGradient id="asst-composer-edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#262626" /><stop offset="1" stop-color="#1a1a1a" />
+    </linearGradient>
+    <radialGradient id="asst-lens" cx="0.4" cy="0.4" r="0.7">
+      <stop offset="0" stop-color="#3a3f9a" /><stop offset="0.6" stop-color="#15183f" /><stop offset="1" stop-color="#07070d" />
+    </radialGradient>
+  </defs>
+
+  <!-- side buttons -->
+  <g fill="#6f7072">
+    <rect x="8" y="234" width="4" height="46" rx="1.5" />
+    <rect x="8" y="321" width="4" height="69" rx="1.5" />
+    <rect x="8" y="422" width="4" height="76" rx="1.5" />
+    <rect x="528" y="347" width="4" height="125" rx="1.5" />
+  </g>
+  <!-- frame: metal rim (concentric rounded rects, bright inner highlight) + black bezel -->
+  <rect x="11" y="11" width="518" height="1078" rx="97" fill="#2c2d2e" />
+  <rect x="12.5" y="12.5" width="515" height="1075" rx="95.5" fill="#58595b" />
+  <rect x="14" y="14" width="512" height="1072" rx="94" fill="#8d8e90" />
+  <rect x="15.4" y="15.4" width="509.2" height="1069.2" rx="92.6" fill="#c9cacb" />
+  <rect x="16.6" y="16.6" width="506.8" height="1066.8" rx="91.4" fill="#3d3d3e" />
+  <rect x="18" y="18" width="504" height="1064" rx="90" fill="#1c1c1c" />
+  <rect x="21" y="21" width="498" height="1058" rx="87" fill="#000" />
+  <rect x="218" y="17" width="103" height="3" rx="1.5" fill="#161616" />
+
+  <!-- display -->
+  <g clip-path="url(#asst-display)">
+    <rect x="30" y="28" width="480" height="1048" fill="#050505" />
+    <rect x="30" y="742" width="480" height="334" fill="#121212" />
+  </g>
+
+  <!-- status bar -->
+  <text x="97.5" y="65" text-anchor="middle" fill="#fff" font-family="Inter Variable, Inter, system-ui, sans-serif" font-size="16.6" font-weight="600" letter-spacing="-0.1">9:40</text>
+  <rect x="196" y="46" width="148" height="42" rx="21" fill="#000" stroke="#121212" stroke-width="1" />
+  <rect x="204" y="51" width="79" height="31" rx="15.5" fill="#030303" stroke="#0d0d0d" stroke-width="1" />
+  <circle cx="323" cy="67" r="13" fill="#060608" stroke="#101012" stroke-width="1" />
+  <circle cx="323" cy="67" r="5.5" fill="url(#asst-lens)" />
+  <g fill="#fff">
+    <rect x="382" y="61" width="3.6" height="4.5" rx="1" />
+    <rect x="387.5" y="58.6" width="3.6" height="6.9" rx="1" />
+    <rect x="393" y="56.2" width="3.6" height="9.3" rx="1" />
+    <rect x="398.5" y="53.8" width="3.6" height="11.7" rx="1" />
+  </g>
+  <g fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round">
+    <path d="M409.6 57.4 a13 13 0 0 1 18.2 0" />
+    <path d="M412.8 60.6 a8.4 8.4 0 0 1 11.8 0" />
+  </g>
+  <circle cx="418.7" cy="64" r="2" fill="#fff" />
+  <rect x="435" y="54.3" width="24" height="11.6" rx="3.4" fill="#fff" />
+  <rect x="460.4" y="58" width="1.8" height="4.4" rx="0.9" fill="#fff" fill-opacity="0.5" />
+
+  <!-- top navigation -->
+  <g stroke-linecap="round" fill="none" stroke-width="1.6">
+    <path d="M74 105h13.4M74 110.2h10.6M74 115.4h7.6" stroke="#6a6a6a" />
+    <path d="M454.3 104.3l11.4 11.4M465.7 104.3l-11.4 11.4" stroke="#e0e0e0" />
+  </g>
+  <g fill="#a9a9a9"><circle cx="417.6" cy="105" r="1.15" /><circle cx="417.6" cy="110.2" r="1.15" /><circle cx="417.6" cy="115.4" r="1.15" /></g>
+
+  <!-- chat viewport (static, final composed state) -->
+  <g clip-path="url(#asst-viewport)" font-family="Inter Variable, Inter, system-ui, sans-serif" font-size="16.1" font-weight="400" letter-spacing="-0.3">
+    <rect class="asst-bubble" x="142" y="160" width="336.5" height="61" rx="10" fill="#161616" />
+    <text class="asst-bubble-t" x="459.5" y="196" text-anchor="end" fill="#f2f2f2">How long does it take to build a website?</text>
+
+    <text fill="#ececec">
+      {answer.map((t, i) => <tspan x={L} y={250 + i * 23}>{t}</tspan>)}
+    </text>
+
+    {table.map(([k, v], i) => (
+      <g>
+        <text x={L} y={ROW0 + i * ROWH + 32} fill="#f4f4f4">{k}</text>
+        <text x={VX} y={ROW0 + i * ROWH + 32} fill="#f4f4f4">{v}</text>
+        <rect x={L} y={ROW0 + (i + 1) * ROWH - 0.5} width="416" height="1" fill="#fff" fill-opacity="0.055" />
+      </g>
+    ))}
+
+    <!-- reactions: like / dislike / copy (own outline icons) -->
+    <g transform="translate(0 5.5)" fill="none" stroke="#919191" stroke-width="1.35" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M72.5 491.5h3.6v9.6h-3.6z M76.1 491.8l3.4-6.3c1.6 0 2.5 1.1 2.2 2.6l-.6 2.9h4.6c1.2 0 2 1 1.8 2.1l-1.2 5.6c-.2.9-1 1.5-1.9 1.5h-8.3" />
+      <path d="M133.9 497.5h-3.6v-9.6h3.6z M130.3 497.2l-3.4 6.3c-1.6 0-2.5-1.1-2.2-2.6l.6-2.9h-4.6c-1.2 0-2-1-1.8-2.1l1.2-5.6c.2-.9 1-1.5 1.9-1.5h8.3" />
+      <rect x="167.2" y="489.6" width="10.4" height="10.4" rx="1.6" />
+      <path d="M171 489.6v-1.9c0-.9.7-1.6 1.6-1.6h6.8c.9 0 1.6.7 1.6 1.6v6.8c0 .9-.7 1.6-1.6 1.6h-1.8" />
+    </g>
+  </g>
+
+  <!-- composer -->
+  <rect x="52.5" y="547" width="435" height="143.5" rx="20" fill="url(#asst-composer)" stroke="url(#asst-composer-edge)" stroke-width="1.2" />
+  <rect x="70.6" y="566" width="1.3" height="21.5" fill="#eeeeee" />
+  <text x="77.5" y="583.2" fill="#5b5b5b" font-family="Inter Variable, Inter, system-ui, sans-serif" font-size="15.2" letter-spacing="-0.1">Ask anything about your website…</text>
+  <rect x="71" y="635" width="199" height="36.6" rx="10" fill="#171717" />
+  <circle cx="89.5" cy="653.6" r="3.6" fill="rgb(0,156,90)" />
+  <text x="103.5" y="657.8" fill="#e6e6e6" font-family="Inter Variable, Inter, system-ui, sans-serif" font-size="12.9" letter-spacing="-0.05">Trained on your business</text>
+  <rect x="432" y="635" width="37" height="36.6" rx="10" fill="#161616" />
+  <path d="M450.5 662.5v-17.2M443.6 652l6.9-6.9 6.9 6.9" fill="none" stroke="#e1e1e1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- note under the composer -->
+  <text x="270" y="725.5" text-anchor="middle" fill="#535353" font-family="Inter Variable, Inter, system-ui, sans-serif" font-size="13.6" letter-spacing="-0.05">Answers after hours. <tspan text-decoration="underline">Learn more</tspan></text>
+
+  <!-- keyboard -->
+  <g font-family="Inter Variable, Inter, system-ui, sans-serif" text-anchor="middle">
+    {row1.map((k, i) => (<g><rect x={52.5 + i * 44.22} y={R1} width="37.5" height={KH} rx="5.6" fill="#595959" /><text x={71.25 + i * 44.22} y={R1 + 33.2} fill="#fff" font-size="27.5" font-weight="350">{k}</text></g>))}
+    {row2.map((k, i) => (<g><rect x={71 + i * 45} y={R2} width="38" height={KH} rx="5.6" fill="#595959" /><text x={90 + i * 45} y={R2 + 33.2} fill="#fff" font-size="27.5" font-weight="350">{k}</text></g>))}
+    <rect x="52.5" y={R3} width="48.5" height={KH} rx="5.6" fill="#2a2a2a" />
+    <path d="M76.75 889.6l-9.4 10.2h5.4v8.4h8v-8.4h5.4z" fill="none" stroke="#fff" stroke-width="1.5" stroke-linejoin="round" />
+    {row3.map((k, i) => (<g><rect x={117.5 + i * 44.6} y={R3} width="37.5" height={KH} rx="5.6" fill="#595959" /><text x={136.25 + i * 44.6} y={R3 + 33.2} fill="#fff" font-size="27.5" font-weight="350">{k}</text></g>))}
+    <rect x="439" y={R3} width="48.5" height={KH} rx="5.6" fill="#2a2a2a" />
+    <path d="M455.2 900.75l6-7h15.6c1.2 0 2.1.9 2.1 2.1v9.8c0 1.2-.9 2.1-2.1 2.1h-15.6z M466.2 896.9l6.6 7.7M472.8 896.9l-6.6 7.7" fill="none" stroke="#fff" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+    <rect x="52.5" y={R4} width="105.5" height={KH} rx="5.6" fill="#2a2a2a" />
+    <text x="105.25" y={R4 + 30.8} fill="#fff" font-size="19">123</text>
+    <rect x="165.5" y={R4} width="209" height={KH} rx="5.6" fill="#595959" />
+    <text x="270" y={R4 + 30.8} fill="#fff" font-size="19">space</text>
+    <rect x="382" y={R4} width="105.5" height={KH} rx="5.6" fill="#2a2a2a" />
+    <text x="434.75" y={R4 + 30.8} fill="#fff" font-size="19">return</text>
+  </g>
+  <rect x="189" y="1060.5" width="161" height="5.6" rx="2.8" fill="#fff" />
+</svg>

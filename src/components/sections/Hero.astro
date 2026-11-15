@@ -1,0 +1,221 @@
+---
+// Hero — layout/motion replica of useorigin.com `section.hero.hero-v2`.
+// Reference facts (measured at 1680x848):
+//  - section 1170 tall: padding 135 top (fixed navbar space) / 32 sides / 0 bottom, content pinned to bottom (flex-end).
+//  - no pin, no parallax, no scroll-linked motion (MutationObserver on the reference recorded zero changes while scrolling).
+//  - load-in (Webflow IX2 "Hero Animation"): .hero-container from opacity 0 / y 30 / blur 10 -> 1/0/0, delay .2s, .5s ease-in-out;
+//    then phone wrapper opacity 0 -> 1, delay .2s after that, .4s ease-in-out (i.e. 0.9s -> 1.3s);
+//    phone title SplitText words from y40/opacity0/blur10, delay 1.3, .6s, stagger .1, power2.out.
+//  - cards in the phone: time-based stack (not scroll): every 3.5s the front card falls away and the stack advances (0.8s).
+import { HERO_SKY_TINT, HERO_SKY_FALLBACK_AVG } from './hero/constants';
+
+// images.ts is written by another agent; resolve it lazily so this file works before and after it exists.
+const imgMods = import.meta.glob('../../data/images.ts', { eager: true }) as Record<string, any>;
+const imgMod = Object.values(imgMods)[0];
+const heroSky = imgMod?.images?.heroSky ?? imgMod?.default?.heroSky ?? null;
+const skySrc: string | null = typeof heroSky === 'string' ? heroSky : (heroSky?.src ?? heroSky?.url ?? null);
+const skyAlt: string = (typeof heroSky === 'object' && heroSky?.alt) || '';
+const skySmall: string | null = (typeof heroSky === 'object' && heroSky?.srcSmall) || null;
+const skyAvg: string = (typeof heroSky === 'object' && heroSky?.avg) || HERO_SKY_FALLBACK_AVG;
+// Blue multiply tint only when images.ts asks for it (pale photo); a deep-blue photo renders untouched.
+const skyTint: boolean = !!(heroSky as any)?.tint;
+const skyBg = skySrc
+  ? (skySmall ? `image-set(url("${skySmall}") 1x, url("${skySrc}") 2x)` : `url("${skySrc}")`)
+  : 'none';
+
+const cards = [
+  { caption: 'AI ASSISTANT', title: 'Trained on your business.', body: 'A chatbot that knows your services, pricing, suburbs and FAQs — and answers after hours.' },
+  { caption: 'MAINTENANCE', title: 'Your site repairs itself.', body: 'Security scanning and patching, uptime alerts, and backups that run without anyone remembering to.' },
+  { caption: 'PERFORMANCE', title: 'Fixes applied, not reported.', body: "Your codebase is audited against Google's own metrics. We send you the score after we've fixed it." },
+  { caption: 'LEAD CAPTURE', title: "See who's ready to buy.", body: 'Every enquiry gets read, summarised and scored before it hits your inbox, with a reply drafted.' },
+];
+---
+<script is:inline>
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('hero-anim');
+</script>
+
+<section data-section="Hero" class="hero-v2 relative z-0 [mask:linear-gradient(#fff,#fff)]">
+  <div class="hero-wrap relative z-10 mx-auto flex min-h-screen w-full flex-col items-center justify-end overflow-hidden px-8 pt-[135px] pb-0
+              max-[767px]:px-[50px] max-[767px]:pt-[130px] max-[479px]:px-4 max-[479px]:pt-[105px]">
+    <!-- background still (replaces the reference's looping cloud video) -->
+    <div class="hero-bg pointer-events-none absolute inset-0 z-[1] overflow-hidden" style={`background-color:${skyAvg}`}>
+      <!-- CSS background (no <img>, so no broken-image glyph when offline); labelled for assistive tech -->
+      <div class="hero-bg-img absolute inset-0 bg-cover bg-center" style={`background-image:${skyBg}`} role={skyAlt ? 'img' : undefined} aria-label={skyAlt || undefined} aria-hidden={skyAlt ? undefined : 'true'}></div>
+      {skyTint && <div class="absolute inset-0 mix-blend-multiply" style={`background:${HERO_SKY_TINT}`}></div>}
+    </div>
+
+    <div class="hero-container relative z-[2] mx-auto max-w-[1200px]" data-hero-container>
+      <div class="mx-auto max-w-[830px] text-center">
+        <h1 class="hero-title relative top-[8px] mt-0 mb-6 font-display text-[96px] leading-[1.15] font-[360] tracking-[-0.005em] text-white
+                   max-[991px]:text-[84px] max-[767px]:text-[50px] max-[479px]:mb-4 max-[479px]:text-[34px] max-[479px]:top-[3px]">
+          Websites <em class="italic">engineered</em><br />for the modern web.
+        </h1>
+        <div class="mx-auto mb-6 max-w-[420px] max-[767px]:mb-4">
+          <p class="m-0 font-sans text-base leading-6 font-[300] text-white/60">Rebirth builds fast, secure, static-first websites on a production-grade architecture.</p>
+        </div>
+        <div>
+          <a href="/contact" class="hero-btn inline-flex gap-1 rounded-lg bg-white px-[18px] py-3 font-mono text-xs leading-6 font-medium tracking-[0.25px] text-black uppercase no-underline">
+            <span>Get Started</span>
+            <svg class="w-[15px] h-6 shrink-0" viewBox="0 0 15 24" fill="none" aria-hidden="true"><path d="M2.5 12h9.5M8 7.75 12.25 12 8 16.25" stroke="currentColor" stroke-width="1.25" stroke-linecap="square"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-phone relative z-[2] mx-auto mt-12 w-full max-w-[630px] max-[991px]:max-w-[560px] max-[479px]:mt-[38px]" data-hero-phone>
+      <!-- original generic phone frame (CSS only), sized relative to the wrapper width like the reference's svg -->
+      <div class="hero-phone-frame" aria-hidden="true">
+        <span class="hero-btn-side hero-btn-l1"></span><span class="hero-btn-side hero-btn-l2"></span><span class="hero-btn-side hero-btn-l3"></span><span class="hero-btn-side hero-btn-r1"></span>
+        <div class="hero-phone-body"><span class="hero-phone-slot"></span></div>
+      </div>
+
+      <div class="relative px-[60px] py-20 max-[991px]:py-[70px] max-[767px]:p-[50px] max-[479px]:px-[30px] max-[479px]:py-10">
+        <div class="hero-icon mx-auto flex aspect-square w-12 items-center justify-center rounded-xl bg-white/8 max-[479px]:w-11">
+          <svg class="w-[42%]" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3.5l1.9 4.6 4.6 1.9-4.6 1.9L12 16.5l-1.9-4.6L5.5 10l4.6-1.9L12 3.5z" stroke="#fff" stroke-width="1.3" stroke-linejoin="round"/><path d="M18 15.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8.8-1.7z" stroke="#fff" stroke-width="1.1" stroke-linejoin="round"/></svg>
+        </div>
+        <h2 class="hero-phone-title relative top-[3px] mt-4 mb-10 tracking-[-0.01em] text-center font-display text-[48px] leading-[1.15] font-[360] text-[#fafafa]
+                   max-[991px]:text-[38px] max-[479px]:mb-[30px] max-[479px]:text-[30px]" data-hero-words>Your site answers, fixes and updates itself</h2>
+
+        <div class="flex w-full items-start justify-center">
+          <div class="w-full max-w-[484px] pr-[18px] max-[991px]:pr-0">
+            <div class="hero-slider relative mx-auto h-[248px] max-w-full max-[767px]:h-[250px] max-[479px]:h-[248px]" data-hero-slider>
+              {cards.map((c, i) => (
+                <div class={`hero-card hero-card-${i} absolute inset-0 flex h-full w-full flex-col items-start gap-6 overflow-hidden rounded-3xl border border-white/8 p-6
+                             max-[767px]:gap-[14px] max-[767px]:p-5 max-[479px]:p-4`} data-hero-card>
+                  <div class="relative z-[1] font-mono text-[15px] leading-[1.6] font-medium tracking-[2.4px] text-white/32 max-[767px]:text-xs">{c.caption}</div>
+                  <h3 class="relative top-[3px] z-[1] m-0 tracking-[-0.01em] text-left font-display text-[36px] leading-[1.15] font-[360] text-white/80 max-[767px]:text-[30px]">{c.title}</h3>
+                  <p class="relative z-[1] m-0 font-sans text-[20px] leading-[1.42] font-[300] tracking-[-0.01em] text-white max-[767px]:text-base max-[479px]:text-sm">{c.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* ---------- background: subtle slow drift (the reference video is a slow fly-through of clouds) ---------- */
+  .hero-bg-img { transform-origin: 50% 40%; animation: hero-drift 26s ease-in-out infinite alternate; will-change: transform; }
+  @keyframes hero-drift { from { transform: scale(1) translate3d(0,0,0); } to { transform: scale(1.06) translate3d(-1%, 0.6%, 0); } }
+
+  /* ---------- button hover (ref: background-color .2s -> rgba(255,255,255,.86)) ---------- */
+  .hero-btn { transition: background-color .2s; }
+  .hero-btn:hover { background-color: rgba(255,255,255,.86); }
+
+  /* ---------- icon tile ---------- */
+  .hero-icon { box-shadow: 1px 1px 0 0 rgba(255,255,255,.2), inset 1px 1px 0 0 rgba(255,255,255,.3); }
+
+  /* ---------- phone frame: original CSS device, geometry measured from the reference (630px-wide wrapper) ----------
+     outer frame starts 4.5/630 in from each side and at the wrapper top; metal band 11/630; black band 10/630;
+     outer radius 116/630; overall height 1301/630 of the width (clipped by the hero). */
+  .hero-phone { container-type: inline-size; }
+  .hero-phone-frame { position: absolute; inset: 0 0 auto 0; height: calc(100cqw * 1301 / 630); pointer-events: none; filter: drop-shadow(0 30px 40px rgba(0,0,0,.12)); }
+  .hero-phone-body {
+    --u: calc(100cqw / 630);
+    position: absolute; left: calc(var(--u) * 4.5); right: calc(var(--u) * 4.5); top: 0; bottom: 0;
+    border-radius: calc(var(--u) * 116);
+    /* metal band: dark outer edge, bright rim highlight, then dark steel into the black band (sampled from the ref) */
+    background: #262422;
+    box-shadow: inset 0 0 0 calc(var(--u) * 1.5) #454950, inset 0 0 0 calc(var(--u) * 4.5) #a7a7ab, inset 0 0 0 calc(var(--u) * 6.5) #626266;
+    -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+            mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    padding: calc(var(--u) * 21);
+  }
+  /* black band, drawn as a ring inside the metal band */
+  .hero-phone-body::after {
+    content: ''; position: absolute; inset: calc(var(--u) * 11);
+    border-radius: calc(var(--u) * 105);
+    border: calc(var(--u) * 10) solid #050505;
+  }
+  .hero-phone-slot { /* small top-centre speaker slot in the frame */
+    position: absolute; top: 0; left: 50%; width: calc(var(--u) * 120); height: calc(var(--u) * 5); transform: translateX(-50%);
+    background: #1a1a1b; border-radius: 0 0 4px 4px; z-index: 1;
+  }
+  .hero-btn-side { position: absolute; width: calc(100cqw * 6 / 630); border-radius: 2px; background: linear-gradient(90deg, #444 0%, #6c6c70 50%, #3a3a3c 100%); }
+  .hero-btn-l1, .hero-btn-l2, .hero-btn-l3 { left: 0; }
+  .hero-btn-l1 { top: calc(100cqw * 268 / 630); height: calc(100cqw * 57 / 630); }
+  .hero-btn-l2 { top: calc(100cqw * 371 / 630); height: calc(100cqw * 96 / 630); }
+  .hero-btn-l3 { top: calc(100cqw * 495 / 630); height: calc(100cqw * 95 / 630); }
+  .hero-btn-r1 { right: 0; top: calc(100cqw * 403 / 630); height: calc(100cqw * 157 / 630); }
+
+  /* ---------- glass cards ---------- */
+  .hero-card {
+    z-index: 0;
+    background-color: rgba(255,255,255,.04);
+    background-image: radial-gradient(100% 58.12% at 100% 100%, rgba(132,125,255,.12) 0%, rgba(132,125,255,0) 100%);
+    -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px);
+  }
+  /* resting stack (also the no-JS state; GSAP takes these over) */
+  .hero-card-0 { opacity: 1; z-index: 3; }
+  .hero-card-1 { opacity: .4; z-index: 2; transform: translate(8px, 0) rotate(3deg); }
+  .hero-card-2 { opacity: .4; z-index: 1; transform: translate(3px, 0) rotate(-3deg); }
+  .hero-card-3 { opacity: 0; z-index: 0; }
+
+  /* ---------- load-in initial states (only when JS + motion allowed) ---------- */
+  :global(html.hero-anim) [data-hero-container] { opacity: 0; transform: translateY(30px); filter: blur(10px); }
+  :global(html.hero-anim) [data-hero-phone] { opacity: 0; }
+  :global(html.hero-anim) [data-hero-words] { visibility: hidden; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-bg-img { animation: none; }
+  }
+</style>
+
+<script>
+  import gsap from 'gsap';
+  import { SplitText } from 'gsap/SplitText';
+  gsap.registerPlugin(SplitText);
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const container = document.querySelector<HTMLElement>('[data-hero-container]');
+  const phone = document.querySelector<HTMLElement>('[data-hero-phone]');
+  const title = document.querySelector<HTMLElement>('[data-hero-words]');
+  const slider = document.querySelector<HTMLElement>('[data-hero-slider]');
+
+  if (!reduce && container && phone && title) {
+    // Webflow IX2 "Hero Animation" equivalent. Webflow 'easeInOut' == CSS ease-in-out == cubic-bezier(.42,0,.58,1)
+    // On finish the end values are committed inline and the animation cancelled, so no lingering
+    // animation keeps a backdrop root alive (that would break the cards' backdrop-filter).
+    const css = (el: HTMLElement, props: Record<string, string>, ms: number, delay: number) => {
+      const a = el.animate([{}, props], { duration: ms, delay, easing: 'cubic-bezier(.42,0,.58,1)', fill: 'forwards' });
+      a.onfinish = () => { Object.assign(el.style, props); a.cancel(); };
+    };
+    css(container, { opacity: '1', transform: 'translateY(0px)', filter: 'blur(0px)' }, 500, 200);
+    css(phone, { opacity: '1' }, 400, 900);
+
+    // phone headline: word reveal (ref: SplitText words, from y40 / opacity 0 / blur 10, delay 1.3, dur .6, stagger .1, power2.out)
+    const split = SplitText.create(title, { type: 'words' });
+    gsap.set(title, { visibility: 'visible' });
+    gsap.from(split.words, { y: 40, opacity: 0, filter: 'blur(10px)', delay: 1.3, duration: 0.6, stagger: 0.1, ease: 'power2.out' });
+  }
+
+  // Card stack — time-based cycle, a port of the reference behaviour (not scroll-linked).
+  if (!reduce && slider) {
+    const items = Array.from(slider.querySelectorAll<HTMLElement>('[data-hero-card]'));
+    if (items.length >= 4) {
+      const cardDuration = 0.8, stayDuration = 3.5;
+      let current = 0;
+      gsap.set(items, { opacity: 0, scale: 1, x: 0, yPercent: 0, rotate: 0, filter: 'blur(0rem)', pointerEvents: 'none' });
+      gsap.set(items[2], { opacity: 0.4, zIndex: 1, x: 3, rotate: -3, pointerEvents: 'auto' });
+      gsap.set(items[1], { opacity: 0.4, zIndex: 2, x: 8, rotate: 3, pointerEvents: 'auto' });
+      gsap.set(items[0], { opacity: 1, zIndex: 3, pointerEvents: 'auto' });
+      gsap.set(items[3], { opacity: 0, scale: 0.96, x: 25, yPercent: 180, rotate: 8, filter: 'blur(0.3rem)', zIndex: 0, pointerEvents: 'none' });
+      const step = () => {
+        const n = items.length;
+        const falling = items[current], second = items[(current + 1) % n], third = items[(current + 2) % n], next = items[(current + 3) % n];
+        gsap.set(next, { yPercent: -15, x: -10, rotate: -4, scale: 0.96, opacity: 0, filter: 'blur(0.3rem)', zIndex: 1 });
+        gsap.to(next, { yPercent: 0, x: 3, rotate: -3, scale: 1, opacity: 0.4, filter: 'blur(0rem)', duration: cardDuration, ease: 'power3.out', pointerEvents: 'auto' });
+        gsap.to(third, { yPercent: 0, x: 8, rotate: 3, scale: 1, opacity: 0.4, filter: 'blur(0rem)', duration: cardDuration, ease: 'power3.out', zIndex: 2, pointerEvents: 'auto' });
+        gsap.to(second, { yPercent: 0, x: 0, rotate: 0, scale: 1, opacity: 1, filter: 'blur(0rem)', duration: cardDuration, ease: 'power3.out', zIndex: 3, pointerEvents: 'auto' });
+        gsap.set(falling, { zIndex: 999, pointerEvents: 'none' });
+        gsap.to(falling, { yPercent: 180, x: 25, rotate: 45, scale: 0.96, opacity: 1, filter: 'blur(0.3rem)', duration: cardDuration, ease: 'power2.in',
+          onComplete: () => { gsap.set(falling, { zIndex: 0 }); } });
+        current = (current + 1) % n;
+        gsap.delayedCall(stayDuration, step);
+      };
+      gsap.delayedCall(stayDuration, step);
+    }
+  }
+</script>

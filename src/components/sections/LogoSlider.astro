@@ -1,0 +1,58 @@
+---
+// LogoSlider — replica of useorigin.com `section.logo-slider-section`.
+// Not a marquee on the reference: a static, centred, wrapping flex row (gap 32/52) of 8 logos at opacity .38.
+// Logos are replaced by plain-text wordmarks; each sits in the reference logo's box (w × h).
+// Entrance (ref = Webflow IX2): container opacity 0 / y 100 → 1 / 0, 1s outQuart, once.
+type Mark = { lines: string[]; w: number; h: number; cls: string[] };
+const marks: Mark[] = [
+  { lines: ['Astro'], w: 96, h: 30, cls: ['font-display text-[34px] font-[500] tracking-[0.05em]'] },
+  { lines: ['Tailwind', 'CSS'], w: 60, h: 21, cls: ['font-mono text-[10.5px] font-[700] tracking-[0.04em] uppercase', 'font-mono text-[10.5px] font-[700] tracking-[0.04em] uppercase'] },
+  { lines: ['GitHub'], w: 134, h: 31, cls: ['font-sans text-[37px] font-[700] tracking-[0]'] },
+  { lines: ['Cloudflare'], w: 86, h: 21, cls: ['font-sans text-[17px] font-[500] tracking-[-0.01em]'] },
+  { lines: ['Lighthouse'], w: 132, h: 24, cls: ['font-display text-[30px] font-[400] italic tracking-[0]'] },
+  { lines: ['PageSpeed', 'Insights'], w: 100, h: 34, cls: ['font-sans text-[18px] font-[600] tracking-[-0.02em]', 'font-sans text-[12px] font-[500] tracking-[0.2em] uppercase'] },
+  { lines: ['Core Web', 'Vitals'], w: 65, h: 19, cls: ['font-mono text-[9px] font-[700] tracking-[0.16em] uppercase', 'font-mono text-[9px] font-[700] tracking-[0.16em] uppercase'] },
+  { lines: ['Semantic', 'HTML'], w: 88, h: 32, cls: ['font-display text-[21px] font-[500] tracking-[0]', 'font-mono text-[10px] font-[600] tracking-[0.42em] uppercase'] },
+];
+---
+<section data-section="LogoSlider" class="ls-section overflow-hidden px-8 py-12 max-[767px]:py-6 max-[479px]:px-4">
+  <div class="relative mx-auto max-w-[1400px]">
+    <div class="ls-trigger relative z-[2] mx-auto max-w-[1200px]">
+      <div class="ls-reveal">
+        <p class="text-center font-sans text-[12px] leading-[1.5] font-[300] text-white/[0.32]">Built on a modern stack</p>
+        <ul class="ls-list mt-6 flex flex-wrap items-center justify-center gap-x-[52px] gap-y-8 max-[479px]:gap-x-8" role="list">
+          {marks.map((m) => (
+            <li
+              class="ls-item flex shrink-0 flex-col items-center justify-center whitespace-nowrap text-white opacity-[0.38]"
+              style={`--w:${m.w}px;--h:${m.h}px;--k:${Math.min(1, 24 / m.h).toFixed(4)}`}
+              aria-label={m.lines.join(' ')}
+            >
+              {m.lines.map((l, i) => <span aria-hidden="true" class={`block leading-[0.92] ${m.cls[i]}`}>{l}</span>)}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .ls-item { width: var(--w); height: var(--h); }
+  /* ref: .logo-item-img { max-height: 24px } at ≤479 — images scale proportionally */
+  @media (max-width: 479px) { .ls-item { zoom: var(--k); } }
+</style>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll<HTMLElement>('[data-section="LogoSlider"]').forEach((section) => {
+    const trigger = section.querySelector<HTMLElement>('.ls-trigger');
+    const reveal = section.querySelector<HTMLElement>('.ls-reveal');
+    if (!trigger || !reveal || reduce) return;
+    const tween = gsap.fromTo(reveal, { opacity: 0, y: 100 }, { opacity: 1, y: 0, duration: 1, ease: 'power3.out', paused: true });
+    ScrollTrigger.create({ trigger, start: 'top bottom-=10', once: true, onEnter: () => tween.play() });
+  });
+</script>

@@ -1,0 +1,2 @@
+- [certificate] body/page background on the reference is rgb(5,5,5) (#050505), not #000 (getComputedStyle(document.body).backgroundColor). Cards with rgba(255,255,255,.04) then render as rgb(15,15,15) like the ref.
+- [FeatureSlider] reference body background is rgb(5,5,5) (#050505), not #000; FeatureSlider sets bg-[#050505] on its own section meanwhile. Suggest html/body background #050505 in global.css.

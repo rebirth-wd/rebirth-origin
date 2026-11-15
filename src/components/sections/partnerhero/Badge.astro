@@ -1,0 +1,35 @@
+---
+// PartnerHero badge: glass pill holding two "initial" discs and a small icon disc between them.
+// Own drawing. Geometry follows the reference badge box (176x70 rendered, 272x108 artboard):
+// pill r≈53.5 filled white/.04 with a soft top-left inner highlight, three discs r≈35.6 filled white/.04,
+// glyphs white/.8 with a ~20-unit cap height.
+---
+<svg class="ph-badge block h-auto w-[176px] max-w-full" width="176" height="70" viewBox="0 0 272 108" fill="none" role="img" aria-label="You and your developer, directly connected">
+  <defs>
+    <filter id="ph-badge-inner" x="-20%" y="-50%" width="140%" height="200%" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 127 0" result="a" />
+      <feOffset in="a" dx="1.9" dy="1.9" />
+      <feGaussianBlur stdDeviation="0.95" />
+      <feComposite in2="a" operator="arithmetic" k2="-1" k3="1" />
+      <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.15 0" result="hi" />
+      <feOffset in="a" dx="-3.75" dy="-3.75" />
+      <feGaussianBlur stdDeviation="1.9" />
+      <feComposite in2="a" operator="arithmetic" k2="-1" k3="1" />
+      <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.05 0" result="lo" />
+      <feMerge><feMergeNode in="SourceGraphic" /><feMergeNode in="hi" /><feMergeNode in="lo" /></feMerge>
+    </filter>
+  </defs>
+  <rect x="0.6" y="0.7" width="270.3" height="107" rx="53.5" fill="#fff" fill-opacity="0.04" filter="url(#ph-badge-inner)" />
+  <circle cx="54.05" cy="54.15" r="35.65" fill="#fff" fill-opacity="0.04" />
+  <circle cx="134.75" cy="54.15" r="35.65" fill="#fff" fill-opacity="0.04" />
+  <circle cx="217.35" cy="54.15" r="35.65" fill="#fff" fill-opacity="0.04" />
+  <g fill="#fff" fill-opacity="0.8" font-family="Roboto Mono Variable, ui-monospace, monospace" font-weight="600" font-size="24" letter-spacing="2" text-anchor="middle">
+    <text x="55" y="63.4">YOU</text>
+    <text x="218.3" y="63.4">DEV</text>
+  </g>
+  <!-- icon: two overlapping speech bubbles (a direct conversation) -->
+  <g stroke="#fff" stroke-opacity="0.8" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M116.5 44.5a4.5 4.5 0 0 1 4.5-4.5h17a4.5 4.5 0 0 1 4.5 4.5v9.5a4.5 4.5 0 0 1-4.5 4.5h-11l-6.5 5.5v-5.5a4.5 4.5 0 0 1-4-4.5z" />
+    <path d="M146.5 47.5h3a4.5 4.5 0 0 1 4.5 4.5v9a4.5 4.5 0 0 1-4.5 4.5v5l-6.5-5h-9.5a4.5 4.5 0 0 1-4.5-4.5v-0.5" />
+  </g>
+</svg>

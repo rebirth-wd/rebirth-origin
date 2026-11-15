@@ -1,0 +1,129 @@
+---
+// Assistant — replica of useorigin.com `section.finance-section`.
+// Panel: rounded (24px), overflow-hidden wrapper with NO fill; two blurred blue→violet gradient slabs
+// orbit the panel on an ellipse (60 s per turn, rAF clock, same maths as the reference's inline script),
+// so a glow sweeps around the panel's edges. Content: sparkle (rotates 0→360° scrubbed by scroll,
+// Webflow "scrolling in view" + smoothing), serif heading, muted body, then a 540×1100 phone graphic.
+// Entrances (Webflow slideInBottom): container and phone each fade/slide from opacity 0 / y 100px,
+// 1 s outQuart, 250 ms after their top crosses the viewport bottom; once.
+import Phone from './assistant/Phone.astro';
+---
+<section data-section="Assistant" class="asst-section px-8 max-[479px]:px-4">
+  <div class="asst-wrapper relative mx-auto max-w-[1400px] overflow-hidden rounded-[24px] px-8 py-24 max-[991px]:py-[86px] max-[767px]:py-[76px] max-[479px]:px-4 max-[479px]:py-[66px]">
+    <div class="asst-bg asst-bg-1" aria-hidden="true"></div>
+    <div class="asst-bg asst-bg-2" aria-hidden="true"></div>
+
+    <div class="asst-container asst-reveal relative z-[2] mx-auto max-w-[1200px]">
+      <div class="mx-auto max-w-[980px] text-center">
+        <svg class="asst-star mx-auto mb-[50px] block h-[49px] w-[48px] max-[767px]:mb-[30px]" viewBox="0 0 48 49" aria-hidden="true">
+          <defs>
+            <linearGradient id="asst-star-g" x1="0" y1="0.2" x2="1" y2="0.8">
+              <stop offset="0" stop-color="#8fa8ff" /><stop offset="0.55" stop-color="#8580ff" /><stop offset="1" stop-color="#8f7cff" />
+            </linearGradient>
+          </defs>
+          <!-- own four-point sparkle, rounded tips, upright at rest (ref rest pose = 0deg) -->
+          <g>
+            <path fill="url(#asst-star-g)" stroke="url(#asst-star-g)" stroke-width="6" stroke-linejoin="round"
+              d="M24 4.2Q25.6 22.9 44.3 24.5Q25.6 26.1 24 44.8Q22.4 26.1 3.7 24.5Q22.4 22.9 24 4.2Z" />
+          </g>
+        </svg>
+        <h2 class="asst-heading relative top-[8px] m-0 mb-6 font-display font-[360] text-[rgb(250,250,250)]">
+          Your business,<br /><em class="italic">understood</em>.
+        </h2>
+        <div class="mx-auto mb-6 max-w-[420px] max-[767px]:mb-4">
+          <p class="m-0 font-sans text-[16px] leading-[24px] font-[300] text-white/60">
+            A chatbot that actually knows your business —<br class="max-[479px]:hidden" /> your services, your pricing, your suburbs,<br class="max-[479px]:hidden" /> your FAQs.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="asst-img-content asst-reveal relative z-[2] flex items-start justify-center">
+      <div class="asst-img w-full max-w-[540px]"><Phone /></div>
+    </div>
+  </div>
+</section>
+<script is:inline>
+  // Arm the entrance hidden-state before first paint (content stays visible without JS / with reduced motion).
+  (function () { var s = document.currentScript.previousElementSibling;
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) s.classList.add('asst-armed'); })();
+</script>
+
+<style>
+  /* Heading: ref Lyon Display 400, 80/80, -0.01em (70 ≤991, 55 ≤767, 46 ≤479). Newsreader tuned to the ref box widths. */
+  .asst-heading { --asst-h: 74.2px; --asst-lh: 80px; font-size: var(--asst-h); line-height: var(--asst-lh); letter-spacing: -0.01em; }
+  @media (max-width: 991px) { .asst-heading { --asst-h: 64.9px; --asst-lh: 70px; } }
+  @media (max-width: 767px) { .asst-heading { --asst-h: 51px; --asst-lh: 55px; } }
+  @media (max-width: 479px) { .asst-heading { --asst-h: 42.7px; --asst-lh: 46px; } }
+
+  /* Ref: the svg sits inline inside the 540px box -> box is 7px taller than the artboard (line box). */
+  .asst-img :global(.asst-phone) { display: inline-block; vertical-align: baseline; }
+  .asst-img { font-size: 16px; line-height: 24px; }
+
+  /* Orbiting glow slabs — exact ref geometry: width 100%, aspect 1/.32, radius 20%, blur 50px, 70deg gradient. */
+  .asst-bg {
+    position: absolute; top: 50%; left: 50%; z-index: 0; width: 100%; aspect-ratio: 1 / 0.32;
+    border-radius: 20%; filter: blur(50px); pointer-events: none; will-change: transform;
+    background-image: linear-gradient(70deg, rgb(33, 159, 248), rgb(132, 125, 255) 52%);
+    /* no-JS / reduced-motion pose = orbit start angle (-45deg); JS overwrites every frame */
+    transform: translate(calc(-50% + 47.14%), calc(-50% - var(--asst-ry, 741px))) rotate(45deg);
+  }
+  .asst-bg-2 { transform: translate(calc(-50% - 47.14%), calc(-50% + var(--asst-ry, 741px))) rotate(225deg); }
+
+  .asst-armed .asst-reveal { opacity: 0; }
+</style>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLElement>('[data-section="Assistant"]').forEach((section) => {
+    const wrapper = section.querySelector<HTMLElement>('.asst-wrapper')!;
+    const bg1 = section.querySelector<HTMLElement>('.asst-bg-1')!;
+    const bg2 = section.querySelector<HTMLElement>('.asst-bg-2')!;
+    const star = section.querySelector<SVGElement>('.asst-star')!;
+
+    // ---- glow orbit (ref inline script, verbatim maths) ----
+    let W = 0, H = 0;
+    const measure = () => { const r = wrapper.getBoundingClientRect(); W = r.width; H = r.height; };
+    measure();
+    new ResizeObserver(measure).observe(wrapper);
+    const DURATION = 60_000;
+    const place = (ts: number) => {
+      const iw = window.innerWidth;
+      const rx = W / 1.5;
+      const ry = iw <= 767 ? H / 1.8 : iw <= 991 ? H / 1.75 : iw <= 1240 ? H / 1.65 : H / 1.6;
+      const a1 = (-45 * Math.PI) / 180 + ((ts % DURATION) / DURATION) * Math.PI * 2;
+      const a2 = a1 + Math.PI;
+      bg1.style.transform = `translate(calc(-50% + ${Math.cos(a1) * rx}px),calc(-50% + ${Math.sin(a1) * ry}px))rotate(${(a1 * 180) / Math.PI + 90}deg)`;
+      bg2.style.transform = `translate(calc(-50% + ${Math.cos(a2) * rx}px),calc(-50% + ${Math.sin(a2) * ry}px))rotate(${(a2 * 180) / Math.PI + 90}deg)`;
+    };
+    let frozen: number | null = null;
+    if (reduce) place(0);
+    else {
+      const loop = (ts: number) => { place(frozen ?? ts); requestAnimationFrame(loop); };
+      requestAnimationFrame(loop);
+    }
+    if (reduce) return;
+
+    // ---- entrances: Webflow slideInBottom (delay 250ms, then 0/100px -> 1/0, 1000ms outQuart), once ----
+    section.querySelectorAll<HTMLElement>('.asst-reveal').forEach((el) => {
+      ScrollTrigger.create({
+        trigger: el, start: 'top bottom', once: true,
+        onEnter: () => gsap.delayedCall(0.25, () => {
+          gsap.fromTo(el, { opacity: 0, y: 100 }, { opacity: 1, y: 0, duration: 1, ease: 'power3.out', clearProps: 'transform' });
+        }),
+      });
+    });
+
+    // ---- sparkle: rotateZ 0 -> 360deg over its whole pass through the viewport (enter bottom -> leave top),
+    // smoothed like Webflow's continuous scroll action (catch-up ~0.85s) ----
+    gsap.fromTo(star, { rotation: 0 }, {
+      rotation: 360, ease: 'none', transformOrigin: '50% 50%',
+      scrollTrigger: { trigger: star, start: 'top bottom', end: 'bottom top', scrub: 0.85 },
+    });
+  });
+</script>

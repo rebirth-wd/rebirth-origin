@@ -1,0 +1,265 @@
+---
+// FeatureSlider — replica of useorigin.com `section.intro.financial-slider-section`
+// Mechanics (from the reference's slick config + inline script):
+//  slidesToShow 3 (>=992) / 2 (576–991) / 1 (<576), slidesToScroll 1, infinite false,
+//  transform transition 500ms `ease`, mouse drag + touch swipe (threshold = list width / 5, edge friction .35),
+//  custom ping-pong autoplay every 5000ms (0→1→2→1→0…), prev/next reset direction to forward and restart the timer,
+//  play/pause toggles `.pause` (white ring, icon cross-fade .3s). No active/inactive card styling.
+//  Entrance: Webflow "scroll into view" on the heading block and on the slider block: opacity 0→1, y 100→0, 1s outQuart, once.
+import Infographic from './featureslider/Infographic.astro';
+
+const cards = [
+  { kind: 'lighthouse', h: 291, title: 'Built on Astro', body: 'Ships zero unnecessary JavaScript, so your site loads in a blink.' },
+  { kind: 'commits', h: 380, title: 'Tracked with GitHub', body: 'Every change is tracked, backed up, and reversible — a professional workflow.' },
+  { kind: 'deploy', h: 330, title: 'Powered by Cloudflare', body: "Built and hosted by one of the internet's core backbones." },
+  { kind: 'vitals', h: 278, title: 'Engineered to rank', body: 'Core Web Vitals and semantic HTML, built into the architecture.' },
+  { kind: 'waterfall', h: 275, title: 'Loads in under a second', body: "Static pages served from Cloudflare's edge, built to turn traffic into customers." },
+] as const;
+---
+<script is:inline>document.documentElement.classList.add('fs-js');</script>
+<section data-section="FeatureSlider" class="fs-section relative overflow-hidden bg-[#050505] px-8 pt-[100px] pb-0 max-[767px]:pt-[70px] max-[479px]:px-4">
+  <div class="relative z-[1] mx-auto max-w-[1400px]">
+    <div class="fs-reveal relative z-[2] mx-auto max-w-[1200px]">
+      <div class="mx-auto max-w-[980px] text-center">
+        <h2 class="fs-heading m-0 font-display font-light text-[#fafafa]">
+          <em class="italic">Modern</em> technology,<br />proven at scale.
+        </h2>
+        <div class="fs-glow relative mt-6 inline-block overflow-hidden rounded-lg">
+          <a href="/about" class="fs-btn relative inline-flex rounded-lg bg-white/10 px-[18px] py-3 font-mono text-xs font-medium uppercase leading-6 text-white no-underline transition-[background-color] duration-200 hover:bg-white/[.18]">
+            <span>Explore the stack</span>
+          </a>
+          <span class="fs-glow-anim" aria-hidden="true"><span class="fs-glow-glow"></span></span>
+          <span class="fs-glow-ring" aria-hidden="true"><span class="fs-glow-borders"></span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="fs-reveal fs-wrap relative">
+      <div class="fs-overlay" aria-hidden="true"></div>
+      <div class="fs-slider mt-[72px] max-w-[95%] max-[991px]:mt-[62px] max-[767px]:mt-[52px] max-[479px]:mt-[42px]" role="region" aria-roledescription="carousel" aria-label="What your site is built on">
+        <div class="fs-list" tabindex="0">
+          <div class="fs-track">
+            {cards.map((c, i) => (
+              <div class="fs-slide" role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${cards.length}`}>
+                <article class="fs-card flex h-full flex-col items-stretch gap-6 rounded-3xl border border-white/[.08] bg-white/[.04] p-12 max-[991px]:p-[38px] max-[767px]:p-[26px] max-[479px]:p-4">
+                  <div class="fs-card-art flex h-full w-full items-start justify-center">
+                    <Infographic kind={c.kind} h={c.h} />
+                  </div>
+                  <div class="flex-1">
+                    <h3 class="fs-card-title m-0 mb-3 text-left font-sans text-xl font-light leading-[1.08] tracking-[-0.01em] text-white max-[767px]:text-lg">{c.title}</h3>
+                    <p class="m-0 font-sans text-base font-light leading-[1.35] tracking-[-0.01em] text-white/[.32]">{c.body}</p>
+                  </div>
+                </article>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div class="fs-controls mt-6 flex items-center justify-center gap-6 max-[479px]:mt-4 max-[479px]:gap-4">
+        <button type="button" class="fs-ctl fs-prev" aria-label="Previous card" aria-disabled="true">
+          <svg width="9" viewBox="0 0 9 17" fill="none"><path d="M8 1 1 8.5 8 16" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="fs-ctl fs-play" aria-label="Pause autoplay" aria-pressed="false">
+          <svg class="fs-ico-pause" viewBox="0 0 24 24" width="100%" fill="none"><rect x="3.5" y="1.25" width="7" height="21.5" rx="1.5" stroke="#fff" stroke-width="1.75"/><rect x="13.5" y="1.25" width="7" height="21.5" rx="1.5" stroke="#fff" stroke-width="1.75"/></svg>
+          <svg class="fs-ico-play" viewBox="0 0 24 24" width="100%" fill="none"><path d="M7 4.6v14.8a.8.8 0 0 0 1.2.7l12-7.4a.8.8 0 0 0 0-1.4l-12-7.4a.8.8 0 0 0-1.2.7Z" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="fs-ctl fs-next" aria-label="Next card" aria-disabled="false">
+          <svg width="9" viewBox="0 0 9 17" fill="none"><path d="M1 1l7 7.5L1 16" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* ref Lyon Display 80px/80px; Newsreader runs ~5% wider, so 76px on an 80px line keeps block widths */
+  .fs-heading { position: relative; top: .1em; font-size: 76px; line-height: 80px; letter-spacing: -0.01em; font-variation-settings: 'opsz' 72; }
+  @media (max-width: 991px) { .fs-heading { font-size: 66.5px; line-height: 70px; } }
+  @media (max-width: 767px) { .fs-heading { font-size: 52px; line-height: 55px; } }
+  @media (max-width: 479px) { .fs-heading { font-size: 44px; line-height: 46px; } }
+  .fs-heading em { font-weight: 300; }
+
+  /* "magic" button: rotating conic light seen through a ~1px ring + faint blurred glow (ref .glowing-wrapper-active) */
+  .fs-glow-anim, .fs-glow-borders { position: absolute; top: 50%; left: 50%; width: 110%; transform: translate(-50%, -50%); pointer-events: none; }
+  .fs-glow-anim::before, .fs-glow-borders::before { content: ''; float: left; padding-top: 100%; }
+  .fs-glow-glow { position: absolute; inset: 0; opacity: .12; filter: blur(8px); }
+  .fs-glow-glow, .fs-glow-borders {
+    background-image: conic-gradient(rgba(255,255,255,.5) 0deg, rgba(255,255,255,0) 60deg, rgba(255,255,255,0) 310deg, rgba(255,255,255,.5) 360deg);
+    background-position: center; background-repeat: no-repeat; background-size: cover;
+  }
+  .fs-glow-glow { animation: fs-turn 2.5s linear infinite; }
+  .fs-glow-borders { animation: fs-turn-t 2.5s linear infinite; }
+  .fs-glow-ring {
+    position: absolute; inset: 0; border-radius: 8px; padding: .06rem; pointer-events: none;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box exclude, linear-gradient(#fff 0 0);
+  }
+  @keyframes fs-turn { to { transform: rotate(360deg); } }
+  @keyframes fs-turn-t { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+  /* edge fades */
+  .fs-overlay {
+    position: absolute; z-index: 1; top: 0; bottom: 0; left: 50%; width: 100vw; transform: translateX(-50%);
+    pointer-events: none; background: rgb(7,7,7);
+    -webkit-mask-image: linear-gradient(90deg, #000 0%, transparent 10%, transparent 90%, #000 100%);
+    mask-image: linear-gradient(90deg, #000 0%, transparent 10%, transparent 90%, #000 100%);
+  }
+
+  /* slider geometry (slick equivalent): list = slider + 2*gap/2, each slide = list / show, 12px side margins */
+  .fs-slider { --fs-show: 3; --fs-gap: 12px; }
+  @media (max-width: 991px) { .fs-slider { --fs-show: 2; } }
+  @media (max-width: 767px) { .fs-slider { --fs-gap: 8px; } }
+  @media (max-width: 575px) { .fs-slider { --fs-show: 1; } }
+  @media (max-width: 479px) { .fs-slider { --fs-gap: 6px; } }
+  .fs-list { position: relative; margin: 0 calc(-1 * var(--fs-gap)); outline: none; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  .fs-list:focus-visible { outline: 1px solid rgba(255,255,255,.3); outline-offset: 4px; border-radius: 24px; }
+  .fs-track { --fs-i: 0; display: flex; transform: translate3d(calc(var(--fs-i) * -1 * var(--fs-sw, 100% / var(--fs-show)) + var(--fs-drag, 0px)), 0, 0); transition: transform 500ms ease; }
+  .fs-track.is-dragging { transition: none; }
+  .fs-slide { flex: 0 0 var(--fs-sw, calc(100% / var(--fs-show))); padding: 0 var(--fs-gap); display: flex; flex-direction: column; }
+  .fs-card { -webkit-user-drag: none; }
+
+  /* controls (ref .financial-slider-arrow / .financial-slider-play-pause) */
+  .fs-ctl {
+    position: relative; display: flex; align-items: center; justify-content: center; width: 48px; aspect-ratio: 1; padding: 0;
+    cursor: pointer; border-radius: 100%; background: rgba(255,255,255,.08); border: 1px solid transparent; transition: all .3s ease-in-out;
+  }
+  .fs-ctl:hover, .fs-play.pause { border-color: #fff; }
+  .fs-ctl:focus-visible { outline: 2px solid rgba(255,255,255,.6); outline-offset: 3px; }
+  .fs-ico-pause, .fs-ico-play { width: 40%; transition: opacity .3s ease-in-out; }
+  .fs-ico-play { position: absolute; opacity: 0; }
+  .fs-play.pause .fs-ico-pause { opacity: 0; }
+  .fs-play.pause .fs-ico-play { opacity: 1; }
+
+  /* entrance initial state only when JS runs */
+  :global(html.fs-js) .fs-reveal { opacity: 0; transform: translate3d(0, 100px, 0); }
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.fs-js) .fs-reveal { opacity: 1; transform: none; }
+    .fs-track { transition: none; }
+    .fs-glow-glow, .fs-glow-borders { animation: none; }
+  }
+</style>
+
+<script>
+  import gsap from 'gsap';
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLElement>('[data-section="FeatureSlider"]').forEach((section) => {
+    // ---- entrance (Webflow scroll-into-view: fires when the transformed element enters the viewport, once)
+    const reveals = section.querySelectorAll<HTMLElement>('.fs-reveal');
+    if (!reduce) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          io.unobserve(e.target);
+          gsap.fromTo(e.target, { opacity: 0, y: 100 }, { opacity: 1, y: 0, duration: 1, ease: 'power3.out' });
+        });
+      });
+      reveals.forEach((el) => io.observe(el));
+    }
+
+    // ---- slider
+    const slider = section.querySelector<HTMLElement>('.fs-slider')!;
+    const list = section.querySelector<HTMLElement>('.fs-list')!;
+    const track = section.querySelector<HTMLElement>('.fs-track')!;
+    const slides = [...track.children] as HTMLElement[];
+    const prev = section.querySelector<HTMLButtonElement>('.fs-prev')!;
+    const next = section.querySelector<HTMLButtonElement>('.fs-next')!;
+    const play = section.querySelector<HTMLButtonElement>('.fs-play')!;
+    const AUTOPLAY = 5000;
+    let index = 0;
+    let direction = 1;
+    let playing = !reduce;
+    let timer = 0;
+
+    const show = () => {
+      const w = document.documentElement.clientWidth; // slick responds to $(window).width()
+      return w < 576 ? 1 : w < 992 ? 2 : 3;
+    };
+    const maxIndex = () => Math.max(0, slides.length - show());
+
+    function render() {
+      const s = show();
+      slider.style.setProperty('--fs-show', String(s));
+      // slick: slideWidth = ceil(listWidth / slidesToShow)
+      track.style.setProperty('--fs-sw', Math.ceil(list.getBoundingClientRect().width / s) + 'px');
+      index = Math.min(index, maxIndex());
+      track.style.setProperty('--fs-i', String(index));
+      slides.forEach((el, i) => {
+        const vis = i >= index && i < index + s;
+        el.setAttribute('aria-hidden', String(!vis));
+        el.querySelectorAll<HTMLElement>('a,button').forEach((f) => (f.tabIndex = vis ? 0 : -1));
+      });
+      prev.setAttribute('aria-disabled', String(index === 0));
+      next.setAttribute('aria-disabled', String(index >= maxIndex()));
+    }
+    function goTo(i: number) {
+      index = Math.max(0, Math.min(maxIndex(), i));
+      render();
+    }
+
+    function startAutoplay() {
+      clearTimeout(timer);
+      if (!playing) return;
+      timer = window.setTimeout(() => {
+        const last = maxIndex();
+        if (direction === 1 && index >= last) direction = -1;
+        if (direction === -1 && index <= 0) direction = 1;
+        goTo(index + direction);
+        startAutoplay();
+      }, AUTOPLAY);
+    }
+
+    next.addEventListener('click', () => { goTo(index + 1); direction = 1; if (playing) startAutoplay(); });
+    prev.addEventListener('click', () => { goTo(index - 1); direction = 1; if (playing) startAutoplay(); });
+    play.addEventListener('click', () => {
+      playing = !playing;
+      play.classList.toggle('pause', !playing);
+      play.setAttribute('aria-pressed', String(!playing));
+      play.setAttribute('aria-label', playing ? 'Pause autoplay' : 'Play autoplay');
+      if (playing) startAutoplay(); else clearTimeout(timer);
+    });
+    list.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(index - 1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); goTo(index + 1); }
+    });
+
+    // drag / swipe (slick: draggable + swipe, touchThreshold 5, edgeFriction .35, one slide per swipe)
+    let startX = 0, startY = 0, dx = 0, dragging = false, moved = false, pid = -1;
+    list.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      dragging = true; moved = false; dx = 0; pid = e.pointerId;
+      startX = e.clientX; startY = e.clientY;
+    });
+    list.addEventListener('pointermove', (e) => {
+      if (!dragging || e.pointerId !== pid) return;
+      dx = e.clientX - startX;
+      if (!moved) {
+        if (Math.abs(dx) < 4) return;
+        if (Math.abs(e.clientY - startY) > Math.abs(dx)) { dragging = false; return; }
+        moved = true; track.classList.add('is-dragging');
+        try { list.setPointerCapture(pid); } catch {}
+      }
+      const atEdge = (index === 0 && dx > 0) || (index >= maxIndex() && dx < 0);
+      track.style.setProperty('--fs-drag', `${atEdge ? dx * 0.35 : dx}px`);
+    });
+    const end = () => {
+      if (!dragging) return;
+      dragging = false;
+      if (!moved) return;
+      track.classList.remove('is-dragging');
+      track.style.setProperty('--fs-drag', '0px');
+      if (Math.abs(dx) >= list.offsetWidth / 5) goTo(index + (dx < 0 ? 1 : -1));
+    };
+    list.addEventListener('pointerup', end);
+    list.addEventListener('pointercancel', end);
+    list.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+    list.addEventListener('dragstart', (e) => e.preventDefault());
+
+    addEventListener('resize', render);
+    render();
+    if (reduce) { play.classList.add('pause'); play.setAttribute('aria-pressed', 'true'); play.setAttribute('aria-label', 'Play autoplay'); }
+    startAutoplay();
+
+  });
+</script>

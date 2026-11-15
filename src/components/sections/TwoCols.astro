@@ -1,0 +1,151 @@
+---
+// TwoCols — replica of useorigin.com `div.two-cols-section`
+// 3 rows × [photo card | dark infographic card] (alternating), 24px gaps, inside a 1400px wrapper.
+// Photo card: r24, padding 96, image object-fit cover + two blurred colour discs (blur 60px) + 10% black veil,
+//   centred serif heading at the top, Inter 20px body at the bottom.
+// Dark card: rgba(255,255,255,.04) + 1px rgba(255,255,255,.08), r24, aspect 1/0.933 (min-h 500) — sets row height.
+// Entrance (ref = Webflow IX2): both cards of a row fade/slide from opacity 0 / y 100 → 1 / 0 together,
+//   1s outQuart (= power3.out), once, when the row's top reaches the viewport bottom. No parallax, no pinning.
+import { images } from '@/data/images';
+import AuditStrip from './twocols/AuditStrip.astro';
+import ScorePanel from './twocols/ScorePanel.astro';
+import GuidePanel from './twocols/GuidePanel.astro';
+
+const rows = [
+  {
+    img: images.tulips, glow: 'rgb(204,124,1)', reverse: false, panel: 'audit',
+    heading: ['We audit', 'every page'],
+    body: 'Your codebase is audited against Google’s own metrics, and the fixes get applied.',
+  },
+  {
+    img: images.meadow, glow: 'rgb(97,161,51)', reverse: true, panel: 'score',
+    heading: ['Engineered', 'to rank'],
+    body: 'Google weighs Core Web Vitals and semantic HTML. Astro outputs both by default.',
+  },
+  {
+    img: images.dune, glow: 'rgb(167,97,46)', reverse: false, panel: 'guide',
+    heading: ['We keep you', 'current'],
+    body: 'Astro, dependencies, and integrations are kept current — tested against a preview deploy before they hit production.',
+  },
+];
+---
+<div data-section="TwoCols" class="tc-section px-8 max-[479px]:px-4">
+  <div class="tc-wrapper relative z-[1] mx-auto max-w-[1400px]">
+    <div class="flex flex-col items-stretch gap-6">
+      {rows.map((r) => (
+        <div class={`tc-row grid grid-cols-2 items-stretch gap-6 max-[767px]:grid-cols-1 ${r.reverse ? 'tc-row-reverse' : ''}`}>
+          {r.reverse && (
+            <div class="tc-panel tc-reveal">
+              <ScorePanel />
+            </div>
+          )}
+
+          <div class="tc-photo tc-reveal" style={`background-color:${r.img.avg};--glow:${r.glow}`}>
+            <img
+              src={r.img.src}
+              srcset={`${r.img.srcSmall} 900w, ${r.img.src} 2000w`}
+              sizes="(max-width: 767px) 100vw, 50vw"
+              alt={r.img.alt}
+              loading="lazy"
+              decoding="async"
+              class="tc-img pointer-events-none absolute inset-0 z-[1] h-full w-full object-cover"
+              style="filter:blur(10px);transform:scale(1.12)"
+              onerror="this.style.display='none'"
+            />
+            <div class="tc-glow tc-glow-1" aria-hidden="true"></div>
+            <div class="tc-glow tc-glow-2" aria-hidden="true"></div>
+            <div class="tc-veil" aria-hidden="true"></div>
+            <div class="tc-content relative z-[3] mx-auto flex flex-1 flex-col items-center justify-between gap-12 text-center max-[479px]:gap-[34px]">
+              <h2 class="tc-heading m-0 font-display font-[350] text-[rgb(250,250,250)]">
+                {r.heading[0]}<br /><em class="italic">{r.heading[1]}</em>
+              </h2>
+              <p class="tc-body m-0 font-sans font-[300] text-white">{r.body}</p>
+            </div>
+          </div>
+
+          {!r.reverse && (
+            <div class={`tc-panel tc-reveal ${r.panel === 'audit' ? 'tc-panel-audit' : ''}`}>
+              {r.panel === 'audit' ? <AuditStrip /> : <GuidePanel />}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ---- wrapper: ref .site-wrapper clips the 100px entrance offset on desktop ---- */
+  .tc-wrapper { overflow: hidden; }
+  @media (max-width: 991px) { .tc-wrapper { overflow: visible; } }
+
+  @media (max-width: 767px) {
+    .tc-row-reverse { display: flex; flex-direction: column-reverse; }
+  }
+
+  /* ---- photo card ---- */
+  .tc-photo {
+    position: relative; display: flex; flex-direction: column; align-items: flex-start;
+    width: 100%; min-width: 0; padding: 96px; border-radius: 24px; overflow: hidden;
+  }
+  .tc-img { color: transparent; }
+  .tc-glow {
+    position: absolute; z-index: 1; pointer-events: none; aspect-ratio: 1 / 1; border-radius: 100%;
+    background-color: var(--glow); filter: blur(60px);
+  }
+  .tc-glow-1 { width: 53%; right: 14%; bottom: -13%; }
+  .tc-glow-2 { width: 80%; top: 68%; left: 50%; transform: translate(-50%); }
+  .tc-veil { position: absolute; inset: 0; z-index: 1; background-color: rgba(0, 0, 0, 0.1); pointer-events: none; }
+
+  /* Ref Lyon Display 80px/1em -0.01em → Newsreader, tuned so the line boxes match (80px tall lines). */
+  .tc-heading { position: relative; top: 4px; font-size: 80px; line-height: 1em; letter-spacing: -0.01em; }
+  .tc-body { font-size: 20px; line-height: 135%; letter-spacing: -0.01em; }
+
+  /* ---- dark infographic card ---- */
+  .tc-panel {
+    display: flex; justify-content: center; align-items: center;
+    width: 100%; min-width: 0; min-height: 500px; aspect-ratio: 1 / 0.933; padding: 96px; overflow: hidden;
+    background-color: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px;
+  }
+  .tc-panel-audit { padding-left: 0; padding-right: 0; }
+
+  @media (min-width: 992px) and (max-width: 1279px) {
+    .tc-photo, .tc-panel { padding: 80px; }
+    .tc-panel-audit { padding-left: 0; padding-right: 0; }
+  }
+  @media (max-width: 991px) {
+    .tc-heading { font-size: 70px; }
+    .tc-photo, .tc-panel { padding: 80px 32px; }
+    .tc-panel-audit { padding-left: 0; padding-right: 0; }
+  }
+  @media (max-width: 767px) {
+    .tc-heading { font-size: 55px; }
+    .tc-body { font-size: 18px; }
+    .tc-photo { aspect-ratio: 1 / 1; min-height: 308px; padding-top: 64px; padding-bottom: 64px; }
+    .tc-panel { aspect-ratio: auto; min-height: auto; padding-top: 64px; padding-bottom: 64px; }
+    .tc-glow-1 { width: 43%; }
+    .tc-glow-2 { width: 60%; }
+  }
+  @media (max-width: 479px) {
+    .tc-heading { font-size: 46px; }
+    .tc-body { font-size: 16px; }
+    .tc-photo { padding: 48px 16px; }
+    .tc-panel { padding: 48px 16px; }
+    .tc-panel-audit { padding-left: 0; padding-right: 0; }
+  }
+</style>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll<HTMLElement>('[data-section="TwoCols"] .tc-row').forEach((row) => {
+    if (reduce) return;
+    const cards = row.querySelectorAll<HTMLElement>('.tc-reveal');
+    // Ref: both cards together (no stagger), opacity 0 / translateY(100px) → 1 / 0, 1000ms outQuart, once; ref fires when the row top is ~16-20px above the viewport bottom (measured at 1680×904).
+    const tween = gsap.fromTo(cards, { opacity: 0, y: 100 }, { opacity: 1, y: 0, duration: 1, ease: 'power3.out', paused: true });
+    ScrollTrigger.create({ trigger: row, start: 'top bottom-=18', once: true, onEnter: () => tween.play() });
+  });
+</script>

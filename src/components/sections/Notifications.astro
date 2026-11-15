@@ -1,0 +1,203 @@
+---
+// Notifications — replica of the reference's 2nd `section.hero` ("always-on" advice stack).
+// Dot-grid canvas (16px grid, r=1, white .3, elliptical ring mask, mouse proximity glow),
+// pulsing green dot, centred serif heading, cycling stack of 4 notification pills (3s step, .5s power1.inOut).
+const rows = [
+  { icon: 'shield', html: 'Security patch applied and tested on a preview deploy. <strong>View deploy</strong>' },
+  { icon: 'mail', html: 'New enquiry read, summarised and scored. <strong>Reply drafted</strong>' },
+  { icon: 'trend', html: 'Market shift detected. Copy adjusted to match what people search for.' },
+  { icon: 'post', html: 'Blog post published and pushed to your socials. <strong>See post</strong>' },
+];
+---
+<section data-section="Notifications" class="notif relative z-0 bg-[#050505] max-[767px]:min-h-[100vh]">
+  <div class="notif-wrap relative z-10 mx-auto flex min-h-[100vh] w-full max-w-[1400px] items-center justify-center overflow-hidden rounded-[24px] px-[100px] pt-[50px] pb-[50px] max-[991px]:px-[5%] max-[767px]:px-[50px] max-[767px]:pt-[70px] max-[767px]:pb-[70px] max-[479px]:px-[24px]">
+    <div class="notif-maskbox pointer-events-none absolute inset-0" aria-hidden="true">
+      <canvas class="notif-canvas block h-full w-full"></canvas>
+    </div>
+
+    <div class="notif-container relative z-[2] mx-auto w-full max-w-[1200px]">
+      <div class="mx-auto flex w-full max-w-[690px] flex-col items-start gap-[64px] text-center max-[767px]:gap-[54px] max-[479px]:gap-[44px]">
+        <div class="notif-pulse mx-auto aspect-square w-[16px] rounded-full bg-[rgb(0,156,90)] max-[767px]:w-[14px] max-[479px]:w-[12px]" aria-hidden="true"></div>
+
+        <h2 class="notif-heading relative top-[3px] m-0 w-full font-display text-[80px] leading-[1em] font-[400] tracking-[-0.01em] text-white max-[991px]:text-[70px] max-[767px]:text-[55px] max-[479px]:text-[46px]">
+          A website that <em class="italic">works</em><br class="max-[767px]:hidden" /> while you sleep.
+        </h2>
+
+        <div class="notif-slider mt-[-16px] flex min-h-[140px] w-full justify-center text-left max-[767px]:mt-0 max-[767px]:min-h-[260px] max-[479px]:min-h-[202px]">
+          <div class="w-full max-w-[670px] max-[767px]:max-w-[470px]">
+            <div class="notif-stack relative mx-auto h-[112px] max-w-full max-[767px]:h-[150px] max-[479px]:h-[140px]">
+              {rows.map((r, i) => (
+                <div class={`notif-item notif-item-${i} absolute inset-0 flex h-full w-full items-center justify-start gap-[24px] rounded-[224px] px-[36px] py-[24px] max-[767px]:flex-col max-[767px]:items-start max-[767px]:gap-[18px] max-[767px]:rounded-[24px] max-[767px]:px-[24px] max-[479px]:gap-[14px] max-[479px]:p-[20px]`}>
+                  <div class="notif-icon flex aspect-square w-[32px] flex-none items-center justify-center max-[767px]:w-[28px] max-[479px]:w-[24px]" aria-hidden="true">
+                    <svg viewBox="2.5 2.5 27 27" class="h-full w-full" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                      {r.icon === 'shield' && (<>
+                        <path d="M16 4.5 6.5 8v7.2c0 6 4 10.2 9.5 12.3 5.5-2.1 9.5-6.3 9.5-12.3V8L16 4.5Z" />
+                        <path d="m11.8 16.2 3 3 5.6-6" />
+                      </>)}
+                      {r.icon === 'mail' && (<>
+                        <rect x="4.5" y="8" width="23" height="16.5" rx="2.5" />
+                        <path d="m5.5 9.5 10.5 8 10.5-8" />
+                      </>)}
+                      {r.icon === 'trend' && (<>
+                        <path d="M4.5 26.5h23" />
+                        <path d="m6.5 21 6-6.5 4.5 4 8.5-9" />
+                        <path d="M20 9.5h5.5V15" />
+                      </>)}
+                      {r.icon === 'post' && (<>
+                        <rect x="6" y="4.5" width="20" height="23" rx="2.5" />
+                        <path d="M10.5 10.5h11M10.5 15h11M10.5 19.5h6.5" />
+                      </>)}
+                    </svg>
+                  </div>
+                  <div class="notif-title flex-1 font-sans text-[20px] leading-[150%] font-light tracking-[-0.01em] text-white max-[767px]:text-[16px] max-[479px]:text-[14px]" set:html={r.html}></div>
+                  <div class="notif-sub flex-none font-sans text-[16px] leading-[24px] font-light tracking-[-0.01em] text-white/[0.32] max-[767px]:absolute max-[767px]:top-[20px] max-[767px]:right-[30px] max-[767px]:text-[12px] max-[479px]:right-[20px]">1m ago</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .notif-maskbox { container-type: size; }
+  /* Elliptical ring mask (transparent centre, ~.49 peak at 73% radius, 0 at edge), measured from the reference's mask profile. */
+  .notif-canvas {
+    --notif-mask: radial-gradient(51.5% 43.7% at 50% 50%, transparent 12%, rgba(0,0,0,.118) 24.3%, rgba(0,0,0,.235) 36.4%, rgba(0,0,0,.349) 48.5%, rgba(0,0,0,.396) 53.4%, rgba(0,0,0,.424) 58.2%, rgba(0,0,0,.455) 65.5%, rgba(0,0,0,.49) 73%, rgba(0,0,0,.44) 77.7%, rgba(0,0,0,.341) 82.5%, rgba(0,0,0,.243) 87.4%, rgba(0,0,0,.149) 92.2%, rgba(0,0,0,.051) 97.1%, transparent 100%);
+    -webkit-mask-image: var(--notif-mask); mask-image: var(--notif-mask);
+    -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+    -webkit-mask-position: 50% 50%; mask-position: 50% 50%;
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  }
+  @media (max-width: 767px) {
+    /* reference: mask-size cover on a 1920x1019 mask image */
+    .notif-canvas {
+      -webkit-mask-size: max(100cqw, 188.42cqh) max(100cqh, 53.07cqw);
+      mask-size: max(100cqw, 188.42cqh) max(100cqh, 53.07cqw);
+    }
+  }
+
+  .notif-pulse { box-shadow: rgb(0,156,90) 0 0 32px 4px; animation: notif-pulse 1.8s ease 0s infinite; }
+  @media (max-width: 479px) { .notif-pulse { animation-name: notif-pulse-sm; } }
+  @keyframes notif-pulse {
+    0% { box-shadow: rgb(0,156,90) 0 0 0 0; }
+    70% { box-shadow: rgba(0,156,90,0) 0 0 32px 16px; }
+    100% { box-shadow: rgba(0,156,90,0) 0 0 0 0; }
+  }
+  @keyframes notif-pulse-sm {
+    0% { box-shadow: rgb(0,156,90) 0 0 0 0; }
+    70% { box-shadow: rgba(0,156,90,0) 0 0 32px 8px; }
+    100% { box-shadow: rgba(0,156,90,0) 0 0 0 0; }
+  }
+
+  .notif-item {
+    transform-origin: 50% 0;
+    background-image: linear-gradient(rgb(22,23,24), rgb(38,39,39));
+    box-shadow: rgba(255,255,255,.15) 0 2px 0 -1px inset;
+    z-index: 0;
+  }
+  .notif-icon { color: rgb(112,113,114); }
+  .notif-title :global(strong) { font-weight: 700; }
+  .notif-item-3 { opacity: 0; }
+
+  /* Static (no-JS / reduced-motion) resting state = the reference's resting frame. */
+  .notif:not(.notif-js) .notif-item-0 { transform: translateY(23%); opacity: 1; z-index: 3; }
+  .notif:not(.notif-js) .notif-item-1 { transform: translateY(12%) scale(.9); opacity: .4; z-index: 2; }
+  .notif:not(.notif-js) .notif-item-2 { transform: scale(.8); opacity: .3; z-index: 1; }
+  @media (max-width: 767px) {
+    .notif:not(.notif-js) .notif-item-0 { transform: translateY(12%); }
+    .notif:not(.notif-js) .notif-item-1 { transform: translateY(6%) scale(.9); }
+  }
+  @media (prefers-reduced-motion: reduce) { .notif-pulse { animation: none; } }
+</style>
+
+<script>
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(ScrollTrigger);
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLElement>('section.notif').forEach((section) => {
+    /* ---------- dot grid (16px gap, r=1, white .3; mouse proximity raises opacity up to +.45) ---------- */
+    const canvas = section.querySelector<HTMLCanvasElement>('.notif-canvas')!;
+    const ctx = canvas.getContext('2d')!;
+    const GAP = 16;
+    let W = 0, H = 0;
+    let dots: { x: number; y: number; o: number; inf: number; str: number }[] = [];
+    const mouse = { x: -9999, y: -9999 };
+    const setup = () => {
+      const r = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      W = r.width; H = r.height;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      dots = [];
+      const cols = Math.ceil(W / GAP), rowsN = Math.ceil(H / GAP);
+      for (let x = 0; x <= cols; x++) for (let y = 0; y <= rowsN; y++)
+        dots.push({ x: x * GAP, y: y * GAP, o: 0.3, inf: 0.75 + Math.random() * 0.5, str: 0.75 + Math.random() * 0.25 });
+    };
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+      for (const d of dots) {
+        const dx = (d.x - mouse.x) * 0.85, dy = (d.y - mouse.y) * 1.1;
+        const p = Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy) / (200 * d.inf));
+        d.o = 0.3 + p * p * (3 - 2 * p) * 0.45 * d.str;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, 1, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${d.o})`;
+        ctx.fill();
+      }
+    };
+    setup(); draw();
+    let visible = false, raf = 0, dirty = true;
+    const loop = () => { if (dirty) { draw(); dirty = false; } raf = visible ? requestAnimationFrame(loop) : 0; };
+    new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible && !raf) raf = requestAnimationFrame(loop); }).observe(canvas);
+    document.addEventListener('mousemove', (e) => { const r = canvas.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; dirty = true; });
+    document.addEventListener('mouseleave', () => { mouse.x = mouse.y = -9999; dirty = true; });
+    window.addEventListener('resize', () => { setup(); dirty = true; draw(); });
+
+    if (reduce) return;
+
+    /* ---------- entrance: opacity 0 / y 100 -> visible, 1s ease-out quart, plays once when the (offset) box's top crosses the viewport bottom (trigger is measured with the 100px offset applied, like Webflow's scroll-into-view) ---------- */
+    const container = section.querySelector<HTMLElement>('.notif-container')!;
+    gsap.from(container, {
+      opacity: 0, y: 100, duration: 1, ease: 'power3.out',
+      scrollTrigger: { trigger: container, start: 'top bottom', once: true },
+    });
+
+    /* ---------- notification stack cycle ---------- */
+    section.classList.add('notif-js');
+    const items = [...section.querySelectorAll<HTMLElement>('.notif-item')];
+    const DUR = 0.5, HOLD = 2.5, STEP = DUR + HOLD, PER_VIEW = 3;
+    let tl: gsap.core.Timeline | undefined, loopTw: gsap.core.Tween | undefined;
+    const build = () => {
+      loopTw?.kill(); tl?.kill();
+      gsap.set(items, { clearProps: 'transform,opacity,filter,zIndex' });
+      const desk = window.innerWidth > 767;
+      const yMid = desk ? 12 : 6, yAct = desk ? 23 : 12, yEnd = desk ? 34 : 19;
+      tl = gsap.timeline({ paused: true, defaults: { duration: DUR, ease: 'power1.inOut' } });
+      for (let i = 0; i < items.length + PER_VIEW; i++) {
+        const el = items[i % items.length], t = i * STEP;
+        tl.set(el, { x: 0, y: 0, scale: 0.8, yPercent: 0, opacity: 0.3, filter: 'blur(0rem)', zIndex: 100 - i, pointerEvents: 'none' }, t);
+        tl.to(el, { scale: 0.9, yPercent: yMid, opacity: 0.4 }, t + STEP);
+        tl.to(el, { scale: 1, yPercent: yAct, opacity: 1, pointerEvents: 'auto' }, t + 2 * STEP);
+        tl.to(el, { scale: 1.1, yPercent: yEnd, opacity: 0, filter: 'blur(0.5rem)', pointerEvents: 'none' }, t + 3 * STEP);
+      }
+      // play the steady-state window [PER_VIEW*STEP - HOLD, +items*STEP] forever (one full rotation = 12s)
+      const from = PER_VIEW * STEP - HOLD;
+      tl.time(from);
+      loopTw = gsap.fromTo(tl, { time: from }, { time: from + items.length * STEP, duration: items.length * STEP, ease: 'none', repeat: -1 });
+    };
+    build();
+    (window as any).__notif = { get tl() { return tl; }, get loop() { return loopTw; } };
+    let rt: number | undefined;
+    let lastDesk = window.innerWidth > 767;
+    window.addEventListener('resize', () => {
+      clearTimeout(rt);
+      rt = window.setTimeout(() => { const d = window.innerWidth > 767; if (d !== lastDesk) { lastDesk = d; build(); } }, 150);
+    });
+  });
+</script>

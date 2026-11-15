@@ -1,0 +1,10 @@
+---
+import Base from "@/layouts/Base.astro";
+import Assistant from "@/components/sections/Assistant.astro";
+// 6611px spacer = same document offset as the reference section at 1680 wide, so scroll positions compare 1:1.
+---
+<Base>
+  <div class="h-[6611px]" aria-hidden="true"></div>
+  <Assistant />
+  <div class="h-[1200px]" aria-hidden="true"></div>
+</Base>
