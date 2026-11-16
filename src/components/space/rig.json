@@ -1,14 +1,18 @@
 {
+ "clasp": {
+  "rightRelW": 0.89957,
+  "off": [
+   0.96403,
+   0.13445
+  ]
+ },
  "left": {
-  "width": 2034,
-  "height": 1557,
-  "source_box": [
-   63,
-   60,
-   741,
-   579
-  ],
-  "scale": 3.0,
+  "width": 1852,
+  "height": 1664,
+  "source": "astronaut-a.png",
+  "mirrored": false,
+  "rotation": 59.81,
+  "scale": 1.6,
   "parts": [
    {
     "name": "torso",
@@ -16,46 +20,46 @@
     "z": 2,
     "file": "astronaut-left-torso.webp",
     "box": [
-     913,
-     91,
-     1844,
-     889
+     602,
+     378,
+     1518,
+     1231
     ],
     "pivot": [
-     1371.0,
-     570.0
+     1086.87,
+     750.48
     ],
     "css": {
-     "left": 44.887,
-     "top": 5.845,
-     "width": 45.772,
-     "height": 51.252,
-     "ox": 49.19,
-     "oy": 60.03
+     "left": 32.505,
+     "top": 22.716,
+     "width": 49.46,
+     "height": 51.262,
+     "ox": 52.933,
+     "oy": 43.667
     }
    },
    {
-    "name": "arm-back",
+    "name": "arm-other",
     "parent": "torso",
-    "z": 1,
-    "file": "astronaut-left-arm-back.webp",
+    "z": 3,
+    "file": "astronaut-left-arm-other.webp",
     "box": [
-     778,
-     37,
-     1397,
-     388
+     854,
+     29,
+     1171,
+     581
     ],
     "pivot": [
-     1287.0,
-     234.0
+     1040.7,
+     487.32
     ],
     "css": {
-     "left": -14.501,
-     "top": -6.767,
-     "width": 66.488,
-     "height": 43.985,
-     "ox": 82.23,
-     "oy": 56.13
+     "left": 27.511,
+     "top": -40.914,
+     "width": 34.607,
+     "height": 64.713,
+     "ox": 58.896,
+     "oy": 83.029
     }
    },
    {
@@ -64,22 +68,22 @@
     "z": 4,
     "file": "astronaut-left-arm-reach-upper.webp",
     "box": [
-     1518,
-     545,
-     1857,
-     929
+     1229,
+     761,
+     1570,
+     1065
     ],
     "pivot": [
-     1605.0,
-     570.0
+     1335.85,
+     851.49
     ],
     "css": {
-     "left": 64.984,
-     "top": 56.892,
-     "width": 36.412,
-     "height": 48.12,
-     "ox": 25.66,
-     "oy": 6.51
+     "left": 68.45,
+     "top": 44.9,
+     "width": 37.227,
+     "height": 35.639,
+     "ox": 31.334,
+     "oy": 29.766
     }
    },
    {
@@ -88,145 +92,148 @@
     "z": 5,
     "file": "astronaut-left-arm-reach-lower.webp",
     "box": [
-     1612,
-     730,
-     1997,
-     1087
+     1349,
+     882,
+     1824,
+     1075
     ],
     "pivot": [
-     1791.0,
-     798.0
+     1423.17,
+     979.32
     ],
     "css": {
-     "left": 27.729,
-     "top": 48.177,
-     "width": 113.569,
-     "height": 92.969,
-     "ox": 46.49,
-     "oy": 19.05
+     "left": 35.191,
+     "top": 39.803,
+     "width": 139.296,
+     "height": 63.487,
+     "ox": 15.615,
+     "oy": 50.425
     }
    },
    {
     "name": "leg-a-upper",
     "parent": "torso",
-    "z": 0,
+    "z": 3,
     "file": "astronaut-left-leg-a-upper.webp",
     "box": [
-     581,
-     486,
-     1189,
-     1037
+     323,
+     801,
+     768,
+     1205
     ],
     "pivot": [
-     1167.0,
-     666.0
+     685.46,
+     923.51
     ],
     "css": {
-     "left": -35.661,
-     "top": 49.499,
-     "width": 65.306,
-     "height": 69.048,
-     "ox": 96.38,
-     "oy": 32.67
+     "left": -30.459,
+     "top": 49.59,
+     "width": 48.581,
+     "height": 47.362,
+     "ox": 81.452,
+     "oy": 30.324
     }
    },
    {
     "name": "leg-a-lower",
     "parent": "leg-a-upper",
-    "z": 0,
+    "z": 3,
     "file": "astronaut-left-leg-a-lower.webp",
     "box": [
-     37,
-     763,
-     839,
-     1325
+     29,
+     959,
+     492,
+     1428
     ],
     "pivot": [
-     711.0,
-     918.0
+     430.18,
+     1070.17
     ],
     "css": {
-     "left": -89.474,
-     "top": 50.272,
-     "width": 131.908,
-     "height": 101.996,
-     "ox": 84.04,
-     "oy": 27.58
+     "left": -66.067,
+     "top": 39.109,
+     "width": 104.045,
+     "height": 116.089,
+     "ox": 86.648,
+     "oy": 23.704
     }
    },
    {
     "name": "leg-b-upper",
     "parent": "torso",
-    "z": 1,
+    "z": 3,
     "file": "astronaut-left-leg-b-upper.webp",
     "box": [
-     824,
-     739,
-     1388,
-     1260
+     527,
+     1053,
+     959,
+     1450
     ],
     "pivot": [
-     1245.0,
-     828.0
+     835.63,
+     1121.21
     ],
     "css": {
-     "left": -9.56,
-     "top": 81.203,
-     "width": 60.58,
-     "height": 65.288,
-     "ox": 74.65,
-     "oy": 17.08
+     "left": -8.188,
+     "top": 79.132,
+     "width": 47.162,
+     "height": 46.542,
+     "ox": 71.442,
+     "oy": 17.181
     }
    },
    {
     "name": "leg-b-lower",
     "parent": "leg-b-upper",
-    "z": 1,
+    "z": 3,
     "file": "astronaut-left-leg-b-lower.webp",
     "box": [
-     297,
-     989,
-     1088,
-     1520
+     285,
+     1265,
+     762,
+     1636
     ],
     "pivot": [
-     987.0,
-     1110.0
+     662.5,
+     1342.24
     ],
     "css": {
-     "left": -93.44,
-     "top": 47.985,
-     "width": 140.248,
-     "height": 101.919,
-     "ox": 87.23,
-     "oy": 22.79
+     "left": -56.019,
+     "top": 53.401,
+     "width": 110.417,
+     "height": 93.451,
+     "ox": 79.14,
+     "oy": 20.819
     }
    }
   ],
   "chest": [
-   69.91,
-   22.35
+   54.54,
+   49.52
   ],
   "hand": [
-   98.08,
-   63.2
+   98.201,
+   58.323
   ],
-  "headAngle": -32.5,
+  "headAngle": -37.5,
   "handInPart": [
-   99.48,
-   71.15
-  ]
+   98.882,
+   45.856
+  ],
+  "smokeRect": {
+   "l": 0.43898,
+   "t": 0.42127,
+   "w": 0.21274,
+   "h": 0.14784
+  }
  },
  "right": {
-  "width": 1335,
-  "height": 1683,
-  "source_box": [
-   703,
-   179,
-   1148,
-   740
-  ],
-  "scale": 3.0,
+  "width": 1666,
+  "height": 1830,
+  "source": "astronaut-b.png",
+  "mirrored": true,
+  "rotation": -13.98,
+  "scale": 1.6,
   "parts": [
    {
     "name": "torso",
@@ -234,70 +241,22 @@
     "z": 2,
     "file": "astronaut-right-torso.webp",
     "box": [
-     205,
-     37,
-     944,
-     1070
+     498,
+     29,
+     1317,
+     1232
     ],
     "pivot": [
-     681.0,
-     663.0
+     903.37,
+     580.63
     ],
     "css": {
-     "left": 15.356,
-     "top": 2.198,
-     "width": 55.356,
-     "height": 61.378,
-     "ox": 64.41,
-     "oy": 60.6
-    }
-   },
-   {
-    "name": "arm-reach-upper",
-    "parent": "torso",
-    "z": 4,
-    "file": "astronaut-right-arm-reach-upper.webp",
-    "box": [
-     183,
-     394,
-     542,
-     723
-    ],
-    "pivot": [
-     477.0,
-     498.0
-    ],
-    "css": {
-     "left": -2.977,
-     "top": 34.56,
-     "width": 48.579,
-     "height": 31.849,
-     "ox": 81.89,
-     "oy": 31.61
-    }
-   },
-   {
-    "name": "arm-reach-lower",
-    "parent": "arm-reach-upper",
-    "z": 5,
-    "file": "astronaut-right-arm-reach-lower.webp",
-    "box": [
-     37,
-     464,
-     352,
-     733
-    ],
-    "pivot": [
-     267.0,
-     567.0
-    ],
-    "css": {
-     "left": -40.669,
-     "top": 21.277,
-     "width": 87.744,
-     "height": 81.763,
-     "ox": 73.02,
-     "oy": 38.29
+     "left": 29.892,
+     "top": 1.585,
+     "width": 49.16,
+     "height": 65.738,
+     "ox": 49.496,
+     "oy": 45.855
     }
    },
    {
@@ -306,109 +265,181 @@
     "z": 3,
     "file": "astronaut-right-arm-other.webp",
     "box": [
-     177,
-     569,
-     616,
-     854
+     1120,
+     272,
+     1637,
+     987
     ],
     "pivot": [
-     546.0,
-     693.0
+     1184.67,
+     452.33
     ],
     "css": {
-     "left": -3.789,
-     "top": 51.5,
-     "width": 59.405,
-     "height": 27.59,
-     "ox": 84.05,
-     "oy": 43.51
+     "left": 75.946,
+     "top": 20.2,
+     "width": 63.126,
+     "height": 59.435,
+     "ox": 12.509,
+     "oy": 25.221
     }
    },
    {
-    "name": "legs-upper",
+    "name": "arm-reach-upper",
     "parent": "torso",
-    "z": 1,
-    "file": "astronaut-right-legs-upper.webp",
+    "z": 4,
+    "file": "astronaut-right-arm-reach-upper.webp",
     "box": [
-     589,
-     862,
-     961,
-     1330
+     364,
+     442,
+     654,
+     823
     ],
     "pivot": [
-     726.0,
-     873.0
+     592.36,
+     593.21
     ],
     "css": {
-     "left": 51.962,
-     "top": 79.864,
-     "width": 50.338,
-     "height": 45.305,
-     "ox": 36.83,
-     "oy": 2.35
+     "left": -16.361,
+     "top": 34.331,
+     "width": 35.409,
+     "height": 31.671,
+     "ox": 78.745,
+     "oy": 39.688
     }
    },
    {
-    "name": "shin-a",
-    "parent": "legs-upper",
-    "z": 0,
-    "file": "astronaut-right-shin-a.webp",
+    "name": "arm-reach-lower",
+    "parent": "arm-reach-upper",
+    "z": 5,
+    "file": "astronaut-right-arm-reach-lower.webp",
     "box": [
-     661,
-     1026,
-     1298,
-     1523
+     29,
+     531,
+     480,
+     828
     ],
     "pivot": [
-     741.0,
-     1233.0
+     443.46,
+     670.68
     ],
     "css": {
-     "left": 19.355,
-     "top": 35.043,
-     "width": 171.237,
-     "height": 106.197,
-     "ox": 12.56,
-     "oy": 41.65
+     "left": -115.517,
+     "top": 23.36,
+     "width": 155.517,
+     "height": 77.953,
+     "ox": 91.898,
+     "oy": 47.03
     }
    },
    {
-    "name": "shin-b",
-    "parent": "legs-upper",
-    "z": 1,
-    "file": "astronaut-right-shin-b.webp",
+    "name": "leg-a-upper",
+    "parent": "torso",
+    "z": 3,
+    "file": "astronaut-right-leg-a-upper.webp",
     "box": [
-     618,
-     1193,
-     1216,
-     1646
+     1049,
+     974,
+     1399,
+     1472
     ],
     "pivot": [
-     711.0,
-     1278.0
+     1193.58,
+     1061.01
     ],
     "css": {
-     "left": 7.796,
-     "top": 70.726,
-     "width": 160.753,
-     "height": 96.795,
-     "ox": 15.55,
-     "oy": 18.76
+     "left": 67.277,
+     "top": 78.554,
+     "width": 42.735,
+     "height": 41.397,
+     "ox": 41.309,
+     "oy": 17.472
+    }
+   },
+   {
+    "name": "leg-a-lower",
+    "parent": "leg-a-upper",
+    "z": 3,
+    "file": "astronaut-right-leg-a-lower.webp",
+    "box": [
+     1179,
+     1339,
+     1411,
+     1696
+    ],
+    "pivot": [
+     1287.77,
+     1379.7
+    ],
+    "css": {
+     "left": 37.143,
+     "top": 73.293,
+     "width": 66.286,
+     "height": 71.687,
+     "ox": 46.884,
+     "oy": 11.401
+    }
+   },
+   {
+    "name": "leg-b-upper",
+    "parent": "torso",
+    "z": 3,
+    "file": "astronaut-right-leg-b-upper.webp",
+    "box": [
+     763,
+     1099,
+     1065,
+     1551
+    ],
+    "pivot": [
+     882.48,
+     1135.99
+    ],
+    "css": {
+     "left": 32.357,
+     "top": 88.944,
+     "width": 36.874,
+     "height": 37.573,
+     "ox": 39.563,
+     "oy": 8.184
+    }
+   },
+   {
+    "name": "leg-b-lower",
+    "parent": "leg-b-upper",
+    "z": 3,
+    "file": "astronaut-right-leg-b-lower.webp",
+    "box": [
+     831,
+     1422,
+     1070,
+     1801
+    ],
+    "pivot": [
+     940.76,
+     1462.79
+    ],
+    "css": {
+     "left": 22.517,
+     "top": 71.46,
+     "width": 79.139,
+     "height": 83.85,
+     "ox": 45.925,
+     "oy": 10.763
     }
    }
   ],
   "chest": [
-   45.39,
-   26.92
+   56.69,
+   36.97
   ],
   "hand": [
-   4.72,
-   36.54
+   1.999,
+   39.426
   ],
-  "headAngle": -126.0,
+  "headAngle": -104.0,
   "handInPart": [
-   8.25,
-   56.13
+   0.956,
+   64.142
   ]
  }
 }

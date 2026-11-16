@@ -11,7 +11,7 @@ All times are seconds from the start of **that** transition. Rows are sorted by 
 
 | transition | from → to | length | notes |
 |---|---|---:|---|
-| **A** | hero → section2 | 4.00 s | hands touch at 3.00 s, screen fully smoke at 3.00 s |
+| **A** | hero → section2 | 4.00 s | hands touch at 3.00 s (no hold before it), screen fully smoke at 3.00 s |
 | **B** | section2 → appdesign | 4.25 s | flash peak (`showcase.play()`) at 3.60 s |
 | A reversed | section2 → hero | 2.67 s | same timeline backwards × 1.5 |
 | B reversed | appdesign → section2 | 2.83 s | same timeline backwards × 1.5; `showcase.reset()` at the flash |
@@ -32,19 +32,16 @@ All times are seconds from the start of **that** transition. Rows are sorted by 
 | key | start (s) | duration (s) | end (s) | ease | what happens |
 |---|---:|---:|---:|---|---|
 | `A.heroOut` | 0.00 | 0.72 | 0.72 | `power2.in` | Hero copy, button and phone fade out and lift 46px |
-| `A.converge` | 0.00 | 1.80 | 1.80 | `power2.inOut` | The figures start moving towards each other (to 95% of the way) |
 | `A.cameraTwoShot` | 0.00 | 2.16 | 2.16 | `power2.in` | Camera push towards both figures, ending on the held two-shot (×3.2 desktop, ×2.1 phone) |
+| `A.approach` | 0.00 | 3.00 | 3.00 | `glide(6)` | The figures float towards each other without stopping; the END is the moment the hands touch (= the end of cameraRush) |
 | `A.spaceZoom` | 0.00 | 3.00 | 3.00 | `power2.in` | The star field and moon scale 1 → 1.35 about the chest (parallax) |
 | `A.turn` | 0.12 | 1.98 | 2.10 | `sine.inOut` | Both figures rotate from head-first to the face-to-face clasp pose |
 | `A.cameraFocus` | 0.18 | 2.40 | 2.58 | `power2.inOut` | Camera pans so the left chest moves to the two-shot framing point |
 | `A.reach` | 0.36 | 1.62 | 1.98 | `power2.inOut` | The reaching arms extend (--reach 0 → 1) |
 | `A.leftFigureToFront` | 0.75 | — | 0.75 | `none` | Copy gone: the left figure (the zoom target) is lifted in front of the hero layer |
-| `A.convergeSlow` | 1.80 | 0.54 | 2.34 | `sine.inOut` | They slow down as the hands come close (to 98.5%) |
-| `A.idleFreeze` | 2.16 | — | 2.16 | `none` | The figures’ idle spacewalk motion freezes so the contact is exact |
 | `A.cameraRush` | 2.16 | 0.84 | 3.00 | `power4.in` | Final rush into the left chest; the END is the moment the screen is fully smoke |
 | `A.cameraCentre` | 2.16 | 0.84 | 3.00 | `power2.in` | During the rush the chest moves from the framing point to the exact screen centre |
-| `A.idleCorrection` | 2.16 | 0.84 | 3.00 | `sine.inOut` | The frozen idle offset of hands and chest is corrected so they meet precisely |
-| `A.handsTouch` | 2.34 | 0.66 | 3.00 | `expo.out` | The last gap closes; the END of this beat is the moment the hands touch |
+| `A.idleCorrection` | 2.16 | 0.84 | 3.00 | `sine.inOut` | The idle keeps floating; its live offset of the hands and the chest window is folded in so they meet exactly |
 | `A.smokeIn` | 2.64 | 0.30 | 2.94 | `power1.inOut` | The soft smoke texture cross-fades in over the chest |
 | `A.gradientIn` | 3.00 | 0.30 | 3.30 | `power1.inOut` | Full-screen smoke fades into the moving pink/purple/blue gradient |
 | `A.s2Heading` | 3.05 | 0.40 | 3.45 | `power2.out` | Section 2 heading fades up |
@@ -70,11 +67,10 @@ Phones (≤ 767px): same timings as desktop (no overrides in `TIMING.mobile`).
 | `B.s2HeadingOut` | 0.25 | 0.33 | 0.58 | `power2.in` | Heading out |
 | `B.dogRecede` | 0.44 | 2.12 | 2.56 | `power2.inOut` | The dog recedes from the camera (scale: covering the screen → the size in the phone) |
 | `B.dogDrift` | 0.44 | 2.12 | 2.56 | `power2.inOut` | The dog drifts on a curve: out to the left, then to the centre (the phone screen) |
-| `B.dogDetail` | 0.97 | 0.85 | 1.82 | `power1.inOut` | Helmet glass, tank and rim-light details fade in as the dog gets small |
-| `B.settle` | 2.56 | 0.14 | 2.70 | `none` | Hold: the dog has stopped, nothing moves before the beam (marker only; move beamIgnite/beamGrow to change it) |
-| `B.beamIgnite` | 2.70 | 0.07 | 2.77 | `none` | The thin beam of light appears in the middle of the screen |
-| `B.beamGrow` | 2.70 | 0.53 | 3.23 | `expo.out` | The beam shoots out horizontally to both edges |
-| `B.bloom` | 3.18 | 0.42 | 3.60 | `power2.in` | The beam swells vertically into a band of light (beam → flash bloom) |
+| `B.dogDetail` | 0.97 | 0.85 | 1.82 | `power1.inOut` | The helmet glass and the volume shading fade in as the dog gets small (--dog-detail 0 → 1) |
+| `B.glowIn` | 2.40 | 0.60 | 3.00 | `sine.out` | As the dog settles a soft round glow lights up around it |
+| `B.glowSwell` | 2.40 | 1.20 | 3.60 | `power2.in` | The glow swells out of the dog until it fills the screen with light (no line, no band) |
+| `B.settle` | 2.56 | — | 2.56 | `none` | The dog has arrived on the phone screen rect (marker); its legs and tail keep floating |
 | `B.flashIn` | 3.32 | 0.28 | 3.60 | `power2.in` | The screen goes white |
 | `B.flashPeak` | 3.60 | — | 3.60 | `none` | Flash peak: the phone showcase starts (showcase.play()); dog and space are hidden. Going back: showcase.reset() |
 | `B.whiteHold` | 3.60 | 0.15 | 3.75 | `none` | The screen stays white (global.flashHold) |
@@ -98,6 +94,16 @@ running after arrival; its timings are in `src/components/sections/phoneshowcase
 3. Run `node docs/journey/tools/timing-doc.mjs` to regenerate this table.
 4. For a phone-only change, add an override in `TIMING.mobile`, e.g. `mobile: { A: { cameraRush: { dur: 0.7 } }, B: {} }`.
 
-Things that must stay together: `A.handsTouch` should end when `A.cameraRush` ends (hands touch = screen fully
-smoke), and `A.gradientIn` should start then. `A.idleFreeze`, `A.idleCorrection`, `A.cameraRush` and
-`A.cameraCentre` start together. `B.flashIn` should end at `B.flashPeak`, which is where `B.whiteHold` starts.
+Things that must stay together: `A.approach` must end when `A.cameraRush` ends (hands touch = screen fully
+smoke; journey.ts warns in the console if they drift apart), and `A.gradientIn` should start then.
+`A.idleCorrection`, `A.cameraRush` and `A.cameraCentre` start together. `B.flashIn` should end at
+`B.flashPeak`, which is where `B.whiteHold` starts.
+
+The figures' idle spacewalk motion never pauses during A: during `A.idleCorrection` its live effect on the two
+hands and on the chest window is folded into the right figure's position and the camera target (pure maths from
+`rig.json`, see `posePoint` in `src/components/space/astronaut.ts`), so they still meet exactly. The idle only
+stops while act 1 is hidden (from the end of `A.gradientIn`), and restarts when going back.
+
+`glide(k)` (used by `A.approach`) is our own ease (`EASES` in timing.ts): it starts from rest, covers most of
+the way early, then keeps gliding in at a slowly falling speed that never stops before the end. Larger `k` = more
+of the way covered early.

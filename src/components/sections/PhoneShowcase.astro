@@ -10,11 +10,14 @@ import PhoneFrame from './phoneshowcase/PhoneFrame.astro';
 import FeedScreen from './phoneshowcase/FeedScreen.astro';
 import CameraScreen from './phoneshowcase/CameraScreen.astro';
 import DataScreen from './phoneshowcase/DataScreen.astro';
+import SpaceBackdrop from '../space/SpaceBackdrop.astro';
 interface Props { class?: string; flow?: boolean }
 const { class: cls = '', flow = false } = Astro.props;
 const headline = ['Apps', 'people'];
 ---
 <section class:list={['ps', { 'ps--flow': flow }, cls]} data-phoneshowcase aria-labelledby="ps-title">
+  <!-- the same star field as the dog's open space in act 2, so the flash hands over to the same sky -->
+  <SpaceBackdrop moonPhoto={false} />
   <div class="ps-glow" aria-hidden="true"></div>
   <div class="ps-inner">
     <header class="ps-copy">
@@ -44,7 +47,7 @@ const headline = ['Apps', 'people'];
      so the side phones' slide distance is a constant 112% of their own width at every size. */
   .ps {
     --pw: min(21vw, calc((100vh - 330px) * 0.491), 330px);
-    position: absolute; inset: 0; overflow: hidden; background: #050505; color: #fff;
+    position: absolute; inset: 0; overflow: hidden; background: #04030b; color: #fff;
   }
   @supports (height: 100svh) { .ps { --pw: min(21vw, calc((100svh - 330px) * 0.491), 330px); } }
   .ps--flow { position: relative; inset: auto; min-height: 100vh; min-height: 100svh; }

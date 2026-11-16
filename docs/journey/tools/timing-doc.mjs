@@ -41,7 +41,7 @@ All times are seconds from the start of **that** transition. Rows are sorted by 
 
 | transition | from → to | length | notes |
 |---|---|---:|---|
-| **A** | hero → section2 | ${f(LA)} s | hands touch at ${f(TIMING.A.handsTouch.start + TIMING.A.handsTouch.dur)} s, screen fully smoke at ${f(TIMING.A.cameraRush.start + TIMING.A.cameraRush.dur)} s |
+| **A** | hero → section2 | ${f(LA)} s | hands touch at ${f(TIMING.A.approach.start + TIMING.A.approach.dur)} s (no hold before it), screen fully smoke at ${f(TIMING.A.cameraRush.start + TIMING.A.cameraRush.dur)} s |
 | **B** | section2 → appdesign | ${f(LB)} s | flash peak (\`showcase.play()\`) at ${f(TIMING.B.flashPeak.start)} s |
 | A reversed | section2 → hero | ${f(LA / g.reverseSpeed)} s | same timeline backwards × ${g.reverseSpeed} |
 | B reversed | appdesign → section2 | ${f(LB / g.reverseSpeed)} s | same timeline backwards × ${g.reverseSpeed}; \`showcase.reset()\` at the flash |
@@ -80,9 +80,19 @@ running after arrival; its timings are in \`src/components/sections/phoneshowcas
 3. Run \`node docs/journey/tools/timing-doc.mjs\` to regenerate this table.
 4. For a phone-only change, add an override in \`TIMING.mobile\`, e.g. \`mobile: { A: { cameraRush: { dur: 0.7 } }, B: {} }\`.
 
-Things that must stay together: \`A.handsTouch\` should end when \`A.cameraRush\` ends (hands touch = screen fully
-smoke), and \`A.gradientIn\` should start then. \`A.idleFreeze\`, \`A.idleCorrection\`, \`A.cameraRush\` and
-\`A.cameraCentre\` start together. \`B.flashIn\` should end at \`B.flashPeak\`, which is where \`B.whiteHold\` starts.
+Things that must stay together: \`A.approach\` must end when \`A.cameraRush\` ends (hands touch = screen fully
+smoke; journey.ts warns in the console if they drift apart), and \`A.gradientIn\` should start then.
+\`A.idleCorrection\`, \`A.cameraRush\` and \`A.cameraCentre\` start together. \`B.flashIn\` should end at
+\`B.flashPeak\`, which is where \`B.whiteHold\` starts.
+
+The figures' idle spacewalk motion never pauses during A: during \`A.idleCorrection\` its live effect on the two
+hands and on the chest window is folded into the right figure's position and the camera target (pure maths from
+\`rig.json\`, see \`posePoint\` in \`src/components/space/astronaut.ts\`), so they still meet exactly. The idle only
+stops while act 1 is hidden (from the end of \`A.gradientIn\`), and restarts when going back.
+
+\`glide(k)\` (used by \`A.approach\`) is our own ease (\`EASES\` in timing.ts): it starts from rest, covers most of
+the way early, then keeps gliding in at a slowly falling speed that never stops before the end. Larger \`k\` = more
+of the way covered early.
 `;
 
 fs.writeFileSync(path.join(repo, 'docs/journey/TIMING.md'), md);

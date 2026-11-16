@@ -7,8 +7,10 @@
 // tween of the master's time from one stop to the next (forwards at speed 1, backwards at TIMING.global.reverseSpeed).
 // The timeline tweens a plain state object (`st`); `render()` turns it into transforms using geometry measured in
 // `measure()` (re-run on resize at a stop, or on arrival if the resize happened mid-transition). That keeps the
-// maths exact: the left chest is the zoom focus, the hands meet in Agent A's source arrangement at the end of
-// A.handsTouch, and the dog ends exactly on the rect where Agent C's frozen frame shows it.
+// maths exact: the left chest is the zoom focus, the hands meet in the rig's clasp arrangement at the end of
+// A.approach (the same instant the chest window fills the screen), and the dog ends exactly on the rect where Agent
+// C's frozen frame shows it. The figures never stop floating: their live idle pose (astronaut.ts posePoint, pure
+// maths) is folded into the right figure's position and the camera target, so the contact is exact anyway.
 //
 // Input: GSAP Observer (wheel + touch, preventDefault) while the page is locked at hero / section2 / mid-transition;
 // at appdesign native scrolling is released and a second, passive Observer only watches for an upward intent at
@@ -17,13 +19,14 @@
 import gsap from 'gsap';
 import { Observer } from 'gsap/Observer';
 import { SplitText } from 'gsap/SplitText';
-import { setReach, setIdle, handPoint } from '../../space/astronaut';
+import { setReach, setIdle, posePoint, idleRollMax } from '../../space/astronaut';
 import { initPhoneShowcase } from '../phoneshowcase/controller';
 import dogGeo from '../../space/dog.json';
 import rig from '../../space/rig.json';
-import { TIMING, resolveTiming, transitionLength, type Beat, type TransitionA, type TransitionB } from './timing';
+import { TIMING, EASES, resolveTiming, transitionLength, type Beat, type TransitionA, type TransitionB } from './timing';
 
 gsap.registerPlugin(Observer, SplitText);
+for (const [name, ease] of Object.entries(EASES)) gsap.registerEase(name, ease);
 
 export type Stop = 'hero' | 'section2' | 'appdesign';
 export const STOPS: Stop[] = ['hero', 'section2', 'appdesign'];
@@ -55,13 +58,13 @@ const S2_OUT = ['s2HeadingOut', 's2SubOut', 's2Badge1Out', 's2Badge2Out', 's2Bad
 /** wait for the showcase's own resize handler (150 ms debounce) before re-measuring its dog rect */
 const RESIZE_SETTLE_MS = 250;
 
-// Agent A facts (docs/journey/ASSETS.md): source "hands clasped" arrangement, both boxes at rotation 0, same scale.
-const L_AR = rig.left.width / rig.left.height; // 1.306
-const R_AR = rig.right.width / rig.right.height; // 0.793
-const R_REL_W = 0.6563; // right box width / left box width
-const R_OFF = { x: 0.944, y: 0.1755 }; // right box origin − left box origin, in left box widths
-const SMOKE_RECT = { l: 0.5708, t: 0.1188, w: 0.2557, h: 0.2087 }; // smoke-pink.webp = this rect of the left box
-const ROLL_MAX = (3.6 * Math.PI) / 180; // worst-case idle roll of the chest window (rig 1.6° + torso 1.8°), radians
+// rig.json (docs/journey/ASSETS.md): the clasp arrangement has both boxes at rotation 0 and the same pixel scale.
+const L_AR = rig.left.width / rig.left.height;
+const R_AR = rig.right.width / rig.right.height;
+const R_REL_W = rig.clasp.rightRelW; // right box width / left box width
+const R_OFF = { x: rig.clasp.off[0], y: rig.clasp.off[1] }; // right box origin − left box origin, in left box widths
+const SMOKE_RECT = rig.left.smokeRect; // smoke-pink.webp = this rect of the left box (centred on rig.left.chest)
+const ROLL_MAX = (idleRollMax('left', 'torso') * Math.PI) / 180; // worst-case idle roll of the chest window, radians
 const FEATHER = 0.1; // the smoke overlay's edges are feathered over 10% per side (CSS mask), so only the core must cover
 
 type Pt = { x: number; y: number };
@@ -72,7 +75,7 @@ type Cfg = {
   hold: Pt; // where the left chest sits on screen during the two-shot (fractions of W/H); it reaches the centre at fill
   dogCtrlX: number; // dog drift: bezier control point for the dog's centre (fraction of W): left of centre
 };
-const DESKTOP: Cfg = { L: { x: 0.1, y: 0.215 }, R: { x: 0.875, y: 0.79 }, wL: 0.235, wMin: 230, wMax: 470, alpha: 0.5, sHold: 3.2, hold: { x: 0.5, y: 0.5 }, dogCtrlX: 0.02 };
+const DESKTOP: Cfg = { L: { x: 0.1, y: 0.215 }, R: { x: 0.875, y: 0.79 }, wL: 0.235, wMin: 230, wMax: 470, alpha: 0.5, sHold: 3.2, hold: { x: 0.4, y: 0.5 }, dogCtrlX: 0.02 };
 const MOBILE: Cfg = { L: { x: 0.06, y: 0.15 }, R: { x: 0.88, y: 0.925 }, wL: 0.27, wMin: 96, wMax: 200, alpha: 0.5, sHold: 2.1, hold: { x: 0.3, y: 0.42 }, dogCtrlX: -0.05 };
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -80,7 +83,7 @@ const bez = (a: number, c: number, b: number, t: number) => (1 - t) * (1 - t) * 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const norm = (d: number) => ((((d + 180) % 360) + 360) % 360) - 180;
 
-type Fig = { el: HTMLElement; root: HTMLElement; w: number; h: number; c0: Pt; c1: Pt; rot0: number; chest: Pt; hand: Pt; head: number };
+type Fig = { el: HTMLElement; root: HTMLElement; w: number; h: number; c0: Pt; c1: Pt; rot0: number; chest: Pt; hand: Pt; head: number; restHand: Pt; restChest: Pt };
 
 /** world position of a local box point (px in the unrotated box) for a box centred at c, rotated by rot (deg). */
 function toWorld(f: Fig, p: Pt, c: Pt, rot: number): Pt {
@@ -179,23 +182,6 @@ function mountSmoke(figLeft: HTMLElement, img: HTMLElement) {
   torso.appendChild(img);
 }
 
-/** Every <Dog/> instance carries the same SVG ids (helmet clip, glass gradient). `url(#id)` resolves to the FIRST
- *  one in the document, which is this stage's dog; when act 2 is visibility:hidden (after the flash) the clipPath
- *  would hide the head inside Agent C's frozen-frame dog. Give this instance private ids. */
-function privatiseSvgIds(scope: HTMLElement, prefix: string) {
-  const ids = Array.from(scope.querySelectorAll<SVGElement>('[id]')).map((el) => el.id);
-  if (!ids.length) return;
-  for (const el of Array.from(scope.querySelectorAll<SVGElement>('*'))) {
-    for (const a of Array.from(el.attributes)) {
-      let v = a.value, changed = false;
-      for (const id of ids) if (v.includes(`#${id})`)) { v = v.split(`#${id})`).join(`#${prefix}${id})`); changed = true; }
-      if (changed) el.setAttribute(a.name, v);
-    }
-  }
-  scope.querySelectorAll<SVGElement>('[id]').forEach((el) => { el.id = prefix + el.id; });
-}
-
-
 const end = (b: Beat) => b.start + b.dur;
 
 export function initSpaceJourney(root: HTMLElement) {
@@ -217,7 +203,6 @@ export function initSpaceJourney(root: HTMLElement) {
   const s2 = q('[data-sj-s2]');
   const s2items = Array.from(root.querySelectorAll<HTMLElement>('[data-sj-s2-item]'));
   const fx = q('[data-sj-fx]');
-  const beam = q('[data-sj-beam]');
   const bloom = q('[data-sj-bloom]');
   const flash = q('[data-sj-flash]');
   const figL = q('[data-sj-fig="left"]');
@@ -229,9 +214,6 @@ export function initSpaceJourney(root: HTMLElement) {
   const showcase = initPhoneShowcase(showcaseRoot);
 
   mountSmoke(figL, smoke);
-  privatiseSvgIds(dogbox, 'sj-');
-  const rim = dogbox.querySelector<SVGPathElement>('.rb-dog__detail path[vector-effect="non-scaling-stroke"]');
-  const rimW = rim ? parseFloat(rim.getAttribute('stroke-width') || '5') : 5;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!reduce) { heroLoadIn(root); heroCards(root); }
 
@@ -289,6 +271,7 @@ export function initSpaceJourney(root: HTMLElement) {
     for (const [n, beats] of [['A', A], ['B', B]] as const) {
       for (const [k, b] of Object.entries(beats)) if (end(b) > beats.arrival.start + 1e-6) console.warn(`[journey] ${n}.${k} ends at ${end(b).toFixed(2)}s, after ${n}.arrival (${beats.arrival.start}s): the transition is extended`);
     }
+    if (Math.abs(end(A.approach) - end(A.cameraRush)) > 1e-6) console.warn(`[journey] A.approach ends at ${end(A.approach).toFixed(2)}s but A.cameraRush at ${end(A.cameraRush).toFixed(2)}s: the hands should touch as the screen fills with smoke`);
     const T0: Record<Stop, number> = { hero: 0, section2: LA, appdesign: LA + LB };
 
     // ---------- state driven by the timeline ----------
@@ -297,9 +280,7 @@ export function initSpaceJourney(root: HTMLElement) {
     let W = 0, H = 0, sFill = 10;
     const figs = {} as { L: Fig; R: Fig };
     let P0: Pt = { x: 0, y: 0 }; // left chest at rest (world = screen at zoom 1)
-    let eH: Pt = { x: 0, y: 0 }, eC: Pt = { x: 0, y: 0 }; // idle corrections (world px), measured at freeze
-    let rimPx = 5, Lw = 0, Lh = 0, body: Pt = { x: 0, y: 0 }, k1 = 0.1, C0: Pt = { x: 0, y: 0 }, C1: Pt = { x: 0, y: 0 }, Cc: Pt = { x: 0, y: 0 };
-    let cam = { s: 1, x: 0, y: 0 };
+    let Lw = 0, Lh = 0, body: Pt = { x: 0, y: 0 }, k1 = 0.1, C0: Pt = { x: 0, y: 0 }, C1: Pt = { x: 0, y: 0 }, Cc: Pt = { x: 0, y: 0 };
 
     const measureDog = () => {
       // laid out at the size that just covers the stage (so k = 1 there: the mask is rasterised at that size)
@@ -311,9 +292,6 @@ export function initSpaceJourney(root: HTMLElement) {
       C0 = { x: W / 2 + (Lw / 2 - body.x), y: H / 2 + (Lh / 2 - body.y) };
       const sr = stage.getBoundingClientRect();
       const r = showcase.dogRect();
-      const cDog = q('[data-sj-showcase] [data-ps-dogart] [data-dog]');
-      // C's dog sits inside a scaled photo: its non-scaling rim stroke shows at rimW × that scale on screen
-      rimPx = rimW * (cDog && cDog.offsetWidth ? r.width / cDog.offsetWidth : 1);
       if (r && r.width > 2) {
         k1 = r.width / Lw;
         C1 = { x: r.left - sr.left + r.width / 2, y: r.top - sr.top + r.height / 2 };
@@ -322,6 +300,11 @@ export function initSpaceJourney(root: HTMLElement) {
         C1 = { x: W / 2, y: H / 2 };
       }
       Cc = { x: cfg.dogCtrlX * W, y: lerp(C0.y, C1.y, 0.5) };
+      // the glow before the flash is centred on the dog's body where it comes to rest, and at full size reaches
+      // every corner of the stage (closest-side = d / 2)
+      const gx = C1.x + (body.x - Lw / 2) * k1, gy = C1.y + (body.y - Lh / 2) * k1;
+      const d = 2 * Math.max(Math.hypot(gx, gy), Math.hypot(W - gx, gy), Math.hypot(gx, H - gy), Math.hypot(W - gx, H - gy));
+      Object.assign(bloom.style, { left: `${(gx - d / 2).toFixed(1)}px`, top: `${(gy - d / 2).toFixed(1)}px`, width: `${d.toFixed(1)}px`, height: `${d.toFixed(1)}px` });
     };
 
     const measure = () => {
@@ -333,6 +316,8 @@ export function initSpaceJourney(root: HTMLElement) {
         el, root, w, h, c0, c1: c0, rot0: 0, head: rig[who].headAngle,
         chest: { x: (rig[who].chest[0] / 100) * w, y: (rig[who].chest[1] / 100) * h },
         hand: { x: (rig[who].hand[0] / 100) * w, y: (rig[who].hand[1] / 100) * h },
+        restHand: { x: rig[who].hand[0] / 100, y: rig[who].hand[1] / 100 },
+        restChest: { x: rig[who].chest[0] / 100, y: rig[who].chest[1] / 100 },
       });
       const L = (figs.L = mk(figL, astroL, wL, hL, 'left', { x: cfg.L.x * W, y: cfg.L.y * H }));
       const R = (figs.R = mk(figR, astroR, wR, hR, 'right', { x: cfg.R.x * W, y: cfg.R.y * H }));
@@ -360,15 +345,32 @@ export function initSpaceJourney(root: HTMLElement) {
       c: { x: lerp(f.c0.x, f.c1.x, conv) - corr.x, y: lerp(f.c0.y, f.c1.y, conv) - corr.y },
       rot: lerp(f.rot0, 0, turn),
     });
+    /** world position of a rest-pose box point (fractions) of figure f in its CURRENT idle / reach pose */
+    const live = (f: Fig, part: string, rest: Pt, c: Pt, rot: number): Pt => {
+      const p = posePoint(f.root, part, rest);
+      return toWorld(f, { x: p.x * f.w, y: p.y * f.h }, c, rot);
+    };
     const render = () => {
       const { L, R } = figs;
       if (!L) return;
+      setReach(L.root, st.reach); setReach(R.root, st.reach); // first: posePoint reads the reach
       const pL = figPose(L, st.turn, st.conv, { x: 0, y: 0 });
+      // the idle keeps running to the contact: whatever it does to the two hands this frame is added to the right
+      // figure's position (blended in by `fix`), so at fix = 1 the live fingertips coincide exactly
+      let eH: Pt = { x: 0, y: 0 }, eC: Pt = { x: 0, y: 0 };
+      if (st.fix > 0) {
+        const pR0 = figPose(R, st.turn, st.conv, { x: 0, y: 0 });
+        const hl = live(L, 'arm-reach-lower', L.restHand, pL.c, pL.rot), hr = live(R, 'arm-reach-lower', R.restHand, pR0.c, pR0.rot);
+        const ml = toWorld(L, L.hand, pL.c, pL.rot), mr = toWorld(R, R.hand, pR0.c, pR0.rot);
+        eH = { x: (hr.x - hl.x) - (mr.x - ml.x), y: (hr.y - hl.y) - (mr.y - ml.y) };
+        // and the chest window (the camera target) is followed where the idle has moved it
+        const lc = live(L, 'torso', L.restChest, pL.c, pL.rot), mc = toWorld(L, L.chest, pL.c, pL.rot);
+        eC = { x: lc.x - mc.x, y: lc.y - mc.y };
+      }
       const pR = figPose(R, st.turn, st.conv, { x: eH.x * st.fix, y: eH.y * st.fix });
       for (const [f, p] of [[L, pL], [R, pR]] as const) {
         f.el.style.transform = `translate(${(p.c.x - f.w / 2).toFixed(2)}px, ${(p.c.y - f.h / 2).toFixed(2)}px) rotate(${p.rot.toFixed(3)}deg)`;
       }
-      setReach(L.root, st.reach); setReach(R.root, st.reach);
       // camera (log scale): push to the held two-shot, then the rush to the cover scale where the chest fills the stage
       const lHold = Math.log(cfg.sHold);
       const s = Math.exp(st.push * lHold + st.rush * (Math.log(sFill) - lHold));
@@ -378,8 +380,7 @@ export function initSpaceJourney(root: HTMLElement) {
       // centre moves that point to the exact stage centre during the rush
       const tx = lerp(cfg.hold.x * W, W / 2, st.centre), ty = lerp(cfg.hold.y * H, H / 2, st.centre);
       const Q = { x: lerp(Pw.x, tx, st.focus), y: lerp(Pw.y, ty, st.focus) };
-      cam = { s, x: Q.x - s * Pw.x, y: Q.y - s * Pw.y };
-      const t = `translate(${cam.x.toFixed(2)}px, ${cam.y.toFixed(2)}px) scale(${s.toFixed(5)})`;
+      const t = `translate(${(Q.x - s * Pw.x).toFixed(2)}px, ${(Q.y - s * Pw.y).toFixed(2)}px) scale(${s.toFixed(5)})`;
       for (const w of worlds) w.style.transform = t;
       space.style.transform = `scale(${(1 + 0.35 * st.space).toFixed(5)})`;
       smoke.style.opacity = st.smoke.toFixed(4);
@@ -388,33 +389,21 @@ export function initSpaceJourney(root: HTMLElement) {
       const e = st.dogP;
       const cx = bez(C0.x, Cc.x, C1.x, e), cy = bez(C0.y, Cc.y, C1.y, e);
       dogbox.style.transform = `translate(${(cx - (k * Lw) / 2).toFixed(2)}px, ${(cy - (k * Lh) / 2).toFixed(2)}px) scale(${k.toFixed(6)})`;
+      // helmet glass + volume shading (Dog.astro): off while the dog covers the screen, in as it gets small
       dogRoot.style.setProperty('--dog-detail', st.detail.toFixed(3));
-      // same on-screen rim thickness as C's frozen frame (the stroke ignores the SVG viewBox scale, not CSS scale)
-      if (rim && st.detail > 0) rim.style.strokeWidth = `${(rimPx / k).toFixed(2)}px`;
     };
 
-    // ---------- idle freeze for the contact (Agent A: setIdle(false) once the screen is going to smoke) ----------
-    let frozen = false;
-    const freeze = (on: boolean) => {
-      if (on === frozen) return;
-      frozen = on;
-      setIdle(astroL, !on); setIdle(astroR, !on);
-      if (!on) { eH = { x: 0, y: 0 }; eC = { x: 0, y: 0 }; render(); return; }
-      // the idle pose is now fixed: measure how far it puts the hands / chest window from the model, once
-      eH = { x: 0, y: 0 }; eC = { x: 0, y: 0 }; render();
-      const sr = stage.getBoundingClientRect();
-      const toW = (p: Pt): Pt => ({ x: (p.x - sr.left - cam.x) / cam.s, y: (p.y - sr.top - cam.y) / cam.s });
-      const { L, R } = figs;
-      const pL = figPose(L, st.turn, st.conv, { x: 0, y: 0 }), pR = figPose(R, st.turn, st.conv, { x: 0, y: 0 });
-      const hl = toW(handPoint(astroL)), hr = toW(handPoint(astroR));
-      const ml = toWorld(L, L.hand, pL.c, pL.rot), mr = toWorld(R, R.hand, pR.c, pR.rot);
-      eH = { x: (hr.x - hl.x) - (mr.x - ml.x), y: (hr.y - hl.y) - (mr.y - ml.y) };
-      const ob = smoke.getBoundingClientRect();
-      const oc = toW({ x: ob.left + ob.width / 2, y: ob.top + ob.height / 2 });
-      const mc = toWorld(L, L.chest, pL.c, pL.rot);
-      eC = { x: oc.x - mc.x, y: oc.y - mc.y };
-      render();
+    // ---------- idle: always on while act 1 can be seen; off once act 1 is hidden (no idle work off-stage) ----------
+    let idleOff = false;
+    const setIdleOff = (off: boolean) => {
+      if (off === idleOff) return;
+      idleOff = off;
+      setIdle(astroL, !off); setIdle(astroR, !off);
     };
+    // while the playhead stands still (a debug pause; never during a normal run) the idle still moves the hands and
+    // the chest window, so keep the corrections live every frame
+    const onIdleTick = () => { if (!idleOff && st.fix > 0 && (!run || dbgPaused)) render(); };
+    gsap.ticker.add(onIdleTick);
 
     // ---------- the master timeline (seconds; built ONLY from timing.ts) ----------
     const tl = gsap.timeline({ defaults: { ease: 'none' }, paused: true, onUpdate: () => { render(); sync(); } });
@@ -425,14 +414,12 @@ export function initSpaceJourney(root: HTMLElement) {
     tl.addLabel('hero', 0);
     tl.to(hero, { autoAlpha: 0, y: -46, ...ab(A.heroOut) }, A.heroOut.start);
     tl.set(worldL, { zIndex: 4 }, A.leftFigureToFront.start); // copy gone: the left figure (zoom target) is nearest
-    stTo('conv', 0.95, A.converge);
-    stTo('conv', 0.985, A.convergeSlow);
-    stTo('conv', 1, A.handsTouch); // contact in the source arrangement at the end of this beat
+    stTo('conv', 1, A.approach); // one continuous approach; contact in the clasp arrangement at its end
     stTo('turn', 1, A.turn);
     stTo('reach', 1, A.reach);
     stTo('push', 1, A.cameraTwoShot);
     stTo('focus', 1, A.cameraFocus);
-    stTo('rush', 1, A.cameraRush); // the hands stay in frame while they meet, then the camera rushes into the smoke
+    stTo('rush', 1, A.cameraRush); // the hands are still closing in the two-shot as the camera rushes into the chest
     stTo('centre', 1, A.cameraCentre);
     stTo('fix', 1, A.idleCorrection);
     stTo('smoke', 1, A.smokeIn);
@@ -463,10 +450,9 @@ export function initSpaceJourney(root: HTMLElement) {
     stTo('dogK', 1, B.dogRecede, LA);
     stTo('dogP', 1, B.dogDrift, LA);
     stTo('detail', 1, B.dogDetail, LA);
-    // light: a thin beam from the centre to both edges, the bloom, the screen-wide flash
-    tl.fromTo(beam, { opacity: 0 }, { opacity: 1, ...ab(B.beamIgnite) }, LA + B.beamIgnite.start);
-    tl.fromTo(beam, { scaleX: 0 }, { scaleX: 1, ...ab(B.beamGrow) }, LA + B.beamGrow.start);
-    tl.fromTo(bloom, { opacity: 0, scaleY: 0.02 }, { opacity: 1, scaleY: 1.6, ...ab(B.bloom) }, LA + B.bloom.start);
+    // light: as soon as the dog has arrived a soft round glow swells out of it, then the whole screen fades to white
+    tl.fromTo(bloom, { opacity: 0 }, { opacity: 1, ...ab(B.glowIn) }, LA + B.glowIn.start);
+    tl.fromTo(bloom, { scale: 0.05 }, { scale: 2, ...ab(B.glowSwell) }, LA + B.glowSwell.start); // at 2 its bright core reaches the corners
     tl.fromTo(flash, { opacity: 0 }, { opacity: 1, ...ab(B.flashIn) }, LA + B.flashIn.start);
     tl.set(act2, { autoAlpha: 0 }, LA + B.flashPeak.start); // showcase.play() at the same time, see sync()
     // (B.whiteHold: nothing moves) then the white fades off the showcase
@@ -474,12 +460,12 @@ export function initSpaceJourney(root: HTMLElement) {
     tl.set({}, {}, LA + LB);
     tl.addLabel('appdesign', LA + LB);
 
-    // ---------- discrete hand-offs: idle freeze, and the flash → act 3 ----------
+    // ---------- discrete hand-offs: idle off while act 1 is hidden, and the flash → act 3 ----------
     const FLASH_T = LA + B.flashPeak.start - 1e-4;
     let flashed = false, dogStale = false;
     function sync() {
       const t = tl.time();
-      freeze(t >= A.idleFreeze.start); // stays frozen while act 1 is hidden (no idle work off-stage)
+      setIdleOff(t >= end(A.gradientIn) - 1e-6);
       const past = t >= FLASH_T;
       if (past === flashed) return;
       flashed = past;
@@ -496,7 +482,6 @@ export function initSpaceJourney(root: HTMLElement) {
       // the showcase is running: its dog rect is no longer the t=0 frame (the dog is hidden anyway); re-measure the
       // dog's end rect when reset() puts the frozen frame back
       if (flashed) dogStale = true;
-      if (frozen) freeze(false); // sync() re-freezes and re-measures the idle corrections with the new geometry
       render(); sync();
     };
 
@@ -754,7 +739,8 @@ export function initSpaceJourney(root: HTMLElement) {
       lockObs.kill(); freeObs.kill();
       html.classList.remove('sj-locked');
       if (flashed) showcase.reset();
-      if (frozen) { setIdle(astroL, true); setIdle(astroR, true); }
+      gsap.ticker.remove(onIdleTick);
+      if (idleOff) { setIdle(astroL, true); setIdle(astroR, true); }
       [figL, figR, dogbox].forEach((el) => { el.style.transform = ''; el.style.width = ''; });
       worlds.forEach((w) => { w.style.transform = ''; });
       space.style.transform = ''; space.style.transformOrigin = '';
