@@ -300,6 +300,11 @@ export function initSpaceJourney(root: HTMLElement) {
         C1 = { x: W / 2, y: H / 2 };
       }
       Cc = { x: cfg.dogCtrlX * W, y: lerp(C0.y, C1.y, 0.5) };
+      // the glow before the flash is centred on the dog's body where it comes to rest, and at full size reaches
+      // every corner of the stage (closest-side = d / 2)
+      const gx = C1.x + (body.x - Lw / 2) * k1, gy = C1.y + (body.y - Lh / 2) * k1;
+      const d = 2 * Math.max(Math.hypot(gx, gy), Math.hypot(W - gx, gy), Math.hypot(gx, H - gy), Math.hypot(W - gx, H - gy));
+      Object.assign(bloom.style, { left: `${(gx - d / 2).toFixed(1)}px`, top: `${(gy - d / 2).toFixed(1)}px`, width: `${d.toFixed(1)}px`, height: `${d.toFixed(1)}px` });
     };
 
     const measure = () => {
@@ -445,8 +450,9 @@ export function initSpaceJourney(root: HTMLElement) {
     stTo('dogK', 1, B.dogRecede, LA);
     stTo('dogP', 1, B.dogDrift, LA);
     stTo('detail', 1, B.dogDetail, LA);
-    // light: a soft band of light swells out of the middle of the screen into the screen-wide flash
-    tl.fromTo(bloom, { opacity: 0, scaleY: 0.35 }, { opacity: 1, scaleY: 1.6, ...ab(B.bloom) }, LA + B.bloom.start);
+    // light: as soon as the dog has arrived a soft round glow swells out of it, then the whole screen fades to white
+    tl.fromTo(bloom, { opacity: 0 }, { opacity: 1, ...ab(B.glowIn) }, LA + B.glowIn.start);
+    tl.fromTo(bloom, { scale: 0.05 }, { scale: 2, ...ab(B.glowSwell) }, LA + B.glowSwell.start); // at 2 its bright core reaches the corners
     tl.fromTo(flash, { opacity: 0 }, { opacity: 1, ...ab(B.flashIn) }, LA + B.flashIn.start);
     tl.set(act2, { autoAlpha: 0 }, LA + B.flashPeak.start); // showcase.play() at the same time, see sync()
     // (B.whiteHold: nothing moves) then the white fades off the showcase

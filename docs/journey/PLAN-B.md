@@ -14,8 +14,8 @@
 > **Smoke silhouettes (Nov 2026), also superseding the rows below:** the figures no longer slow down or freeze
 > before contact. `A.approach` is one continuous beat ending at 3.00 s (= the end of `A.cameraRush`); the idle
 > keeps running, and its live effect on the hands and the chest window is computed every frame from `rig.json`
-> (`posePoint`) and folded into the right figure's position and the camera target. There is no beam: a soft band
-> of light (`B.bloom`) swells into the white flash. The App Design screen sits on the star field.
+> (`posePoint`) and folded into the right figure's position and the camera target. There is no beam: a soft round glow
+> swells out of the resting dog (`B.glowIn`, `B.glowSwell`) and fills the screen into the white flash. The App Design screen sits on the star field.
 
 ## As first built (scroll-scrubbed, historical)
 

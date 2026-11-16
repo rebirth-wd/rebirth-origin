@@ -62,7 +62,7 @@ export type TransitionA = {
 export type TransitionB = {
   s2Badge4Out: Beat; s2Badge3Out: Beat; s2Badge2Out: Beat; s2Badge1Out: Beat; s2SubOut: Beat; s2HeadingOut: Beat;
   gradToDog: Beat; dogRecede: Beat; dogDrift: Beat; dogDetail: Beat; settle: Beat;
-  bloom: Beat; flashIn: Beat; flashPeak: Beat;
+  glowIn: Beat; glowSwell: Beat; flashIn: Beat; flashPeak: Beat;
   whiteHold: Beat; whiteFade: Beat;
   arrival: Beat;
 };
@@ -138,8 +138,9 @@ export const TIMING: JourneyTiming = {
     dogRecede:    { start: 0.44, dur: 2.12, ease: 'power2.inOut', what: 'The dog recedes from the camera (scale: covering the screen → the size in the phone)' },
     dogDrift:     { start: 0.44, dur: 2.12, ease: 'power2.inOut', what: 'The dog drifts on a curve: out to the left, then to the centre (the phone screen)' },
     dogDetail:    { start: 0.97, dur: 0.85, ease: 'power1.inOut', what: 'The helmet glass and the volume shading fade in as the dog gets small (--dog-detail 0 → 1)' },
-    settle:       { start: 2.56, dur: 0.62, ease: 'none',         what: 'The dog has arrived and floats in place (legs and tail keep moving) until the light (marker only; move bloom to change it)' },
-    bloom:        { start: 3.18, dur: 0.42, ease: 'power2.in',    what: 'A soft band of light swells out of the middle of the screen (no thin line) into the flash' },
+    settle:       { start: 2.56, dur: 0,    ease: 'none',         what: 'The dog has arrived on the phone screen rect (marker); its legs and tail keep floating' },
+    glowIn:       { start: 2.40, dur: 0.60, ease: 'sine.out',     what: 'As the dog settles a soft round glow lights up around it' },
+    glowSwell:    { start: 2.40, dur: 1.20, ease: 'power2.in',    what: 'The glow swells out of the dog until it fills the screen with light (no line, no band)' },
     flashIn:      { start: 3.32, dur: 0.28, ease: 'power2.in',    what: 'The screen goes white' },
     flashPeak:    { start: 3.60, dur: 0,    ease: 'none',         what: 'Flash peak: the phone showcase starts (showcase.play()); dog and space are hidden. Going back: showcase.reset()' },
     whiteHold:    { start: 3.60, dur: FLASH_HOLD, ease: 'none',   what: 'The screen stays white (global.flashHold)' },

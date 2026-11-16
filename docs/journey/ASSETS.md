@@ -18,8 +18,9 @@ the viewport, and the smoke texture.
   - Outline: smoothed like a vector curve, with the fingers kept. The head is a clean helmet dome over a
     backpack. The dome itself is the outline: the backpack (and on the left figure the shoulders under the helmet)
     never reaches past the shell, so there is no second, offset circle.
-  - Inside: a dark smoke visor with a soft specular, a faint groove only where the helmet shell meets the body or
-    pack (it fades out along the outline), and a slightly denser backpack.
+  - Inside: a dark smoke visor with a soft specular and a slightly denser backpack. The right figure has a faint
+    groove where the helmet shell meets the pack; the left has none (`helmet.groove = 0`), so its helmet is one clean
+    outline.
   - Volume: an inner edge shade and a faint rim light from the upper left.
   - No photo pixel is shipped. Left is pink/magenta/violet; right is blue/violet (its smoke is mirrored and
     hue-shifted).

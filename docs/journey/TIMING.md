@@ -68,8 +68,9 @@ Phones (≤ 767px): same timings as desktop (no overrides in `TIMING.mobile`).
 | `B.dogRecede` | 0.44 | 2.12 | 2.56 | `power2.inOut` | The dog recedes from the camera (scale: covering the screen → the size in the phone) |
 | `B.dogDrift` | 0.44 | 2.12 | 2.56 | `power2.inOut` | The dog drifts on a curve: out to the left, then to the centre (the phone screen) |
 | `B.dogDetail` | 0.97 | 0.85 | 1.82 | `power1.inOut` | The helmet glass and the volume shading fade in as the dog gets small (--dog-detail 0 → 1) |
-| `B.settle` | 2.56 | 0.62 | 3.18 | `none` | The dog has arrived and floats in place (legs and tail keep moving) until the light (marker only; move bloom to change it) |
-| `B.bloom` | 3.18 | 0.42 | 3.60 | `power2.in` | A soft band of light swells out of the middle of the screen (no thin line) into the flash |
+| `B.glowIn` | 2.40 | 0.60 | 3.00 | `sine.out` | As the dog settles a soft round glow lights up around it |
+| `B.glowSwell` | 2.40 | 1.20 | 3.60 | `power2.in` | The glow swells out of the dog until it fills the screen with light (no line, no band) |
+| `B.settle` | 2.56 | — | 2.56 | `none` | The dog has arrived on the phone screen rect (marker); its legs and tail keep floating |
 | `B.flashIn` | 3.32 | 0.28 | 3.60 | `power2.in` | The screen goes white |
 | `B.flashPeak` | 3.60 | — | 3.60 | `none` | Flash peak: the phone showcase starts (showcase.play()); dog and space are hidden. Going back: showcase.reset() |
 | `B.whiteHold` | 3.60 | 0.15 | 3.75 | `none` | The screen stays white (global.flashHold) |

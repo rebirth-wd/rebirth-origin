@@ -1,4 +1,4 @@
-// Review frames of the space journey at fixed transition times, at 1440×900 and 390×844 (touch device).
+// Review frames of the space journey (the folder is emptied first) at fixed transition times, at 1440×900 and 390×844 (touch device).
 //   node docs/journey/tools/auto/final.mjs [--base http://localhost:4321] [--out docs/journey/shots/final]
 // Uses `/?journey=debug` (pause + step to an exact time; the overlay is hidden for the shot). Also prints, at the
 // contact frame, the live gap between the two reaching fingertips (world px, from the DOM hand markers) and the
@@ -16,12 +16,14 @@ const BASE = arg('base', 'http://localhost:4321');
 const OUT = path.resolve(repo, arg('out', 'docs/journey/shots/final'));
 const FRAMES = [
   ['01-approach', 'A', 2.5], ['02-approach-just-before-contact', 'A', 2.7], ['03-contact-full-smoke', 'A', 3.0],
-  ['04-dog-mid-recede', 'B', 1.5], ['05-flash-building', 'B', 3.45], ['06-flash-peak', 'B', 3.6], ['07-appdesign-stars', 'app', 4.5],
+  ['04-dog-mid-recede', 'B', 1.5], ['05-glow-from-dog', 'B', 3.0], ['06-flash-building', 'B', 3.45], ['07-flash-peak', 'B', 3.6],
+  ['08-appdesign-stars', 'app', 4.5],
 ];
 const SIZES = [
   ['desktop-1440x900', { viewport: { width: 1440, height: 900 } }],
   ['phone-390x844', { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }],
 ];
+fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'] });
 for (const [size, opts] of SIZES) {

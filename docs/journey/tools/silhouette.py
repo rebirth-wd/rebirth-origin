@@ -54,7 +54,7 @@ FIG = {
         erase=[],
         # clean helmet shell + visor (ellipses cx, cy, rx, ry) and backpack (rounded rect x0, y0, x1, y1, r) replace
         # the photo's head inside `zone`; `fine`: circles (cx, cy, r) smoothed lightly (gloves: keep the fingers)
-        helmet=dict(zone=(320, 60, 612, 226), shell=(471, 188, 100, 102), visor=(472, 196, 70, 72), pack=(326, 206, 606, 336, 48)),
+        helmet=dict(zone=(320, 60, 612, 226), shell=(471, 188, 100, 102), visor=(472, 196, 70, 72), pack=(326, 206, 606, 336, 48), groove=0.0),  # no seam line: the dome edge is the only outline
         fine=[(130, 230, 120), (805, 125, 120)],
         smoke=dict(c=(600, 300), mag=3.3, sat=1.05),                 # pink / magenta / violet
         parts=[
@@ -280,7 +280,7 @@ VOL_W = 34
 RIM = 0.16         # rim light on edges facing the light (upper left), over ~5 px
 LIGHT = (-0.55, -0.83)
 PACK_TONE = 0.84   # backpack a little denser than the helmet shell
-GROOVE = 0.34      # dark line where the helmet shell meets the pack / body
+GROOVE = 0.34      # dark line where the helmet shell meets the pack / body (per figure: helmet['groove'])
 VISOR = 0.36       # visor: dense dark smoke
 
 
@@ -300,7 +300,7 @@ def shading(F, dist, body, X, Y, Ws, P):
     in_shell, in_pack = smoothstep(-1, 1, shell), smoothstep(-1, 1, pack)
     in_pack = in_pack * (1 - smoothstep(-8, 8, body))                 # only where the pack shows beside the body
     gain = gain * (1 - (1 - PACK_TONE) * in_pack * (1 - in_shell))
-    gain = gain * (1 - GROOVE * np.exp(-(shell / 2.4) ** 2) * smoothstep(4, 10, dist))
+    gain = gain * (1 - h.get('groove', GROOVE) * np.exp(-(shell / 2.4) ** 2) * smoothstep(4, 10, dist))
     v = smoothstep(-1.1, 1.1, visor)
     depth = smoothstep(0, 0.6 * h['visor'][2] * S, visor)            # deeper towards the visor centre
     gain = gain * (1 - v) + v * (VISOR + 0.10 * (1 - depth))
