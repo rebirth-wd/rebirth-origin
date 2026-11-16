@@ -1,0 +1,21 @@
+---
+// Preview for the section-2 stat cards on the live gradient. Loops autoplay; ?seek=2.5 renders a frozen frame at t;
+// ?static leaves the finished static markup untouched (what reduced-motion / no-JS visitors see).
+import Base from '@/layouts/Base.astro';
+import Section2 from '@/components/sections/spacejourney/Section2.astro';
+---
+<Base title="Preview — section 2 cards">
+  <main class="pv rb-gradient-field"><Section2 /></main>
+</Base>
+<style>
+  .pv { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; padding-top: 80px; box-sizing: border-box; }
+</style>
+<script>
+  import { initSection2Cards } from '@/components/sections/section2cards/controller';
+  const p = new URLSearchParams(location.search);
+  if (!p.has('static')) {
+    const c = initSection2Cards(document.querySelector<HTMLElement>('[data-s2cards]')!);
+    (window as any).__s2c = c;
+    if (p.has('seek')) c.seek?.(Number(p.get('seek'))); else c.play(true);
+  }
+</script>
