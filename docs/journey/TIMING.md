@@ -46,10 +46,10 @@ All times are seconds from the start of **that** transition. Rows are sorted by 
 | `A.gradientIn` | 3.00 | 0.30 | 3.30 | `power1.inOut` | Full-screen smoke fades into the moving pink/purple/blue gradient |
 | `A.s2Heading` | 3.05 | 0.40 | 3.45 | `power2.out` | Section 2 heading fades up |
 | `A.s2Sub` | 3.16 | 0.40 | 3.56 | `power2.out` | Section 2 sub line fades up |
-| `A.s2Badge1` | 3.27 | 0.40 | 3.67 | `power2.out` | Badge 1 (2-3 build days) fades up |
-| `A.s2Badge2` | 3.38 | 0.40 | 3.78 | `power2.out` | Badge 2 (<2s load speed) fades up |
-| `A.s2Badge3` | 3.49 | 0.40 | 3.89 | `power2.out` | Badge 3 (100% client satisfaction) fades up |
-| `A.s2Badge4` | 3.60 | 0.40 | 4.00 | `power2.out` | Badge 4 (39k+ Astro users) fades up |
+| `A.s2Badge1` | 3.27 | 0.40 | 3.67 | `power2.out` | Card 1 (2-3 build days) fades up; the four card loops start |
+| `A.s2Badge2` | 3.38 | 0.40 | 3.78 | `power2.out` | Card 2 (<2s load speed) fades up |
+| `A.s2Badge3` | 3.49 | 0.40 | 3.89 | `power2.out` | Card 3 (100% client satisfaction) fades up |
+| `A.s2Badge4` | 3.60 | 0.40 | 4.00 | `power2.out` | Card 4 (39k+ Astro users) fades up |
 | `A.arrival` | 4.00 | — | 4.00 | `none` | Section 2 is displayed; the page rests here |
 
 Phones (≤ 767px): same timings as desktop (no overrides in `TIMING.mobile`).
@@ -58,11 +58,11 @@ Phones (≤ 767px): same timings as desktop (no overrides in `TIMING.mobile`).
 
 | key | start (s) | duration (s) | end (s) | ease | what happens |
 |---|---:|---:|---:|---|---|
-| `B.s2Badge4Out` | 0.00 | 0.33 | 0.33 | `power2.in` | Badge 4 fades out and lifts 20px (last in, first out) |
-| `B.s2Badge3Out` | 0.05 | 0.33 | 0.38 | `power2.in` | Badge 3 out |
-| `B.s2Badge2Out` | 0.10 | 0.33 | 0.43 | `power2.in` | Badge 2 out |
+| `B.s2Badge4Out` | 0.00 | 0.33 | 0.33 | `power2.in` | Card 4 fades out and lifts 20px (last in, first out) |
+| `B.s2Badge3Out` | 0.05 | 0.33 | 0.38 | `power2.in` | Card 3 out |
+| `B.s2Badge2Out` | 0.10 | 0.33 | 0.43 | `power2.in` | Card 2 out |
 | `B.gradToDog` | 0.14 | — | 0.14 | `none` | The gradient becomes the view through the screen-covering dog: a dog-shaped window onto the same live gradient (instant and invisible, the dog covers the screen) |
-| `B.s2Badge1Out` | 0.15 | 0.33 | 0.48 | `power2.in` | Badge 1 out |
+| `B.s2Badge1Out` | 0.15 | 0.33 | 0.48 | `power2.in` | Card 1 out |
 | `B.s2SubOut` | 0.20 | 0.33 | 0.53 | `power2.in` | Sub line out |
 | `B.s2HeadingOut` | 0.25 | 0.33 | 0.58 | `power2.in` | Heading out |
 | `B.dogRecede` | 0.44 | 2.12 | 2.56 | `power2.inOut` | The window shrinks: the dog recedes from the camera (scale: covering the screen → the size in the phone) |

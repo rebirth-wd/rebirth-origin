@@ -1,4 +1,76 @@
 ---
-// placeholder: replaced by the Satisfaction graphic
+// Satisfaction: a completion ring. Static markup = the FINISHED state (full gradient ring + check, all six side
+// chips lit). The loop (./satisfaction.ts) starts from the empty track, draws the ring clockwise from 12 o'clock,
+// lights each chip as the ring passes it, then draws the check and fires one soft pulse.
+// Only transform / opacity / stroke-dashoffset are animated. No text in the art (the card prints the stat).
+const CX = 132, CY = 77, R = 42;
+const ring = `M${CX} ${CY - R} a${R} ${R} 0 1 1 0 ${2 * R} a${R} ${R} 0 1 1 0 ${-2 * R}`;
+const PW = 46, PH = 16;
+// chips sit on a shallow arc around the ring; order = the order the ring passes them (right side down, left side up)
+const rows = [{ y: 43, inset: 28 }, { y: 69, inset: 20 }, { y: 95, inset: 28 }];
+const chips = [
+  ...rows.map((r) => ({ side: 'r', x: 264 - r.inset - PW, y: r.y, c: '#60a5fa' })),
+  ...[...rows].reverse().map((r) => ({ side: 'l', x: r.inset, y: r.y, c: '#f472b6' })),
+].map((c) => {
+  const dotX = c.side === 'r' ? c.x + 9 : c.x + PW - 9;
+  const b1 = c.side === 'r' ? c.x + 19 : c.x + PW - 19;
+  const b2 = c.side === 'r' ? c.x + PW - 9 : c.x + 9;
+  return { ...c, dotX, b1, b2, cy: c.y + PH / 2 };
+});
+// sparks: two small fans, above and below the ring (the sides belong to the chips)
+const sparks = [-28, 0, 28, 152, 180, 208].map((deg) => {
+  const a = (deg * Math.PI) / 180, ux = Math.sin(a), uy = -Math.cos(a);
+  const p = (r: number) => `${(CX + ux * r).toFixed(2)} ${(CY + uy * r).toFixed(2)}`;
+  return { d: `M${p(50)} L${p(55)}`, ux: +ux.toFixed(4), uy: +uy.toFixed(4) };
+});
 ---
-<svg viewBox="0 0 264 150" preserveAspectRatio="xMidYMid meet" data-s2c-art><rect x="20" y="20" width="224" height="110" rx="12" fill="none" stroke="rgba(255,255,255,.15)"/></svg>
+<svg viewBox="0 0 264 150" preserveAspectRatio="xMidYMid meet" data-s2c-art="satisfaction">
+  <defs>
+    <linearGradient id="satisfaction-grad" gradientUnits="userSpaceOnUse" x1="92" y1="42" x2="172" y2="112">
+      <stop offset="0" stop-color="#ff4fa3" /><stop offset=".5" stop-color="#a855f7" /><stop offset="1" stop-color="#3b82f6" />
+    </linearGradient>
+    <radialGradient id="satisfaction-core" gradientUnits="userSpaceOnUse" cx={CX} cy={CY} r={R}>
+      <stop offset="0" stop-color="#a855f7" stop-opacity=".30" /><stop offset=".7" stop-color="#8b5cf6" stop-opacity=".10" /><stop offset="1" stop-color="#8b5cf6" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- side chips: glass base (always there) + lit overlay -->
+  {chips.map((c) => (
+    <g>
+      <rect x={c.x} y={c.y} width={PW} height={PH} rx={PH / 2} fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.13)" stroke-width="1" />
+      <circle cx={c.dotX} cy={c.cy} r="3" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.2" />
+      <path d={`M${c.b1} ${c.cy} H${c.b2}`} stroke="rgba(255,255,255,.14)" stroke-width="3" stroke-linecap="round" />
+      <g data-sat-chip>
+        <rect x={c.x} y={c.y} width={PW} height={PH} rx={PH / 2} fill={c.c} fill-opacity=".10" stroke={c.c} stroke-opacity=".45" stroke-width="1" />
+        <path d={`M${c.b1} ${c.cy} H${c.b2}`} stroke="rgba(255,255,255,.62)" stroke-width="3" stroke-linecap="round" />
+        <g data-sat-dot data-ox={c.dotX} data-oy={c.cy}>
+          <circle cx={c.dotX} cy={c.cy} r="6.5" fill={c.c} opacity=".22" />
+          <circle cx={c.dotX} cy={c.cy} r="3.8" fill={c.c} />
+        </g>
+      </g>
+    </g>
+  ))}
+
+  <!-- ring -->
+  <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,.09)" stroke-width="7" />
+  <circle cx={CX} cy={CY} r={R - 4} fill="url(#satisfaction-core)" data-sat-core />
+  <g data-sat-ring fill="none" stroke="url(#satisfaction-grad)" stroke-linecap="round">
+    <path d={ring} pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="0" stroke-width="17" opacity=".10" data-sat-arc />
+    <path d={ring} pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="0" stroke-width="12" opacity=".16" data-sat-arc />
+    <path d={ring} pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="0" stroke-width="7" data-sat-arc />
+  </g>
+  <!-- leading point of the ring while it draws (hidden when finished) -->
+  <g data-sat-head opacity="0">
+    <circle cx={CX} cy={CY - R} r="7" fill="#fff" opacity=".22" />
+    <circle cx={CX} cy={CY - R} r="2.6" fill="#fff" />
+  </g>
+
+  <!-- completion: one pulse + sparks (both invisible in the finished state), then the check -->
+  <circle cx={CX} cy={CY} r={R} fill="none" stroke="url(#satisfaction-grad)" stroke-width="3" opacity="0" data-sat-pulse />
+  <g stroke="#f9a8d4" stroke-width="2.4" stroke-linecap="round" fill="none">
+    {sparks.map((s, i) => <path d={s.d} opacity="0" data-sat-spark data-ux={s.ux} data-uy={s.uy} stroke={i > 2 ? '#93c5fd' : '#f9a8d4'} />)}
+  </g>
+  <g data-sat-check>
+    <path d="M117 78 l10.5 10.5 l20 -22" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="0" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" data-sat-tick />
+  </g>
+</svg>

@@ -21,8 +21,12 @@ export interface Section2Cards {
 const BUILDERS: Record<string, (root: HTMLElement) => gsap.core.Timeline> = {
   builddays: buildDays, loadspeed: loadSpeed, satisfaction, astrousers: astroUsers,
 };
-/** Seconds between the starts of neighbouring cards' loops, so the four never move in step. */
-export const STAGGER = 0.35;
+/** All four loops start together from their empty first frame (a later start would leave that card showing its
+ *  finished static state until its loop began); their cycle lengths differ, so they drift out of step by themselves. */
+export const STAGGER = 0;
+
+/** The loops' first frame: just past 0 so every loop's time-0 `set`s (its empty state) are rendered. */
+const T0 = 0.001;
 
 const instances = new WeakMap<HTMLElement, Section2Cards>();
 
@@ -43,6 +47,7 @@ export function initSection2Cards(root: HTMLElement): Section2Cards {
       const b = BUILDERS[el.dataset.s2cGraphic || ''];
       if (b) tl.add(b(el), i * STAGGER);
     });
+    tl.time(T0);
     return tl;
   };
   const sync = () => {
@@ -55,7 +60,7 @@ export function initSection2Cards(root: HTMLElement): Section2Cards {
     play(restart = false) {
       master ??= make();
       frozen = false;
-      if (restart || !playing) { if (restart) master.time(0); }
+      if (restart) master.time(T0);
       playing = true;
       sync();
     },
@@ -63,7 +68,7 @@ export function initSection2Cards(root: HTMLElement): Section2Cards {
     seek(t: number) {
       master ??= make();
       playing = true; frozen = true;
-      master.pause(); master.time(t);
+      master.pause(); master.time(Math.max(T0, t));
     },
   };
   instances.set(root, api);

@@ -28,6 +28,7 @@ import { Observer } from 'gsap/Observer';
 import { SplitText } from 'gsap/SplitText';
 import { setReach, setIdle, posePoint, idleRollMax } from '../../space/astronaut';
 import { initPhoneShowcase } from '../phoneshowcase/controller';
+import { initSection2Cards } from '../section2cards/controller';
 import dogGeo from '../../space/dog.json';
 import rig from '../../space/rig.json';
 import { TIMING, EASES, CARRY, resolveTiming, transitionLength, type Beat, type TransitionA, type TransitionB } from './timing';
@@ -222,6 +223,8 @@ export function initSpaceJourney(root: HTMLElement) {
   const skip = root.querySelector<HTMLAnchorElement>('[data-sj-skip]');
   const showcaseRoot = q('[data-sj-showcase] [data-phoneshowcase]');
   const showcase = initPhoneShowcase(showcaseRoot);
+  // section-2 stat cards: four looping graphics (no-op under reduced motion)
+  const cards = initSection2Cards(q('[data-s2cards]'));
 
   mountSmoke(figL, smoke);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -486,9 +489,15 @@ export function initSpaceJourney(root: HTMLElement) {
     // ---------- discrete hand-offs: idle off while act 1 is hidden, and the flash → act 3 ----------
     const FLASH_T = LA + B.flashPeak.start - 1e-4;
     let flashed = false, dogStale = false;
+    // the card loops run only while the cards are on screen: from the first card's fade-in (A) until the last
+    // section-2 element has gone (B); entering from either side restarts them from their first frame
+    const CARDS_ON = A.s2Badge1.start, CARDS_OFF = LA + outEnd;
+    let cardsOn = false;
     function sync() {
       const t = tl.time();
       setIdleOff(t >= end(A.gradientIn) - 1e-6);
+      const on = t >= CARDS_ON - 1e-6 && t < CARDS_OFF;
+      if (on !== cardsOn) { cardsOn = on; if (on) cards.play(true); else cards.pause(); }
       const past = t >= FLASH_T;
       if (past === flashed) return;
       flashed = past;

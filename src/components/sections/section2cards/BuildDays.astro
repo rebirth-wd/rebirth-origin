@@ -1,4 +1,74 @@
 ---
-// placeholder: replaced by the BuildDays graphic
+// BuildDays — "2-3 build days": a tiny build timeline. Three glass day chips (pink → violet → blue) joined by a track
+// are ticked off in turn, then the track runs on into a LIVE pill with a success-green dot.
+// This markup is the FINISHED state (all three days done, LIVE visible); ./buildDays.ts runs the loop.
+// Layers per chip: the quiet "empty" base (always there) + a [data-bd-done] overlay that the loop fades/pops in.
+const CY = 45;            // node (check circle) centre line; the track joins the chips on it
+const days = [
+  { n: 1, x: 20, c: '#f472b6', k: 'p' },
+  { n: 2, x: 101, c: '#a78bfa', k: 'v' },
+  { n: 3, x: 182, c: '#60a5fa', k: 'b' },
+].map((d) => ({ ...d, cx: d.x + 31 }));
+// track segments: chip 1 → 2, chip 2 → 3, then out of chip 3 down and round into the LIVE pill
+const links = [
+  { d: `M82 ${CY}H101`, g: 'builddays-l1' },
+  { d: `M163 ${CY}H182`, g: 'builddays-l2' },
+  { d: 'M213 84V105Q213 115 203 115H165', g: 'builddays-l3' },
+];
 ---
-<svg viewBox="0 0 264 150" preserveAspectRatio="xMidYMid meet" data-s2c-art><rect x="20" y="20" width="224" height="110" rx="12" fill="none" stroke="rgba(255,255,255,.15)"/></svg>
+<svg viewBox="0 0 264 150" preserveAspectRatio="xMidYMid meet" data-s2c-art="builddays">
+  <defs>
+    <linearGradient id="builddays-fp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4fa3" /><stop offset="1" stop-color="#f472b6" /></linearGradient>
+    <linearGradient id="builddays-fv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a855f7" /><stop offset="1" stop-color="#8b5cf6" /></linearGradient>
+    <linearGradient id="builddays-fb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b82f6" /><stop offset="1" stop-color="#60a5fa" /></linearGradient>
+    {days.map((d) => (
+      <radialGradient id={`builddays-h${d.k}`} cx={d.cx} cy={CY} r="26" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color={d.c} stop-opacity=".42" /><stop offset="1" stop-color={d.c} stop-opacity="0" />
+      </radialGradient>
+    ))}
+    <linearGradient id="builddays-l1" x1="82" y1="0" x2="101" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f472b6" /><stop offset="1" stop-color="#a78bfa" /></linearGradient>
+    <linearGradient id="builddays-l2" x1="163" y1="0" x2="182" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#a78bfa" /><stop offset="1" stop-color="#60a5fa" /></linearGradient>
+    <linearGradient id="builddays-l3" x1="213" y1="84" x2="165" y2="115" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#60a5fa" /><stop offset="1" stop-color="#2ebd6b" /></linearGradient>
+    {days.map((d) => <clipPath id={`builddays-c${d.k}`}><rect x={d.x} y="20" width="62" height="64" rx="13" /></clipPath>)}
+  </defs>
+
+  <!-- track: hairline base + gradient progress strokes -->
+  <g fill="none" stroke-width="2">
+    {links.map((l) => <path d={l.d} stroke="rgba(255,255,255,.14)" />)}
+    {links.map((l) => <path d={l.d} stroke={`url(#${l.g})`} pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="0" data-bd-link />)}
+  </g>
+
+  <!-- day chips -->
+  {days.map((d) => (
+    <g data-bd-chip data-ox={d.cx}>
+      <rect x={d.x + 0.5} y="20.5" width="61" height="63" rx="12.5" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.14)" />
+      <circle cx={d.cx} cy={CY} r="9.5" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="1.5" />
+      <text class="builddays-t" x={d.cx} y="73" fill="rgba(255,255,255,.55)">DAY {d.n}</text>
+      <g data-bd-done>
+        <rect x={d.x} y="20" width="62" height="64" fill={`url(#builddays-h${d.k})`} clip-path={`url(#builddays-c${d.k})`} />
+        <rect x={d.x + 0.5} y="20.5" width="61" height="63" rx="12.5" fill="none" stroke={d.c} stroke-opacity=".75" />
+        <g data-bd-node data-ox={d.cx}>
+          <circle cx={d.cx} cy={CY} r="10.5" fill={`url(#builddays-f${d.k})`} />
+          <path d={`M${d.cx - 4.4} ${CY + 0.4}l3.1 3.1 5.7-6.4`} fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="0" data-bd-check />
+        </g>
+        <text class="builddays-t" x={d.cx} y="73" fill="rgba(255,255,255,.92)">DAY {d.n}</text>
+      </g>
+    </g>
+  ))}
+
+  <!-- LIVE pill: a hairline ghost slot (so the empty track has somewhere to go) + the pill itself -->
+  <rect x="99.5" y="102.5" width="65" height="25" rx="12.5" fill="rgba(255,255,255,.03)" stroke="rgba(255,255,255,.14)" />
+  <g data-bd-live>
+    <rect x="99.5" y="102.5" width="65" height="25" rx="12.5" fill="rgba(46,189,107,.14)" stroke="rgba(46,189,107,.6)" />
+    <circle cx="114" cy="115" r="3.6" fill="#2ebd6b" opacity="0" data-bd-ring />
+    <circle cx="114" cy="115" r="6.6" fill="#2ebd6b" opacity=".22" />
+    <circle cx="114" cy="115" r="3.6" fill="#2ebd6b" data-bd-dot />
+    <text class="builddays-t builddays-live" x="124.5" y="119.2" fill="rgba(255,255,255,.92)">LIVE</text>
+  </g>
+</svg>
+
+<style>
+  .builddays-t { font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: .07em; text-anchor: middle; }
+  .builddays-live { text-anchor: start; }
+</style>
