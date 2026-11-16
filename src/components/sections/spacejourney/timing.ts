@@ -3,13 +3,14 @@
 // The page rests only at three stops: hero → section2 → appdesign. The first scroll intent at a stop (wheel,
 // trackpad, swipe, keys) starts a transition, which then plays by TIME to the end on its own:
 //   A = hero → section2      (act 1: figures converge and reach, camera into the left chest, smoke, gradient, section 2)
-//   B = section2 → appdesign (act 2: section 2 out, the dog recedes left → centre, beam, flash, phone showcase)
+//   B = section2 → appdesign (act 2: section 2 out, the dog recedes left → centre, the flash, phone showcase)
 // Going back plays the same timeline in reverse (at `global.reverseSpeed`).
 //
 // Every beat is { start, dur, ease, what }:
 //   start  seconds from the start of ITS transition (A or B each start at 0)
 //   dur    seconds (0 = an instant: a switch, a hand-off or a marker)
 //   ease   a GSAP ease name (https://gsap.com/docs/v3/Eases): 'none', 'sine.inOut', 'power2.in', 'expo.out', ...
+//          or one of ours from EASES below, e.g. 'glide(6)'
 //   what   plain English, shown in docs/journey/TIMING.md
 // A transition ends ("arrives") at its `arrival` beat's start (if a beat runs past it the transition is extended to
 // that beat's end and a warning is logged in the browser console).
@@ -21,6 +22,20 @@
 // Starting values: the previous scroll-scrubbed timeline converted to seconds (act 1 at 1.25 s per viewport-height
 // of scroll, section 2's entrance a little tighter; act 2 at 1.385 s per viewport-height), so A ≈ 4.0 s and B ≈ 3.6 s
 // to the flash peak. Several beats share a start on purpose (they overlapped in the scrubbed version too).
+
+/** `glide(k)`: starts from rest, covers most of the way early, then keeps gliding in at a slowly falling speed that
+ *  never reaches zero before the end (a critically damped approach, normalised to end exactly at 1). Larger k = more
+ *  of the way covered early and a slower final glide. Used by A.approach: the figures never stop before the hands
+ *  touch. */
+const glide = (k: number) => {
+  const f = (x: number) => 1 - (1 + k * x) * Math.exp(-k * x);
+  const n = f(1);
+  return (p: number) => (p <= 0 ? 0 : p >= 1 ? 1 : f(p) / n);
+};
+/** Custom eases, registered with GSAP by journey.ts. `name` alone = the default k; `name(k)` = configured. */
+export const EASES: Record<string, ((p: number) => number) & { config?: (k: number) => (p: number) => number }> = {
+  glide: Object.assign(glide(6), { config: (k: number) => glide(+k || 6) }),
+};
 
 export type Beat = {
   /** seconds from the start of its transition */
@@ -35,10 +50,10 @@ export type Beat = {
 
 export type TransitionA = {
   heroOut: Beat; leftFigureToFront: Beat;
-  converge: Beat; convergeSlow: Beat; handsTouch: Beat;
+  approach: Beat;
   turn: Beat; reach: Beat;
   cameraTwoShot: Beat; cameraFocus: Beat; cameraRush: Beat; cameraCentre: Beat;
-  idleFreeze: Beat; idleCorrection: Beat;
+  idleCorrection: Beat;
   spaceZoom: Beat; smokeIn: Beat; gradientIn: Beat;
   s2Heading: Beat; s2Sub: Beat; s2Badge1: Beat; s2Badge2: Beat; s2Badge3: Beat; s2Badge4: Beat;
   arrival: Beat;
@@ -47,7 +62,7 @@ export type TransitionA = {
 export type TransitionB = {
   s2Badge4Out: Beat; s2Badge3Out: Beat; s2Badge2Out: Beat; s2Badge1Out: Beat; s2SubOut: Beat; s2HeadingOut: Beat;
   gradToDog: Beat; dogRecede: Beat; dogDrift: Beat; dogDetail: Beat; settle: Beat;
-  beamIgnite: Beat; beamGrow: Beat; bloom: Beat; flashIn: Beat; flashPeak: Beat;
+  bloom: Beat; flashIn: Beat; flashPeak: Beat;
   whiteHold: Beat; whiteFade: Beat;
   arrival: Beat;
 };
@@ -91,17 +106,14 @@ export const TIMING: JourneyTiming = {
   A: {
     heroOut:           { start: 0.00, dur: 0.72, ease: 'power2.in',    what: 'Hero copy, button and phone fade out and lift 46px' },
     leftFigureToFront: { start: 0.75, dur: 0,    ease: 'none',         what: 'Copy gone: the left figure (the zoom target) is lifted in front of the hero layer' },
-    converge:          { start: 0.00, dur: 1.80, ease: 'power2.inOut', what: 'The figures start moving towards each other (to 95% of the way)' },
-    convergeSlow:      { start: 1.80, dur: 0.54, ease: 'sine.inOut',   what: 'They slow down as the hands come close (to 98.5%)' },
-    handsTouch:        { start: 2.34, dur: 0.66, ease: 'expo.out',     what: 'The last gap closes; the END of this beat is the moment the hands touch' },
+    approach:          { start: 0.00, dur: 3.00, ease: 'glide(6)',     what: 'The figures float towards each other without stopping; the END is the moment the hands touch (= the end of cameraRush)' },
     turn:              { start: 0.12, dur: 1.98, ease: 'sine.inOut',   what: 'Both figures rotate from head-first to the face-to-face clasp pose' },
     reach:             { start: 0.36, dur: 1.62, ease: 'power2.inOut', what: 'The reaching arms extend (--reach 0 → 1)' },
     cameraTwoShot:     { start: 0.00, dur: 2.16, ease: 'power2.in',    what: 'Camera push towards both figures, ending on the held two-shot (×3.2 desktop, ×2.1 phone)' },
     cameraFocus:       { start: 0.18, dur: 2.40, ease: 'power2.inOut', what: 'Camera pans so the left chest moves to the two-shot framing point' },
     cameraRush:        { start: 2.16, dur: 0.84, ease: 'power4.in',    what: 'Final rush into the left chest; the END is the moment the screen is fully smoke' },
     cameraCentre:      { start: 2.16, dur: 0.84, ease: 'power2.in',    what: 'During the rush the chest moves from the framing point to the exact screen centre' },
-    idleFreeze:        { start: 2.16, dur: 0,    ease: 'none',         what: 'The figures’ idle spacewalk motion freezes so the contact is exact' },
-    idleCorrection:    { start: 2.16, dur: 0.84, ease: 'sine.inOut',   what: 'The frozen idle offset of hands and chest is corrected so they meet precisely' },
+    idleCorrection:    { start: 2.16, dur: 0.84, ease: 'sine.inOut',   what: 'The idle keeps floating; its live offset of the hands and the chest window is folded in so they meet exactly' },
     spaceZoom:         { start: 0.00, dur: 3.00, ease: 'power2.in',    what: 'The star field and moon scale 1 → 1.35 about the chest (parallax)' },
     smokeIn:           { start: 2.64, dur: 0.30, ease: 'power1.inOut', what: 'The soft smoke texture cross-fades in over the chest' },
     gradientIn:        { start: 3.00, dur: 0.30, ease: 'power1.inOut', what: 'Full-screen smoke fades into the moving pink/purple/blue gradient' },
@@ -125,11 +137,9 @@ export const TIMING: JourneyTiming = {
     gradToDog:    { start: 0.14, dur: 0.30, ease: 'power1.inOut', what: 'The plain gradient cross-fades into the screen-covering dog (same gradient inside its silhouette)' },
     dogRecede:    { start: 0.44, dur: 2.12, ease: 'power2.inOut', what: 'The dog recedes from the camera (scale: covering the screen → the size in the phone)' },
     dogDrift:     { start: 0.44, dur: 2.12, ease: 'power2.inOut', what: 'The dog drifts on a curve: out to the left, then to the centre (the phone screen)' },
-    dogDetail:    { start: 0.97, dur: 0.85, ease: 'power1.inOut', what: 'Helmet glass, tank and rim-light details fade in as the dog gets small' },
-    settle:       { start: 2.56, dur: 0.14, ease: 'none',         what: 'Hold: the dog has stopped, nothing moves before the beam (marker only; move beamIgnite/beamGrow to change it)' },
-    beamIgnite:   { start: 2.70, dur: 0.07, ease: 'none',         what: 'The thin beam of light appears in the middle of the screen' },
-    beamGrow:     { start: 2.70, dur: 0.53, ease: 'expo.out',     what: 'The beam shoots out horizontally to both edges' },
-    bloom:        { start: 3.18, dur: 0.42, ease: 'power2.in',    what: 'The beam swells vertically into a band of light (beam → flash bloom)' },
+    dogDetail:    { start: 0.97, dur: 0.85, ease: 'power1.inOut', what: 'The helmet glass and the volume shading fade in as the dog gets small (--dog-detail 0 → 1)' },
+    settle:       { start: 2.56, dur: 0.62, ease: 'none',         what: 'The dog has arrived and floats in place (legs and tail keep moving) until the light (marker only; move bloom to change it)' },
+    bloom:        { start: 3.18, dur: 0.42, ease: 'power2.in',    what: 'A soft band of light swells out of the middle of the screen (no thin line) into the flash' },
     flashIn:      { start: 3.32, dur: 0.28, ease: 'power2.in',    what: 'The screen goes white' },
     flashPeak:    { start: 3.60, dur: 0,    ease: 'none',         what: 'Flash peak: the phone showcase starts (showcase.play()); dog and space are hidden. Going back: showcase.reset()' },
     whiteHold:    { start: 3.60, dur: FLASH_HOLD, ease: 'none',   what: 'The screen stays white (global.flashHold)' },

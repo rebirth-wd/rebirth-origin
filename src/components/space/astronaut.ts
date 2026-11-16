@@ -6,6 +6,7 @@
 // At reach = 1 the reaching arm is in the source pose (fully extended, hand at --hand-x/--hand-y, idle damped
 // on that arm so the hand is steady); at reach = 0 it is relaxed/bent towards the body.
 import { gsap } from 'gsap';
+import rig from './rig.json';
 
 type Who = 'left' | 'right';
 interface Part { el: HTMLElement; set: (v: number) => void; a: { r: number; s: number }; reach?: number; reachDamp?: boolean }
@@ -64,15 +65,18 @@ function readReach(s: State) {
   }
 }
 
-function apply(s: State) {
-  readReach(s);
+/** rotation (deg) of one part right now: idle × amplitude (damped on the reaching arm as reach → 1) + relaxed bend */
+function partRot(s: State, p: Part) {
   const r = s.reach;
   const ease = r * r * (3 - 2 * r); // smooth arrival of the hand
-  const k = s.amp;                   // idle amplitude (setIdleAmp); reach is not scaled
-  for (const p of s.parts) {
-    const damp = p.reachDamp ? 1 - 0.9 * ease : 1;
-    p.set((p.a.r + p.a.s) * damp * k + (p.reach ?? 0) * (1 - ease));
-  }
+  const damp = p.reachDamp ? 1 - 0.9 * ease : 1;
+  return (p.a.r + p.a.s) * damp * s.amp + (p.reach ?? 0) * (1 - ease); // amp (setIdleAmp) does not scale reach
+}
+
+function apply(s: State) {
+  readReach(s);
+  for (const p of s.parts) p.set(partRot(s, p));
+  const k = s.amp;
   s.rigSet.x(s.rigP.x * k); s.rigSet.y(s.rigP.y * k); s.rigSet.r(s.rigP.r * k);
 }
 
@@ -159,6 +163,71 @@ export function chestPoint(root: HTMLElement) {
   const r = root.querySelector('[data-chest-marker]')!.getBoundingClientRect();
   return { x: r.left, y: r.top };
 }
+// ---------- pose maths (no layout): where a point of the rest pose is right now ----------
+type RigPart = { name: string; parent: string | null; css: { left: number; top: number; width: number; height: number; ox: number; oy: number } };
+type Pt = { x: number; y: number };
+const rot = (p: Pt, deg: number): Pt => {
+  const a = (deg * Math.PI) / 180, c = Math.cos(a), si = Math.sin(a);
+  return { x: p.x * c - p.y * si, y: p.x * si + p.y * c };
+};
+
+/** Where the rest-pose point `rest` (fractions of the box; it belongs to `part`) is in the CURRENT pose: the same
+ *  idle, reach and bob / roll values this frame paints (reach is read from the inline `--reach`). Fractions of the
+ *  box, before any transform you put on the root or a wrapper. Pure arithmetic from rig.json: no layout read, so it
+ *  is cheap to call every frame (handPoint / chestPoint measure the DOM instead). Also returns the part's total
+ *  rotation in degrees (rig roll + the chain of joint rotations). */
+export function posePoint(root: HTMLElement, part: string, rest: Pt): { x: number; y: number; rot: number } {
+  const s = states.get(root);
+  const R = (rig as any)[(root.dataset.astronaut as Who) || 'left'] as { width: number; height: number; chest: number[]; parts: RigPart[] };
+  const W = R.width, H = R.height;
+  if (s) readReach(s);
+  // chain root → part with each part's rest rect in box px
+  const chain: { p: RigPart; x: number; y: number; w: number; h: number; deg: number }[] = [];
+  for (let name: string | null = part; name;) {
+    const p = R.parts.find((q) => q.name === name);
+    if (!p) break;
+    chain.unshift({ p, x: 0, y: 0, w: 0, h: 0, deg: 0 });
+    name = p.parent;
+  }
+  let px = 0, py = 0, pw = W, ph = H;
+  for (const c of chain) {
+    c.x = px + (c.p.css.left / 100) * pw; c.y = py + (c.p.css.top / 100) * ph;
+    c.w = (c.p.css.width / 100) * pw; c.h = (c.p.css.height / 100) * ph;
+    const live = s?.parts.find((q) => q.el.dataset.part === c.p.name);
+    c.deg = s && live ? partRot(s, live) : 0;
+    px = c.x; py = c.y; pw = c.w; ph = c.h;
+  }
+  // walk back up: local point in each part → its parent (rotation about the part's transform-origin)
+  let q: Pt = { x: rest.x * W, y: rest.y * H };
+  let total = 0;
+  for (let i = chain.length - 1; i >= 0; i--) {
+    const c = chain[i];
+    const o = { x: c.x + (c.p.css.ox / 100) * c.w, y: c.y + (c.p.css.oy / 100) * c.h }; // origin, box px at rest
+    const v = rot({ x: q.x - o.x, y: q.y - o.y }, c.deg);
+    q = { x: o.x + v.x, y: o.y + v.y };
+    total += c.deg;
+  }
+  // the rig: translate(xPercent, yPercent) rotate(r) about the chest
+  const k = s ? s.amp : 0, rp = s ? s.rigP : { x: 0, y: 0, r: 0 };
+  const o = { x: (R.chest[0] / 100) * W, y: (R.chest[1] / 100) * H };
+  const v = rot({ x: q.x - o.x, y: q.y - o.y }, rp.r * k);
+  total += rp.r * k;
+  return { x: (o.x + (rp.x * k / 100) * W + v.x) / W, y: (o.y + (rp.y * k / 100) * H + v.y) / H, rot: total };
+}
+
+/** Largest idle rotation (deg) the given part can reach in total: the rig roll plus every joint above it (both sine
+ *  amplitudes each, before the ±10% period jitter, which does not change amplitudes). */
+export function idleRollMax(who: Who, part = 'torso'): number {
+  const R = (rig as any)[who] as { parts: RigPart[] };
+  let deg = FLOAT[who][4];
+  for (let name: string | null = part; name;) {
+    const c = IDLE[who][name];
+    deg += c ? c[0] + c[2] : 0;
+    name = R.parts.find((q) => q.name === name)?.parent ?? null;
+  }
+  return deg;
+}
+
 /** Scale every idle term (limb sway, whole-figure bob and roll) by n (default 1; 0 = rest pose, idle clock keeps
  *  running). Applied at once, also while the idle loop is paused. Reach is not affected. */
 export function setIdleAmp(root: HTMLElement, n: number): void {

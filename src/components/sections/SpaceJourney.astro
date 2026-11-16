@@ -70,10 +70,9 @@ import smoke from '../../assets/space/smoke-pink.webp';
       <PhoneShowcase />
     </div>
 
-    <!-- ================= light: beam, bloom, flash ================= -->
+    <!-- ================= light: bloom, flash ================= -->
     <div class="sj-l sj-fx" data-sj-fx aria-hidden="true">
       <div class="sj-bloom" data-sj-bloom></div>
-      <div class="sj-beam" data-sj-beam></div>
       <div class="sj-l sj-flash" data-sj-flash></div>
     </div>
   </div>
@@ -155,18 +154,11 @@ import smoke from '../../assets/space/smoke-pink.webp';
   .sj-dogbox { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
   .sj-dogbox > :global([data-dog]) { width: 100%; }
 
-  /* beam: a thin bright core with a soft coloured halo; scaleX grows from the centre */
-  .sj-beam {
-    position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px;
-    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,244,255,.85) 14%, #fff 50%, rgba(255,244,255,.85) 86%, rgba(255,255,255,0) 100%);
-    box-shadow: 0 0 4px 1px rgba(255,255,255,.95), 0 0 18px 3px rgba(240,190,255,.7), 0 0 52px 9px rgba(170,150,255,.4);
-    transform: scaleX(0); opacity: 0;
-  }
-  /* bloom: a soft horizontal band of light that swells vertically out of the beam */
+  /* bloom: a soft horizontal band of light that swells vertically out of the middle of the screen into the flash */
   .sj-bloom {
     position: absolute; left: 0; right: 0; top: 0; bottom: 0;
     background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(250,236,255,.5) 34%, #fff 50%, rgba(250,236,255,.5) 66%, rgba(255,255,255,0) 100%);
-    transform: scaleY(0.02); opacity: 0;
+    transform: scaleY(0.35); opacity: 0;
   }
   .sj-flash { background: #fffdfe; opacity: 0; }
 </style>
