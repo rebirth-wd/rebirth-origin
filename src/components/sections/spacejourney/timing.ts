@@ -2,9 +2,10 @@
 //
 // The page rests only at three stops: hero → section2 → appdesign. The first scroll intent at a stop (wheel,
 // trackpad, swipe, keys) starts a transition, which then plays by TIME to the end on its own:
-//   A = hero → section2      (act 1: figures converge and reach, camera into the left chest, smoke, gradient, section 2)
+//   A = hero → section2      (act 1: figures converge and reach, camera into the left chest window until the screen
+//                              is all gradient, section 2)
 //   B = section2 → appdesign (act 2: section 2 out, the gradient becomes a dog-shaped window that recedes left →
-//                              centre, a sudden camera flash, phone showcase)
+//                              centre while the dog slowly turns, a sudden camera flash, phone showcase)
 // Going back plays the same timeline in reverse (at `global.reverseSpeed`).
 //
 // Every beat is { start, dur, ease, what }:
@@ -63,14 +64,14 @@ export type TransitionA = {
   turn: Beat; reach: Beat;
   cameraTwoShot: Beat; cameraFocus: Beat; cameraRush: Beat; cameraCentre: Beat;
   idleCorrection: Beat;
-  spaceZoom: Beat; smokeIn: Beat; gradientIn: Beat;
+  spaceZoom: Beat; gradientIn: Beat;
   s2Heading: Beat; s2Sub: Beat; s2Badge1: Beat; s2Badge2: Beat; s2Badge3: Beat; s2Badge4: Beat;
   arrival: Beat;
 };
 
 export type TransitionB = {
   s2Badge4Out: Beat; s2Badge3Out: Beat; s2Badge2Out: Beat; s2Badge1Out: Beat; s2SubOut: Beat; s2HeadingOut: Beat;
-  gradToDog: Beat; dogRecede: Beat; dogDrift: Beat; dogDetail: Beat; settle: Beat;
+  gradToDog: Beat; dogRecede: Beat; dogDrift: Beat; dogTurn: Beat; settle: Beat;
   flashIn: Beat; flashPeak: Beat;
   whiteHold: Beat; whiteFade: Beat;
   arrival: Beat;
@@ -120,12 +121,11 @@ export const TIMING: JourneyTiming = {
     reach:             { start: 0.36, dur: 1.62, ease: 'power2.inOut', what: 'The reaching arms extend (--reach 0 → 1)' },
     cameraTwoShot:     { start: 0.00, dur: 2.16, ease: 'power2.in',    what: 'Camera push towards both figures, ending on the held two-shot (×3.2 desktop, ×2.1 phone)' },
     cameraFocus:       { start: 0.18, dur: 2.40, ease: 'power2.inOut', what: 'Camera pans so the left chest moves to the two-shot framing point' },
-    cameraRush:        { start: 2.16, dur: 0.84, ease: 'carry',        what: 'Final rush into the left chest, continuing at the speed the push ended with (no camera pause); the END is the moment the screen is fully smoke' },
+    cameraRush:        { start: 2.16, dur: 0.84, ease: 'carry',        what: 'Final rush into the left chest, continuing at the speed the push ended with (no camera pause); the END is the moment the screen is fully gradient' },
     cameraCentre:      { start: 2.16, dur: 0.84, ease: 'power2.in',    what: 'During the rush the chest moves from the framing point to the exact screen centre' },
     idleCorrection:    { start: 2.16, dur: 0.84, ease: 'sine.inOut',   what: 'The idle keeps floating; its live offset of the hands and the chest window is folded in so they meet exactly' },
     spaceZoom:         { start: 0.00, dur: 3.00, ease: 'power2.in',    what: 'The star field and moon scale 1 → 1.35 about the chest (parallax)' },
-    smokeIn:           { start: 2.64, dur: 0.30, ease: 'power1.inOut', what: 'The soft smoke texture cross-fades in over the chest' },
-    gradientIn:        { start: 3.00, dur: 0.30, ease: 'power1.inOut', what: 'Full-screen smoke fades into the moving pink/purple/blue gradient' },
+    gradientIn:        { start: 3.00, dur: 0,    ease: 'none',         what: 'The chest window fills the screen: hand-off to the same live gradient in act 2 (instant and invisible)' },
     s2Heading:         { start: 3.05, dur: 0.40, ease: 'power2.out',   what: 'Section 2 heading fades up' },
     s2Sub:             { start: 3.16, dur: 0.40, ease: 'power2.out',   what: 'Section 2 sub line fades up' },
     s2Badge1:          { start: 3.27, dur: 0.40, ease: 'power2.out',   what: 'Badge 1 (2-3 build days) fades up' },
@@ -146,8 +146,8 @@ export const TIMING: JourneyTiming = {
     gradToDog:    { start: 0.14, dur: 0,    ease: 'none',         what: 'The gradient becomes the view through the screen-covering dog: a dog-shaped window onto the same live gradient (instant and invisible, the dog covers the screen)' },
     dogRecede:    { start: 0.44, dur: 2.12, ease: 'power2.inOut', what: 'The window shrinks: the dog recedes from the camera (scale: covering the screen → the size in the phone)' },
     dogDrift:     { start: 0.44, dur: 2.12, ease: 'power2.inOut', what: 'The dog drifts on a curve: out to the left, then to the centre (the phone screen)' },
-    dogDetail:    { start: 0.97, dur: 0.85, ease: 'power1.inOut', what: 'The helmet glass and the volume shading fade in as the dog gets small (--dog-detail 0 → 1)' },
-    settle:       { start: 2.56, dur: 0,    ease: 'none',         what: 'The dog has arrived on the phone screen rect (marker); its legs and tail keep floating' },
+    dogTurn:      { start: 0.44, dur: 2.41, ease: 'power1.in',    what: 'The dog slowly turns off axis as it floats away (roll 0 → 16° desktop, still turning when the flash fires)' },
+    settle:       { start: 2.56, dur: 0,    ease: 'none',         what: 'The dog has arrived on the phone screen rect (marker), still slowly turning; its legs and tail keep paddling' },
     flashIn:      { start: 2.81, dur: 0.04, ease: 'none',         what: 'Camera flash: after a 0.25 s still beat the whole screen snaps to white (about 2 frames, no build-up)' },
     flashPeak:    { start: 2.85, dur: 0,    ease: 'none',         what: 'Flash peak: the phone showcase starts (showcase.play()); dog and space are hidden. Going back: showcase.reset()' },
     whiteHold:    { start: 2.85, dur: FLASH_HOLD, ease: 'none',   what: 'The screen stays white (global.flashHold)' },

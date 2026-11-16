@@ -1,8 +1,9 @@
-// Bakes the two flat copies of each dog part that the window effect needs, from the smoke parts' alpha:
-//   dog-<part>-matte.webp  alpha kept, RGB pure white, same pixel size (the white matte for the gradient window)
-//   dog-<part>-knock.webp  alpha kept, RGB pure black, half the pixel size (the black knockout; it is only a mask
-//                          that gets scaled, so half resolution is plenty and saves bytes)
-// Lossless so the alpha edge stays crisp. Run from the repo root: node docs/journey/tools/dog-matte.mjs
+// Bakes the two flat copies of each dog part and each astronaut part that the keyhole effect needs, from the smoke
+// parts' alpha (dog-<part>-*.webp and astronaut-<left|right>-<part>-*.webp):
+//   <name>-matte.webp  alpha kept, RGB pure white, same pixel size (the white matte for the gradient window)
+//   <name>-knock.webp  alpha kept, RGB pure black, half the pixel size (the black knockout; it is only a mask
+//                      that gets scaled, so half resolution is plenty and saves bytes)
+// Lossless so the alpha edge stays crisp. Run from the repo root: node docs/journey/tools/mattes.mjs
 import sharp from 'sharp';
 import { readFileSync, statSync } from 'node:fs';
 
@@ -18,19 +19,26 @@ async function flat(alpha, w, h, v, out) {
   return statSync(out).size;
 }
 
+const rig = JSON.parse(readFileSync('src/components/space/rig.json', 'utf8'));
+// every smoke part to bake: [file name, base name of the outputs]
+const jobs = [
+  ...dog.parts.map((p) => [p.file, `dog-${p.name}`]),
+  ...['left', 'right'].flatMap((who) => rig[who].parts.map((p) => [p.file, `astronaut-${who}-${p.name}`])),
+];
+
 let total = 0;
-for (const p of dog.parts) {
-  const src = `${dir}/${p.file}`;
+for (const [file, base] of jobs) {
+  const src = `${dir}/${file}`;
   const { data: alpha, info } = await sharp(src).ensureAlpha().extractChannel('alpha').raw().toBuffer({ resolveWithObject: true });
   const [w, h] = [info.width, info.height];
-  const m = `${dir}/dog-${p.name}-matte.webp`;
+  const m = `${dir}/${base}-matte.webp`;
   const sm = await flat(alpha, w, h, 255, m);
   const [kw, kh] = [Math.round(w / 2), Math.round(h / 2)];
   const half = await sharp(alpha, { raw: { width: w, height: h, channels: 1 } }).resize(kw, kh, { kernel: 'lanczos3' }).raw().toBuffer();
-  const k = `${dir}/dog-${p.name}-knock.webp`;
+  const k = `${dir}/${base}-knock.webp`;
   const sk = await flat(half, kw, kh, 0, k);
   console.log(`${m}  ${w}x${h}  ${sm}`);
   console.log(`${k}  ${kw}x${kh}  ${sk}`);
   total += sm + sk;
 }
-console.log(`total ${total} bytes (12 files)`);
+console.log(`total ${total} bytes (${jobs.length * 2} files)`);

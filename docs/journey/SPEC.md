@@ -25,6 +25,12 @@ screen shooting out horizontally in both directions, becoming a screen-wide flas
 > Client changes (Nov 2026): the figures keep floating without a pause until their hands touch, at the moment the
 > screen is fully smoke; the thin beam is gone (the white flash stays); the App Design screen has the star field
 > behind the phones. Current beats: `docs/journey/TIMING.md`.
+>
+> Keyhole rule (Nov 2026, supersedes the smoke and helmet-glass wording above and below): the stage has two
+> full-screen backgrounds, the stars and the live gradient, and every character (both astronauts and the dog) is a
+> keyhole, a complete flat silhouette onto that gradient with no helmet, visor, glass or shading drawn on it. The
+> screen is therefore fully gradient (not smoke) when the hands touch, and the hand-off to section 2's gradient is
+> instant; `smoke-pink.webp` is no longer used on the stage. The dog paddles its limbs and slowly turns as it recedes.
 
 **Automatic, act 3 (triggered by the flash, not scrubbed).** As the flash quickly fades a mobile phone has appeared
 (like the phone in the other sections) and the dog + space background are now frozen inside the phone's screen.

@@ -39,11 +39,10 @@ All times are seconds from the start of **that** transition. Rows are sorted by 
 | `A.cameraFocus` | 0.18 | 2.40 | 2.58 | `power2.inOut` | Camera pans so the left chest moves to the two-shot framing point |
 | `A.reach` | 0.36 | 1.62 | 1.98 | `power2.inOut` | The reaching arms extend (--reach 0 → 1) |
 | `A.leftFigureToFront` | 0.75 | — | 0.75 | `none` | Copy gone: the left figure (the zoom target) is lifted in front of the hero layer |
-| `A.cameraRush` | 2.16 | 0.84 | 3.00 | `carry` | Final rush into the left chest, continuing at the speed the push ended with (no camera pause); the END is the moment the screen is fully smoke |
+| `A.cameraRush` | 2.16 | 0.84 | 3.00 | `carry` | Final rush into the left chest, continuing at the speed the push ended with (no camera pause); the END is the moment the screen is fully gradient |
 | `A.cameraCentre` | 2.16 | 0.84 | 3.00 | `power2.in` | During the rush the chest moves from the framing point to the exact screen centre |
 | `A.idleCorrection` | 2.16 | 0.84 | 3.00 | `sine.inOut` | The idle keeps floating; its live offset of the hands and the chest window is folded in so they meet exactly |
-| `A.smokeIn` | 2.64 | 0.30 | 2.94 | `power1.inOut` | The soft smoke texture cross-fades in over the chest |
-| `A.gradientIn` | 3.00 | 0.30 | 3.30 | `power1.inOut` | Full-screen smoke fades into the moving pink/purple/blue gradient |
+| `A.gradientIn` | 3.00 | — | 3.00 | `none` | The chest window fills the screen: hand-off to the same live gradient in act 2 (instant and invisible) |
 | `A.s2Heading` | 3.05 | 0.40 | 3.45 | `power2.out` | Section 2 heading fades up |
 | `A.s2Sub` | 3.16 | 0.40 | 3.56 | `power2.out` | Section 2 sub line fades up |
 | `A.s2Badge1` | 3.27 | 0.40 | 3.67 | `power2.out` | Badge 1 (2-3 build days) fades up |
@@ -67,8 +66,8 @@ Phones (≤ 767px): same timings as desktop (no overrides in `TIMING.mobile`).
 | `B.s2HeadingOut` | 0.25 | 0.33 | 0.58 | `power2.in` | Heading out |
 | `B.dogRecede` | 0.44 | 2.12 | 2.56 | `power2.inOut` | The window shrinks: the dog recedes from the camera (scale: covering the screen → the size in the phone) |
 | `B.dogDrift` | 0.44 | 2.12 | 2.56 | `power2.inOut` | The dog drifts on a curve: out to the left, then to the centre (the phone screen) |
-| `B.dogDetail` | 0.97 | 0.85 | 1.82 | `power1.inOut` | The helmet glass and the volume shading fade in as the dog gets small (--dog-detail 0 → 1) |
-| `B.settle` | 2.56 | — | 2.56 | `none` | The dog has arrived on the phone screen rect (marker); its legs and tail keep floating |
+| `B.dogTurn` | 0.44 | 2.41 | 2.85 | `power1.in` | The dog slowly turns off axis as it floats away (roll 0 → 16° desktop, still turning when the flash fires) |
+| `B.settle` | 2.56 | — | 2.56 | `none` | The dog has arrived on the phone screen rect (marker), still slowly turning; its legs and tail keep paddling |
 | `B.flashIn` | 2.81 | 0.04 | 2.85 | `none` | Camera flash: after a 0.25 s still beat the whole screen snaps to white (about 2 frames, no build-up) |
 | `B.flashPeak` | 2.85 | — | 2.85 | `none` | Flash peak: the phone showcase starts (showcase.play()); dog and space are hidden. Going back: showcase.reset() |
 | `B.whiteHold` | 2.85 | 0.06 | 2.91 | `none` | The screen stays white (global.flashHold) |

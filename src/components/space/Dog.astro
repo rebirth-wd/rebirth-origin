@@ -9,11 +9,13 @@
 // `detail={false}` leaves out the volume layers and the glass, so the copy is just the fill. `sync` puts the root in a
 // sync group (data-dog-sync): dog.ts moves every dog of one group with the same idle, so a black, a white and a
 // detail-only copy stacked on each other keep their legs and tail together. Any copy that is not the plain smoke dog
-// is decorative and carries no role/aria-label.
+// is decorative and carries no role/aria-label. `tempo` (default 1, attribute data-dog-tempo, left out when 1) speeds
+// the idle up: dog.ts divides every idle period by it, so a dog that is on screen for only 2 to 3 seconds still
+// visibly paddles (the leader root's tempo counts for the whole group).
 // Contract (cover sizes, `body`, `silhouette`): docs/journey/ASSETS.md.
 import dog from './dog.json';
-interface Props { class?: string; idle?: boolean; fill?: 'smoke' | 'white' | 'black' | 'none'; detail?: boolean; sync?: string }
-const { class: cls = '', idle = true, fill = 'smoke', detail = true, sync } = Astro.props;
+interface Props { class?: string; idle?: boolean; fill?: 'smoke' | 'white' | 'black' | 'none'; detail?: boolean; sync?: string; tempo?: number }
+const { class: cls = '', idle = true, fill = 'smoke', detail = true, sync, tempo = 1 } = Astro.props;
 const files = import.meta.glob<{ default: { src: string } }>('../../assets/space/dog-*.webp', { eager: true });
 const url = (f: string) => files[`../../assets/space/${f}`].default.src;
 type P = { name: string; parent: string | null; z: number; file: string; shade_file: string; css: any };
@@ -35,7 +37,7 @@ const uid = `rbdg${Math.random().toString(36).slice(2, 8)}`; // per instance: se
 const decorative = fill !== 'smoke' || !detail;
 const rot = `rotate(${h.angle} ${h.cx} ${h.cy})`;
 ---
-<div class:list={['rb-dog', cls]} data-dog data-dog-idle={idle ? undefined : 'false'} data-dog-sync={sync} style={style} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : 'Silhouette of a dog in a glass space helmet with an air tank, made of pink and violet smoke'} aria-hidden={decorative ? 'true' : undefined}>
+<div class:list={['rb-dog', cls]} data-dog data-dog-idle={idle ? undefined : 'false'} data-dog-sync={sync} data-dog-tempo={tempo === 1 ? undefined : tempo} style={style} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : 'Silhouette of a dog in a glass space helmet with an air tank, made of pink and violet smoke'} aria-hidden={decorative ? 'true' : undefined}>
   <div class="rb-dog__rig" set:html={html} />
   {detail && <svg class="rb-dog__glass" viewBox={`0 0 ${vw} ${vh}`} preserveAspectRatio="none" aria-hidden="true">
     <defs>

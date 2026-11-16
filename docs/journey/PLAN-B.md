@@ -18,6 +18,14 @@
 > the dog is a dog-shaped window onto the live section-2 gradient (switched on invisibly at `B.gradToDog`), and 0.25 s
 > after it settles a camera flash snaps the whole screen to white in about two frames (`B.flashIn`, peak at 2.85 s),
 > then the white decays fast (`B.whiteHold` 0.06 s, `B.whiteFade` 0.35 s, `expo.out`). The App Design screen sits on the star field.
+>
+> **Keyhole figures (Nov 2026), superseding the smoke rows below:** every character is a flat silhouette window onto
+> the live gradient, drawn as a black knockout plus a `screen`-blended group (`.sj-win1` in act 1, `.sj-win` in act 2)
+> holding a gradient and a black stage with a white copy (`multiply`). Act 1 has one knockout layer and one window
+> layer per astronaut (`data-sj-side`), all four `[data-sj-world]` layers share the camera transform, and act 1 is
+> the isolated group they blend in. There is no smoke overlay: at `A.gradientIn` (3.00 s, instant) the left chest
+> window covers the stage and act 2's gradient takes over invisibly. The dog has no detail copy (no glass or
+> shading); it turns up to 16° about its body point (`B.dogTurn`) and its idle amplitude doubles as it shrinks.
 
 ## As first built (scroll-scrubbed, historical)
 
@@ -31,7 +39,7 @@ Files: `src/components/sections/SpaceJourney.astro` (markup, layering, fallback 
 |---|-------|----------|
 | act1 | `[data-sj-space]` | `<SpaceBackdrop moon moonPhoto={false}/>`, scales 1 → 1.35 about the chest during the approach |
 | act1 | `[data-sj-world="left"]`, hero, `[data-sj-world="right"]` | one camera transform shared by both world layers; left figure behind the copy, lifted to the front once the copy is gone |
-| act1 | `smoke-pink.webp` | moved by JS INTO the left figure's torso part on A's chest rect, edges feathered 10%, so it follows the idle motion exactly and cross-fades in without a jump |
+| act1 | ~~`smoke-pink.webp`~~ | removed (Nov 2026): the astronauts are gradient windows, see the keyhole note above |
 | act2 | `[data-sj-space2]` | `<SpaceBackdrop moonPhoto={false}/>` (no moon) |
 | act2 | `[data-sj-dogwrap]` | `<Dog/>` laid out at exactly the size that covers the stage (computed from dog.json with `isPointInFill`), transform-scaled down |
 | act2 | `[data-sj-grad]` | viewport-sized `.rb-gradient-field` |

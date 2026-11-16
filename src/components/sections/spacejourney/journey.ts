@@ -3,12 +3,18 @@
 //   A = hero → section2 (act 1), B = section2 → appdesign (act 2 + the camera flash hand-off to act 3).
 // Every timing lives in ./timing.ts. Docs: docs/journey/TIMING.md, docs/journey/PLAN-B.md.
 //
+// One rule for the whole journey: two full-screen backgrounds (the stars and the live gradient) and every character
+// (both astronauts and the dog) is a keyhole, a complete flat silhouette onto the gradient with nothing drawn on it.
+// Per pixel the frame is backdrop × (1 − M) + gradient × M (M = the character's matte), built from two stacked copies
+// of the character that get the same width and the same transform every frame (SpaceJourney.astro): a black knockout
+// over the backdrop and a window group (gradient × a white copy on black, multiply) blended `screen` onto it. There is
+// no detail overlay.
+// Act 1 in A: the astronauts are always windows; the camera rushes into the left chest until its window covers the
+// stage, so the frame is the plain gradient, and at that instant act 2 (the same gradient) takes over invisibly.
 // Act 2 in B: the dog is a dog-shaped window onto the unchanged, live, screen-fixed section-2 gradient, like stepping
-// back from a keyhole. Per pixel the frame is space × (1 − M) + gradient × M (M = the dog matte), built from three
-// stacked copies of the dog that get the same width and the same transform every frame (SpaceJourney.astro): a black
-// knockout over the stars, the window group `.sj-win` (gradient × a white dog on black, multiply) blended `screen` onto
-// them, and a detail-only dog on top. At B.gradToDog the dog already covers the screen, so switching the window on is
-// invisible; the gradient itself is never faded in B. Then a sudden camera flash (no build-up) hands over to act 3.
+// back from a keyhole, and it slowly turns off axis while it paddles. At B.gradToDog the dog already covers the
+// screen, so switching the window on is invisible; the gradient itself is never faded in B. Then a sudden camera
+// flash (no build-up) hands over to act 3.
 //
 // ONE paused master timeline in seconds holds both transitions: A on [0, LA], B on [LA, LA + LB]. A transition is a
 // tween of the master's time from one stop to the next (forwards at speed 1, backwards at TIMING.global.reverseSpeed).
@@ -27,6 +33,7 @@ import gsap from 'gsap';
 import { Observer } from 'gsap/Observer';
 import { SplitText } from 'gsap/SplitText';
 import { setReach, setIdle, posePoint, idleRollMax } from '../../space/astronaut';
+import { setDogIdleAmp } from '../../space/dog';
 import { initPhoneShowcase } from '../phoneshowcase/controller';
 import dogGeo from '../../space/dog.json';
 import rig from '../../space/rig.json';
@@ -70,9 +77,13 @@ const L_AR = rig.left.width / rig.left.height;
 const R_AR = rig.right.width / rig.right.height;
 const R_REL_W = rig.clasp.rightRelW; // right box width / left box width
 const R_OFF = { x: rig.clasp.off[0], y: rig.clasp.off[1] }; // right box origin − left box origin, in left box widths
-const SMOKE_RECT = rig.left.smokeRect; // smoke-pink.webp = this rect of the left box (centred on rig.left.chest)
+// the chest window: this rect of the left box (centred on rig.left.chest) is the part of the left matte that must
+// cover the stage at the end of A.cameraRush, so the frame there is exactly the plain gradient
+const SMOKE_RECT = rig.left.smokeRect;
 const ROLL_MAX = (idleRollMax('left', 'torso') * Math.PI) / 180; // worst-case idle roll of the chest window, radians
-const FEATHER = 0.1; // the smoke overlay's edges are feathered over 10% per side (CSS mask), so only the core must cover
+// only the inner 80% of the chest window (10% margin per side) is required to cover: that keeps the zoom it always
+// had and leaves a safety margin inside the matte
+const FEATHER = 0.1;
 
 type Pt = { x: number; y: number };
 type Cfg = {
@@ -81,16 +92,17 @@ type Cfg = {
   sHold: number; // camera scale of the held two-shot at `freeze` (hands still in frame)
   hold: Pt; // where the left chest sits on screen during the two-shot (fractions of W/H); it reaches the centre at fill
   dogCtrlX: number; // dog drift: bezier control point for the dog's centre (fraction of W): left of centre
+  dogTurn: number; // dog roll at the end of B.dogTurn, degrees about its body point (positive = clockwise)
 };
-const DESKTOP: Cfg = { L: { x: 0.1, y: 0.215 }, R: { x: 0.875, y: 0.79 }, wL: 0.235, wMin: 230, wMax: 470, alpha: 0.5, sHold: 3.2, hold: { x: 0.4, y: 0.5 }, dogCtrlX: 0.02 };
-const MOBILE: Cfg = { L: { x: 0.06, y: 0.15 }, R: { x: 0.88, y: 0.925 }, wL: 0.27, wMin: 96, wMax: 200, alpha: 0.5, sHold: 2.1, hold: { x: 0.3, y: 0.42 }, dogCtrlX: -0.05 };
+const DESKTOP: Cfg = { L: { x: 0.1, y: 0.215 }, R: { x: 0.875, y: 0.79 }, wL: 0.235, wMin: 230, wMax: 470, alpha: 0.5, sHold: 3.2, hold: { x: 0.4, y: 0.5 }, dogCtrlX: 0.02, dogTurn: 16 };
+const MOBILE: Cfg = { L: { x: 0.06, y: 0.15 }, R: { x: 0.88, y: 0.925 }, wL: 0.27, wMin: 96, wMax: 200, alpha: 0.5, sHold: 2.1, hold: { x: 0.3, y: 0.42 }, dogCtrlX: -0.05, dogTurn: 16 };
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const bez = (a: number, c: number, b: number, t: number) => (1 - t) * (1 - t) * a + 2 * (1 - t) * t * c + t * t * b;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const norm = (d: number) => ((((d + 180) % 360) + 360) % 360) - 180;
 
-type Fig = { el: HTMLElement; root: HTMLElement; w: number; h: number; c0: Pt; c1: Pt; rot0: number; chest: Pt; hand: Pt; head: number; restHand: Pt; restChest: Pt };
+type Fig = { els: HTMLElement[]; root: HTMLElement; w: number; h: number; c0: Pt; c1: Pt; rot0: number; chest: Pt; hand: Pt; head: number; restHand: Pt; restChest: Pt };
 
 /** world position of a local box point (px in the unrotated box) for a box centred at c, rotated by rot (deg). */
 function toWorld(f: Fig, p: Pt, c: Pt, rot: number): Pt {
@@ -175,20 +187,6 @@ function heroCards(root: HTMLElement) {
   gsap.delayedCall(stayDuration, step);
 }
 
-/** Put smoke-pink.webp inside the left figure's torso part, on the box rect it was cut from, so it follows the
- *  figure's idle motion exactly (Agent A: the texture IS that rect, so overlaying it there is seamless). */
-function mountSmoke(figLeft: HTMLElement, img: HTMLElement) {
-  const torso = figLeft.querySelector<HTMLElement>('[data-astronaut] [data-part="torso"]');
-  if (!torso) return;
-  const tl = parseFloat(torso.style.left), tt = parseFloat(torso.style.top), tw = parseFloat(torso.style.width), th = parseFloat(torso.style.height);
-  const pct = (v: number) => `${v.toFixed(4)}%`;
-  img.style.left = pct(((SMOKE_RECT.l * 100 - tl) / tw) * 100);
-  img.style.top = pct(((SMOKE_RECT.t * 100 - tt) / th) * 100);
-  img.style.width = pct(((SMOKE_RECT.w * 100) / tw) * 100);
-  img.style.height = pct(((SMOKE_RECT.h * 100) / th) * 100);
-  torso.appendChild(img);
-}
-
 const end = (b: Beat) => b.start + b.dur;
 
 export function initSpaceJourney(root: HTMLElement) {
@@ -198,32 +196,34 @@ export function initSpaceJourney(root: HTMLElement) {
   const act1 = q('[data-sj-act1]');
   const act2 = q('[data-sj-act2]');
   const space = q('[data-sj-space]');
+  // four camera layers (knockout + window copy per figure): all get the same camera transform
   const worlds = Array.from(root.querySelectorAll<HTMLElement>('[data-sj-world]'));
-  const worldL = q('[data-sj-world="left"]');
+  // both layers of the left figure (knockout + its window group), lifted together
+  const sideL = Array.from(root.querySelectorAll<HTMLElement>('[data-sj-side="left"]'));
   const hero = q('[data-sj-hero]');
-  const smoke = q('[data-sj-smoke]');
   const space2 = q('[data-sj-space2]');
   const grad = q('[data-sj-grad]');
   const win = q('[data-sj-win]');
   const matte = q('[data-sj-matte]');
   const knockWrap = q('[data-sj-dogwrap="knock"]');
-  const detailWrap = q('[data-sj-dogwrap="detail"]');
-  // the knockout, matte and detail dogs: always the same width and transform
+  // the knockout and matte dogs: always the same width and transform
   const dogboxes = Array.from(root.querySelectorAll<HTMLElement>('[data-sj-dogbox]'));
-  const detailDog = q('[data-sj-dogwrap="detail"] [data-dog]');
+  // the knockout dog leads the dog's sync group (first in the DOM); its idle amplitude drives both copies
+  const dogLead = q('[data-sj-dogwrap="knock"] [data-dog]');
   const s2 = q('[data-sj-s2]');
   const s2items = Array.from(root.querySelectorAll<HTMLElement>('[data-sj-s2-item]'));
   const fx = q('[data-sj-fx]');
   const flash = q('[data-sj-flash]');
-  const figL = q('[data-sj-fig="left"]');
-  const figR = q('[data-sj-fig="right"]');
+  // each figure is drawn twice (black knockout, white matte); both copies get the same width and transform
+  const figLs = Array.from(root.querySelectorAll<HTMLElement>('[data-sj-fig="left"]'));
+  const figRs = Array.from(root.querySelectorAll<HTMLElement>('[data-sj-fig="right"]'));
+  // the leaders of the two astronaut sync groups (the knockout copies, first in the DOM): pose maths, reach, idle
   const astroL = q('[data-sj-fig="left"] [data-astronaut]');
   const astroR = q('[data-sj-fig="right"] [data-astronaut]');
   const skip = root.querySelector<HTMLAnchorElement>('[data-sj-skip]');
   const showcaseRoot = q('[data-sj-showcase] [data-phoneshowcase]');
   const showcase = initPhoneShowcase(showcaseRoot);
 
-  mountSmoke(figL, smoke);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!reduce) { heroLoadIn(root); heroCards(root); }
 
@@ -284,11 +284,11 @@ export function initSpaceJourney(root: HTMLElement) {
     for (const [n, beats] of [['A', A], ['B', B]] as const) {
       for (const [k, b] of Object.entries(beats)) if (end(b) > beats.arrival.start + 1e-6) console.warn(`[journey] ${n}.${k} ends at ${end(b).toFixed(2)}s, after ${n}.arrival (${beats.arrival.start}s): the transition is extended`);
     }
-    if (Math.abs(end(A.approach) - end(A.cameraRush)) > 1e-6) console.warn(`[journey] A.approach ends at ${end(A.approach).toFixed(2)}s but A.cameraRush at ${end(A.cameraRush).toFixed(2)}s: the hands should touch as the screen fills with smoke`);
+    if (Math.abs(end(A.approach) - end(A.cameraRush)) > 1e-6) console.warn(`[journey] A.approach ends at ${end(A.approach).toFixed(2)}s but A.cameraRush at ${end(A.cameraRush).toFixed(2)}s: the hands should touch as the chest window fills the screen`);
     const T0: Record<Stop, number> = { hero: 0, section2: LA, appdesign: LA + LB };
 
     // ---------- state driven by the timeline ----------
-    const st = { conv: 0, turn: 0, reach: 0, push: 0, rush: 0, focus: 0, centre: 0, fix: 0, smoke: 0, space: 0, dogK: 0, dogP: 0, detail: 0 };
+    const st = { conv: 0, turn: 0, reach: 0, push: 0, rush: 0, focus: 0, centre: 0, fix: 0, space: 0, dogK: 0, dogP: 0, dogR: 0 };
     // ---------- geometry ----------
     let W = 0, H = 0, sFill = 10;
     const figs = {} as { L: Fig; R: Fig };
@@ -319,16 +319,17 @@ export function initSpaceJourney(root: HTMLElement) {
       W = stage.clientWidth; H = stage.clientHeight;
       const wL = clamp(cfg.wL * W, cfg.wMin, cfg.wMax), hL = wL / L_AR;
       const wR = wL * R_REL_W, hR = wR / R_AR;
-      figL.style.width = `${wL.toFixed(2)}px`; figR.style.width = `${wR.toFixed(2)}px`;
-      const mk = (el: HTMLElement, root: HTMLElement, w: number, h: number, who: 'left' | 'right', c0: Pt): Fig => ({
-        el, root, w, h, c0, c1: c0, rot0: 0, head: rig[who].headAngle,
+      for (const el of figLs) el.style.width = `${wL.toFixed(2)}px`;
+      for (const el of figRs) el.style.width = `${wR.toFixed(2)}px`;
+      const mk = (els: HTMLElement[], root: HTMLElement, w: number, h: number, who: 'left' | 'right', c0: Pt): Fig => ({
+        els, root, w, h, c0, c1: c0, rot0: 0, head: rig[who].headAngle,
         chest: { x: (rig[who].chest[0] / 100) * w, y: (rig[who].chest[1] / 100) * h },
         hand: { x: (rig[who].hand[0] / 100) * w, y: (rig[who].hand[1] / 100) * h },
         restHand: { x: rig[who].hand[0] / 100, y: rig[who].hand[1] / 100 },
         restChest: { x: rig[who].chest[0] / 100, y: rig[who].chest[1] / 100 },
       });
-      const L = (figs.L = mk(figL, astroL, wL, hL, 'left', { x: cfg.L.x * W, y: cfg.L.y * H }));
-      const R = (figs.R = mk(figR, astroR, wR, hR, 'right', { x: cfg.R.x * W, y: cfg.R.y * H }));
+      const L = (figs.L = mk(figLs, astroL, wL, hL, 'left', { x: cfg.L.x * W, y: cfg.L.y * H }));
+      const R = (figs.R = mk(figRs, astroR, wR, hR, 'right', { x: cfg.R.x * W, y: cfg.R.y * H }));
       // hero: head-first towards each other
       const phi = (Math.atan2(R.c0.y - L.c0.y, R.c0.x - L.c0.x) * 180) / Math.PI;
       L.rot0 = norm(phi - L.head);
@@ -339,7 +340,8 @@ export function initSpaceJourney(root: HTMLElement) {
       L.c1 = { x: L.c0.x + cfg.alpha * D.x, y: L.c0.y + cfg.alpha * D.y };
       R.c1 = { x: L.c1.x + dC.x, y: L.c1.y + dC.y };
       P0 = toWorld(L, L.chest, L.c0, L.rot0);
-      // zoom at fill: the (possibly slightly rolled) chest window must cover the stage
+      // zoom at fill: the inner part of the (possibly slightly rolled) chest window must cover the stage, so the
+      // frame is all gradient (formula and margins unchanged from the smoke overlay it replaced: same zoom)
       const rw = SMOKE_RECT.w * wL, rh = SMOKE_RECT.h * hL, co = Math.cos(ROLL_MAX), si = Math.sin(ROLL_MAX);
       sFill = (Math.max((W * co + H * si) / rw, (W * si + H * co) / rh) * 1.03) / (1 - 2 * FEATHER);
       // 'carry' (A.cameraRush): start the rush at the zoom speed A.cameraTwoShot ends with, so the camera never pauses
@@ -382,7 +384,8 @@ export function initSpaceJourney(root: HTMLElement) {
       }
       const pR = figPose(R, st.turn, st.conv, { x: eH.x * st.fix, y: eH.y * st.fix });
       for (const [f, p] of [[L, pL], [R, pR]] as const) {
-        f.el.style.transform = `translate(${(p.c.x - f.w / 2).toFixed(2)}px, ${(p.c.y - f.h / 2).toFixed(2)}px) rotate(${p.rot.toFixed(3)}deg)`;
+        const ft = `translate(${(p.c.x - f.w / 2).toFixed(2)}px, ${(p.c.y - f.h / 2).toFixed(2)}px) rotate(${p.rot.toFixed(3)}deg)`;
+        for (const el of f.els) el.style.transform = ft;
       }
       // camera (log scale): push to the held two-shot, then the rush to the cover scale where the chest fills the stage
       const lHold = Math.log(cfg.sHold);
@@ -396,17 +399,20 @@ export function initSpaceJourney(root: HTMLElement) {
       const t = `translate(${(Q.x - s * Pw.x).toFixed(2)}px, ${(Q.y - s * Pw.y).toFixed(2)}px) scale(${s.toFixed(5)})`;
       for (const w of worlds) w.style.transform = t;
       space.style.transform = `scale(${(1 + 0.35 * st.space).toFixed(5)})`;
-      smoke.style.opacity = st.smoke.toFixed(4);
       // dog: log-scale recede from cover (k = 1) to C's rect; its centre on a bezier (centre → left → middle)
       const k = Math.exp(lerp(0, Math.log(k1), st.dogK));
       const e = st.dogP;
       const cx = bez(C0.x, Cc.x, C1.x, e), cy = bez(C0.y, Cc.y, C1.y, e);
-      // one transform for all three copies, so the knockout, the window's matte and the detail stay pixel-aligned
-      const dt = `translate(${(cx - (k * Lw) / 2).toFixed(2)}px, ${(cy - (k * Lh) / 2).toFixed(2)}px) scale(${k.toFixed(6)})`;
+      // the slow weightless turn, about the body point (box px) so the body stays on the bezier path:
+      // translate, scale, then rotate about `body`
+      const r = cfg.dogTurn * st.dogR;
+      const bx = body.x.toFixed(2), by = body.y.toFixed(2);
+      // one transform for both copies, so the knockout and the window's matte stay pixel-aligned
+      const dt = `translate(${(cx - (k * Lw) / 2).toFixed(2)}px, ${(cy - (k * Lh) / 2).toFixed(2)}px) scale(${k.toFixed(6)}) translate(${bx}px, ${by}px) rotate(${r.toFixed(3)}deg) translate(-${bx}px, -${by}px)`;
       for (const b of dogboxes) b.style.transform = dt;
-      // helmet glass + volume shading (Dog.astro, detail copy only): off while the dog covers the screen, in as it
-      // gets small
-      detailDog.style.setProperty('--dog-detail', st.detail.toFixed(3));
+      // the legs and tail paddle twice as far once the dog is small (1 at cover size: the cover width is computed
+      // for the normal idle); applied by dog.ts on its next idle tick
+      setDogIdleAmp(dogLead, lerp(1, 2, st.dogK));
     };
 
     // ---------- idle: always on while act 1 can be seen; off once act 1 is hidden (no idle work off-stage) ----------
@@ -423,8 +429,10 @@ export function initSpaceJourney(root: HTMLElement) {
 
     // ---------- the master timeline (seconds; built ONLY from timing.ts) ----------
     // the window group blends normally (it is just the section-2 gradient) until B.gradToDog; set before the timeline
-    // is built so the tl.set to 'screen' below records 'normal' as the value to restore when B plays in reverse
+    // is built so the tl.set to 'screen' below records 'normal' as the value to restore when B plays in reverse.
+    // Likewise act 2's gradient starts hidden, so playing A in reverse past A.gradientIn hides it again.
     gsap.set(win, { mixBlendMode: 'normal' });
+    gsap.set(grad, { autoAlpha: 0 });
     const tl = gsap.timeline({ defaults: { ease: 'none' }, paused: true, onUpdate: () => { render(); sync(); } });
     const stTo = (key: keyof typeof st, to: number, b: Beat, off = 0) => tl.to(st, { [key]: to, duration: b.dur, ease: b.ease }, off + b.start);
     const ab = (b: Beat) => ({ duration: b.dur, ease: b.ease });
@@ -432,7 +440,7 @@ export function initSpaceJourney(root: HTMLElement) {
     // A: hero → section2
     tl.addLabel('hero', 0);
     tl.to(hero, { autoAlpha: 0, y: -46, ...ab(A.heroOut) }, A.heroOut.start);
-    tl.set(worldL, { zIndex: 4 }, A.leftFigureToFront.start); // copy gone: the left figure (zoom target) is nearest
+    tl.set(sideL, { zIndex: 4 }, A.leftFigureToFront.start); // copy gone: the left figure (zoom target) is nearest
     stTo('conv', 1, A.approach); // one continuous approach; contact in the clasp arrangement at its end
     stTo('turn', 1, A.turn);
     stTo('reach', 1, A.reach);
@@ -441,13 +449,12 @@ export function initSpaceJourney(root: HTMLElement) {
     stTo('rush', 1, A.cameraRush); // the hands are still closing in the two-shot as the camera rushes into the chest
     stTo('centre', 1, A.cameraCentre);
     stTo('fix', 1, A.idleCorrection);
-    stTo('smoke', 1, A.smokeIn);
     stTo('space', 1, A.spaceZoom);
-    // smoke → gradient, section 2 in
-    tl.set(act2, { autoAlpha: 1 }, A.gradientIn.start);
-    tl.fromTo(grad, { autoAlpha: 0 }, { autoAlpha: 1, ...ab(A.gradientIn) }, A.gradientIn.start);
-    tl.set(act1, { autoAlpha: 0 }, end(A.gradientIn));
-    tl.set(s2, { autoAlpha: 1 }, A.gradientIn.start);
+    // the chest window covers the stage, so act 1 shows exactly the live gradient: hand off to act 2's copy of the
+    // same gradient in one instant (both are the same CSS animation started at page load, so they are the same
+    // picture), then section 2 comes in on it
+    tl.set([act2, grad, s2], { autoAlpha: 1 }, A.gradientIn.start);
+    tl.set(act1, { autoAlpha: 0 }, A.gradientIn.start);
     s2items.forEach((el, i) => {
       const b = A[S2_IN[i]];
       if (b) tl.fromTo(el, { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, ...ab(b) }, b.start);
@@ -465,15 +472,15 @@ export function initSpaceJourney(root: HTMLElement) {
       outEnd = Math.max(outEnd, end(b));
     });
     tl.set(s2, { autoAlpha: 0 }, LA + outEnd);
-    // the window switches on: stars, the black knockout, the white matte and the detail dog appear and the window
-    // group is screened onto them. The dog covers the screen at scale 1 (and --dog-detail is 0), so the frame is
-    // still exactly the plain gradient; the gradient is never faded, act 2 is hidden at the flash peak instead.
+    // the window switches on: stars, the black knockout and the white matte appear and the window group is screened
+    // onto them. The dog covers the screen at scale 1, roll 0, so the frame is still exactly the plain gradient; the
+    // gradient is never faded, act 2 is hidden at the flash peak instead.
     // tl.set (not gsap.set) so playing B in reverse restores 'normal' and the hidden layers.
-    tl.set([space2, knockWrap, matte, detailWrap], { autoAlpha: 1 }, LA + B.gradToDog.start);
+    tl.set([space2, knockWrap, matte], { autoAlpha: 1 }, LA + B.gradToDog.start);
     tl.set(win, { mixBlendMode: 'screen' }, LA + B.gradToDog.start);
     stTo('dogK', 1, B.dogRecede, LA);
     stTo('dogP', 1, B.dogDrift, LA);
-    stTo('detail', 1, B.dogDetail, LA);
+    stTo('dogR', 1, B.dogTurn, LA); // the slow turn off axis (cfg.dogTurn degrees at the end)
     // light: a camera flash. After a short still beat the whole screen snaps to white in about two frames (no glow,
     // no build-up), like a magician's flashbulb
     tl.fromTo(flash, { opacity: 0 }, { opacity: 1, ...ab(B.flashIn) }, LA + B.flashIn.start);
@@ -764,11 +771,11 @@ export function initSpaceJourney(root: HTMLElement) {
       if (flashed) showcase.reset();
       gsap.ticker.remove(onIdleTick);
       if (idleOff) { setIdle(astroL, true); setIdle(astroR, true); }
-      [figL, figR, ...dogboxes].forEach((el) => { el.style.transform = ''; el.style.width = ''; });
+      [...figLs, ...figRs, ...dogboxes].forEach((el) => { el.style.transform = ''; el.style.width = ''; });
+      setDogIdleAmp(dogLead, 1);
       win.style.mixBlendMode = '';
       worlds.forEach((w) => { w.style.transform = ''; });
       space.style.transform = ''; space.style.transformOrigin = '';
-      smoke.style.opacity = '';
       setReach(astroL, 0); setReach(astroR, 0);
       tl.kill();
       if (handle.ctl === ctl) handle.ctl = null;

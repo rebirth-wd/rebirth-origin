@@ -10,7 +10,6 @@ import Astronaut from '../space/Astronaut.astro';
 import Dog from '../space/Dog.astro';
 import SpaceBackdrop from '../space/SpaceBackdrop.astro';
 import PhoneShowcase from './PhoneShowcase.astro';
-import smoke from '../../assets/space/smoke-pink.webp';
 ---
 <script is:inline>
   // JS + motion allowed → the stage with stops; page scrolling is locked from the first paint (journey.ts releases it
@@ -27,53 +26,67 @@ import smoke from '../../assets/space/smoke-pink.webp';
     <!-- visually hidden until focused; JS: straight to the appdesign stop's final state (no animation) -->
     <a class="sj-skip" href="#sj-appdesign" data-sj-skip>Skip intro</a>
     <!-- ================= act 1: space + moon, the two figures, hero content ================= -->
+    <!-- One rule for the whole journey: two full-screen backgrounds (the stars and the live gradient) and every
+         character is a keyhole, a complete flat silhouette onto the gradient with no helmet, visor or shading drawn on
+         it. Per pixel: backdrop × (1 − M) + gradient × M (M = the figure's matte). Each astronaut is drawn twice with
+         one idle (sync="sj"; the black knockout is first in the DOM, so it leads): the black copy blocks what is below
+         it, and .sj-win1 holds a full-stage gradient with a black stage above it that has the white copy cut into it
+         (multiply: gradient inside the figure, black outside), blended `screen` onto everything painted below it in
+         act 1. Both layers of a side share data-sj-side, so they stack as one (left behind the hero copy, right in
+         front of it). Every .sj-world gets the same camera transform. The window groups must stay direct children of
+         act 1 (the isolated group) so they blend with the stars, the moon, the hero and the other figure. -->
     <div class="sj-act sj-act1" data-sj-act1>
       <div class="sj-l sj-space" data-sj-space>
         <SpaceBackdrop moon moonPhoto={false} />
       </div>
-      <!-- one camera layer per figure (identical transform). At rest the left figure is behind the hero copy and the
-           right one in front of the hero phone; once the copy has gone the left one (the zoom target) is lifted up. -->
-      <div class="sj-l sj-world sj-world-left" data-sj-world="left" aria-hidden="true">
-        <div class="sj-fig sj-fig-left" data-sj-fig="left">
-          <Astronaut who="left" />
-          <!-- smoke-pink.webp: exactly the left box's chest window; JS moves it into the torso part so it follows the
-               figure's idle motion pixel for pixel, then cross-fades it in before the screen is all smoke -->
-          <img class="sj-smoke" data-sj-smoke src={smoke.src} width={smoke.width} height={smoke.height} alt="" decoding="async" fetchpriority="low" />
+      <div class="sj-l sj-world" data-sj-world="left" data-sj-side="left" aria-hidden="true">
+        <div class="sj-fig sj-fig-left" data-sj-fig="left"><Astronaut who="left" fill="black" sync="sj" /></div>
+      </div>
+      <div class="sj-l sj-win1" data-sj-win1 data-sj-side="left" aria-hidden="true">
+        <div class="sj-l rb-gradient-field"></div>
+        <div class="sj-l sj-matte1">
+          <div class="sj-l sj-world" data-sj-world="left">
+            <div class="sj-fig sj-fig-left" data-sj-fig="left"><Astronaut who="left" fill="white" sync="sj" /></div>
+          </div>
         </div>
       </div>
       <div class="sj-l sj-hero" data-sj-hero>
         <HeroContent />
       </div>
-      <div class="sj-l sj-world sj-world-right" data-sj-world="right" aria-hidden="true">
-        <div class="sj-fig sj-fig-right" data-sj-fig="right">
-          <Astronaut who="right" />
+      <div class="sj-l sj-world" data-sj-world="right" data-sj-side="right" aria-hidden="true">
+        <div class="sj-fig sj-fig-right" data-sj-fig="right"><Astronaut who="right" fill="black" sync="sj" /></div>
+      </div>
+      <div class="sj-l sj-win1" data-sj-win1 data-sj-side="right" aria-hidden="true">
+        <div class="sj-l rb-gradient-field"></div>
+        <div class="sj-l sj-matte1">
+          <div class="sj-l sj-world" data-sj-world="right">
+            <div class="sj-fig sj-fig-right" data-sj-fig="right"><Astronaut who="right" fill="white" sync="sj" /></div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- ================= act 2: gradient, section 2, the dog in open space ================= -->
-    <!-- In B the dog is a dog-shaped WINDOW onto the same live, screen-fixed gradient: per pixel
-         space × (1 − dog) + gradient × dog. Three copies of the dog share one box size, one transform and one idle
-         (sync="sj"; the black knockout is first in the DOM, so it leads):
-         the black dog blocks the stars; .sj-win holds the gradient with a black stage above it that has a white dog
-         cut into it (multiply: gradient inside the dog, black outside), and journey.ts blends the whole group onto the
-         stars with `screen` from B.gradToDog on; the detail-only dog (helmet glass, shading) sits on top. Before that
-         instant .sj-win blends normally and the three dogs are hidden, so A and section 2 are just the gradient. -->
+    <!-- The same rule as act 1: in B the dog is a dog-shaped WINDOW onto the same live, screen-fixed gradient, per pixel
+         space × (1 − dog) + gradient × dog, a complete flat silhouette with nothing drawn on it. Two copies of the dog
+         share one box size, one transform and one idle (sync="sj"; the black knockout is first in the DOM, so it
+         leads; tempo 2 so the short trip still shows the paddling): the black dog blocks the stars; .sj-win holds the
+         gradient with a black stage above it that has a white dog cut into it (multiply: gradient inside the dog,
+         black outside), and journey.ts blends the whole group onto the stars with `screen` from B.gradToDog on.
+         Before that instant .sj-win blends normally and the dogs are hidden, so the end of A and section 2 are just
+         the gradient. -->
     <div class="sj-act sj-act2" data-sj-act2>
       <div class="sj-l sj-space2" data-sj-space2 aria-hidden="true">
         <SpaceBackdrop moonPhoto={false} />
       </div>
       <div class="sj-l sj-dogwrap" data-sj-dogwrap="knock" aria-hidden="true">
-        <div class="sj-dogbox" data-sj-dogbox><Dog fill="black" detail={false} sync="sj" /></div>
+        <div class="sj-dogbox" data-sj-dogbox><Dog fill="black" detail={false} sync="sj" tempo={2} /></div>
       </div>
       <div class="sj-l sj-win" data-sj-win aria-hidden="true">
         <div class="sj-l sj-grad rb-gradient-field" data-sj-grad></div>
         <div class="sj-l sj-matte" data-sj-matte>
-          <div class="sj-dogbox" data-sj-dogbox><Dog fill="white" detail={false} sync="sj" /></div>
+          <div class="sj-dogbox" data-sj-dogbox><Dog fill="white" detail={false} sync="sj" tempo={2} /></div>
         </div>
-      </div>
-      <div class="sj-l sj-dogwrap" data-sj-dogwrap="detail" aria-hidden="true">
-        <div class="sj-dogbox" data-sj-dogbox><Dog fill="none" sync="sj" /></div>
       </div>
       <div class="sj-l sj-s2" data-sj-s2>
         <Section2 />
@@ -98,14 +111,19 @@ import smoke from '../../assets/space/smoke-pink.webp';
   .sj-stage { position: relative; isolation: isolate; }
 
   /* ---------- fallback (no JS / reduced motion): three stacked blocks ---------- */
-  .sj-act1 { position: relative; min-height: 100vh; min-height: 100svh; overflow: hidden; }
+  /* act 1 is the isolated group the astronaut windows blend in (both layouts) */
+  .sj-act1 { position: relative; min-height: 100vh; min-height: 100svh; overflow: hidden; isolation: isolate; }
   .sj-act1 .sj-hero { position: relative; inset: auto; min-height: 100vh; min-height: 100svh; }
   .sj-world { pointer-events: none; }
   .sj-fig { position: absolute; }
   /* static hero pose: head-first towards each other, clear of the copy */
   .sj-fig-left { left: -1%; top: 6%; width: min(21vw, 400px); transform: rotate(56deg); }
   .sj-fig-right { right: 2%; bottom: 3%; width: min(13.8vw, 262px); transform: rotate(-26deg); }
-  .sj-smoke { display: none; }
+  /* the astronaut windows (both layouts: the astronauts are always keyholes onto the gradient). Screen onto what
+     act 1 has painted below; inside the group the matte multiplies the gradient down to the figure. pointer-events
+     none (inherited by the worlds inside) so the window layers never take a click meant for the hero button. */
+  .sj-win1 { mix-blend-mode: screen; pointer-events: none; isolation: isolate; }
+  .sj-matte1 { background: #000; mix-blend-mode: multiply; }
   .sj-act2 { position: relative; display: flex; align-items: center; min-height: 90vh; min-height: 90svh; overflow: hidden; padding: 18vh 0; }
   /* .sj-win and the .sj-grad inside it are both inset 0 in act 2, so the static gradient still fills the block behind
      the copy; the window's dogs are only for the motion version */
@@ -138,11 +156,6 @@ import smoke from '../../assets/space/smoke-pink.webp';
   :global(html.sj-motion) .sj-act { position: absolute; inset: 0; min-height: 0; padding: 0; display: block; }
   :global(html.sj-motion) .sj-act1 .sj-hero { position: absolute; inset: 0; min-height: 0; }
   :global(html.sj-motion) .sj-fig { left: 0; top: 0; right: auto; bottom: auto; transform: none; transform-origin: 50% 50%; }
-  :global(html.sj-motion) .sj-smoke { display: block; position: absolute; z-index: 99; max-width: none; opacity: 0; pointer-events: none;
-    /* feathered edges (10% per side, matches FEATHER in journey.ts) so the overlay melts into the figure */
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent), linear-gradient(180deg, transparent, #000 10%, #000 90%, transparent);
-    -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent), linear-gradient(180deg, transparent, #000 10%, #000 90%, transparent);
-    mask-composite: intersect; }
   :global(html.sj-motion) .sj-space2,
   :global(html.sj-motion) .sj-dogwrap,
   :global(html.sj-motion) .sj-matte,
@@ -164,13 +177,16 @@ import smoke from '../../assets/space/smoke-pink.webp';
   :global(html.sj-motion) .sj-act3 { pointer-events: none; }
   /* until journey.ts has armed the showcase (module JS still downloading) act 3 must not paint over the hero */
   :global(html.sj-motion:not(.sj-ready)) .sj-act3 { visibility: hidden; }
-  /* same guard for the two figures: with sj-motion they sit unpositioned at 0,0 until journey.ts places them */
-  :global(html.sj-motion:not(.sj-ready)) .sj-world { visibility: hidden; }
+  /* same guard for the two figures: with sj-motion they sit unpositioned at 0,0 until journey.ts places them, and a
+     black knockout or a gradient window there would paint over the hero */
+  :global(html.sj-motion:not(.sj-ready)) [data-sj-side] { visibility: hidden; }
   :global(html.sj-motion) .sj-act3 > * { pointer-events: auto; }
   :global(html.sj-motion) .sj-fx { z-index: 3; }
-  :global(html.sj-motion) .sj-world-left { z-index: 1; }
+  /* both layers of a figure (knockout + window) stack together: left behind the hero copy, right in front of it
+     (the .sj-world inside a .sj-matte1 has no z-index of its own) */
+  :global(html.sj-motion) [data-sj-side="left"] { z-index: 1; }
   :global(html.sj-motion) .sj-hero { z-index: 2; }
-  :global(html.sj-motion) .sj-world-right { z-index: 3; }
+  :global(html.sj-motion) [data-sj-side="right"] { z-index: 3; }
 
   .sj-fx { pointer-events: none; }
   .sj-dogbox { position: absolute; left: 0; top: 0; transform-origin: 0 0; }

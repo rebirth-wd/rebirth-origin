@@ -5,13 +5,19 @@
 // or call setReach(root, n) directly. Both are supported; setReach also writes the inline variable.
 // At reach = 1 the reaching arm is in the source pose (fully extended, hand at --hand-x/--hand-y, idle damped
 // on that arm so the hand is steady); at reach = 0 it is relaxed/bent towards the body.
+//
+// Sync groups: roots with the same data-astronaut value AND the same data-astronaut-sync value form a group (a
+// keyhole figure is drawn twice, a black and a white copy, and both must move identically). The first in DOM order is
+// the leader and the only one with a State, tweens, ticker and observers. Its per-part and rig setters write to every
+// root of the group, and `states` maps each follower to the leader's State, so setReach, setIdle, setIdleAmp and
+// posePoint called with a follower act on the leader. Roots without data-astronaut-sync behave exactly as before.
 import { gsap } from 'gsap';
 import rig from './rig.json';
 
 type Who = 'left' | 'right';
-interface Part { el: HTMLElement; set: (v: number) => void; a: { r: number; s: number }; reach?: number; reachDamp?: boolean }
+interface Part { el: HTMLElement; els: HTMLElement[]; set: (v: number) => void; a: { r: number; s: number }; reach?: number; reachDamp?: boolean }
 interface State {
-  root: HTMLElement; who: Who; parts: Part[]; rig: HTMLElement;
+  root: HTMLElement; who: Who; parts: Part[]; rig: HTMLElement; roots: HTMLElement[];
   rigSet: { x: (v: number) => void; y: (v: number) => void; r: (v: number) => void }; rigP: { x: number; y: number; r: number };
   tl: gsap.core.Timeline | null; running: boolean; visible: boolean; enabled: boolean; reach: number; lastReachStr: string; tick: () => void;
   amp: number;
@@ -55,6 +61,18 @@ const FLOAT: Record<Who, [number, number, number, number, number, number]> = {
 };
 
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** (Re)create the quick setters so they write to every root of the group; called when a follower joins. */
+function bindSetters(s: State) {
+  const rigs = s.roots.map((r) => r.querySelector<HTMLElement>('[data-rig]')!);
+  s.rigSet = {
+    x: gsap.quickSetter(rigs, 'xPercent') as any, y: gsap.quickSetter(rigs, 'yPercent') as any, r: gsap.quickSetter(rigs, 'rotation', 'deg') as any,
+  };
+  for (const p of s.parts) {
+    p.els = s.roots.map((r) => r.querySelector<HTMLElement>(`[data-part="${p.el.dataset.part}"]`)).filter((e): e is HTMLElement => !!e);
+    p.set = gsap.quickSetter(p.els, 'rotation', 'deg') as (v: number) => void;
+  }
+}
 
 function readReach(s: State) {
   const v = s.root.style.getPropertyValue('--reach');
@@ -120,16 +138,29 @@ function update(s: State) {
 export function initAstronaut(root: HTMLElement) {
   if (states.has(root)) return states.get(root)!;
   const who = (root.dataset.astronaut as Who) || 'left';
+  const key = root.dataset.astronautSync;
+  if (key) { // follower of an earlier root with the same figure and sync value: moved by that leader, nothing of its own
+    const lead = [...root.ownerDocument.querySelectorAll<HTMLElement>('[data-astronaut][data-astronaut-sync]')]
+      .find((r) => r !== root && r.dataset.astronaut === root.dataset.astronaut && r.dataset.astronautSync === key && states.get(r)?.root === r);
+    const ls = lead && states.get(lead);
+    if (ls && root.querySelector('[data-rig]')) {
+      ls.roots.push(root);
+      states.set(root, ls);
+      bindSetters(ls);
+      if (!ls.running) apply(ls); // show the group's current pose at once
+      return ls;
+    }
+  }
   const rig = root.querySelector<HTMLElement>('[data-rig]')!;
   const parts: Part[] = [...root.querySelectorAll<HTMLElement>('[data-part]')].map((el) => {
     const name = el.dataset.part!;
     return {
-      el, set: gsap.quickSetter(el, 'rotation', 'deg') as (v: number) => void, a: { r: 0, s: 0 },
+      el, els: [el], set: gsap.quickSetter(el, 'rotation', 'deg') as (v: number) => void, a: { r: 0, s: 0 },
       reach: RELAX[who][name], reachDamp: name.startsWith('arm-reach'),
     };
   });
   const s: State = {
-    root, who, parts, rig,
+    root, who, parts, rig, roots: [root],
     rigSet: {
       x: gsap.quickSetter(rig, 'xPercent') as any, y: gsap.quickSetter(rig, 'yPercent') as any, r: gsap.quickSetter(rig, 'rotation', 'deg') as any,
     },
@@ -150,7 +181,7 @@ export function initAstronaut(root: HTMLElement) {
 export function setReach(root: HTMLElement, n: number) {
   root.style.setProperty('--reach', String(n));
   const s = states.get(root);
-  if (s && !s.running) apply(s);
+  if (s) { if (s.root !== root) s.root.style.setProperty('--reach', String(n)); if (!s.running) apply(s); } // a follower acts as its leader
 }
 
 /** Live viewport position of the reaching hand tip (includes idle motion, reach and any transform B applies). */

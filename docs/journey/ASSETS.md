@@ -6,7 +6,7 @@ Preview: `http://localhost:4321/preview/space`. It has the hero (moon, both figu
 two figures in their clasp arrangement (`rig.clasp`) at `--reach:1`, dogs at 260/520/900 px, a dog covering
 the viewport, and the smoke texture.
 
-## `<Astronaut who="left|right" class? />`: `src/components/space/Astronaut.astro` + `astronaut.ts`
+## `<Astronaut who="left|right" class? fill? sync? />`: `src/components/space/Astronaut.astro` + `astronaut.ts`
 
 - Root: `div.rb-astro[data-astronaut="left|right"]` with `position: relative; width: 100%` and an intrinsic
   `aspect-ratio`. left is 1852×1664 (1.113), right is 1666×1830 (0.910). Set its width on a wrapper or class.
@@ -85,6 +85,17 @@ the viewport, and the smoke texture.
   `setReach(root, n)`, `setIdleAmp(root, n)`, `handPoint(root)`, `chestPoint(root)`, `posePoint(root, part, rest)`,
   `idleRollMax(who, part?)`, `setIdle(root, on)`.
   Debug handle: `root.rbAstronaut`.
+- **Keyhole props** (defaults give the plain smoke figure, unchanged): `fill` = `'smoke'` (default) | `'white'` |
+  `'black'` picks each part's image: `astronaut-<who>-<part>.webp`, `-matte.webp` (flat white) or `-knock.webp` (flat
+  black, half resolution). `sync="name"` sets `data-astronaut-sync` on the root. Copies with a fill other than
+  `'smoke'` are decorative: no `role` / `aria-label`, `aria-hidden="true"`. The hand and chest markers stay in every
+  copy, and geometry and data attributes are identical, so a black and a white copy stack exactly.
+- **Sync groups** (`astronaut.ts`): roots with the same `data-astronaut` value and the same `data-astronaut-sync`
+  value are one group. The first in DOM order is the leader and the only one with a State, tweens, ticker and
+  observers; its part setters and rig setters (`xPercent`, `yPercent`, `rotation`) write to every root of the group.
+  Each follower maps to the leader's State, so `setReach`, `setIdle`, `setIdleAmp` and `posePoint` called with a
+  follower act as if called with the leader, and a second `initAll()` creates nothing new. Roots without
+  `data-astronaut-sync` are untouched.
 - Rig parts, the same 8 for both figures: `torso` (with helmet and backpack), `arm-reach-upper`,
   `arm-reach-lower`, `arm-other`, `leg-a-upper`, `leg-a-lower`, `leg-b-upper`, `leg-b-lower`.
   - Every child paints above its parent.
@@ -94,6 +105,12 @@ the viewport, and the smoke texture.
   - The smoke is sampled once per figure in rest-pose box coordinates, so there is no seam at the joints.
   - The generator asserts no hole at any joint with every joint at ±8° (all one way and alternating).
 - Assets: `src/assets/space/astronaut-{left,right}-*.webp`, 16 files, **175,232 bytes** total. Alpha is lossless.
+  Matte copies `astronaut-<who>-<part>-matte.webp` (the part's alpha, RGB pure white, same pixel size, 16 files,
+  **79,602 bytes**) and knockout copies `astronaut-<who>-<part>-knock.webp` (same alpha, RGB pure black, half the
+  pixel size, 16 files, **29,592 bytes**), both lossless: 32 files, **109,194 bytes** in all. Generator:
+  `node docs/journey/tools/mattes.mjs` (see the Dog section).
+- The stage no longer uses `smoke-pink.webp` nor the dog's volume and glass layers (every stage character is a
+  plain keyhole silhouette). The files and the `detail` prop stay in the repo; the phone's dog still uses them.
 - Generator: `python3 docs/journey/tools/silhouette.py astronauts [--shots docs/journey/shots/t1]`. It prints
   `OK astronauts` when every assert passes. `--shots` writes the contact sheets.
 
@@ -105,7 +122,7 @@ the viewport, and the smoke texture.
 - **Average colour `#fb57ba`** (hot pink).
 - Generator: `silhouette.py astronauts` (same run).
 
-## `<Dog class? idle? fill? detail? sync? />`: `src/components/space/Dog.astro`
+## `<Dog class? idle? fill? detail? sync? tempo? />`: `src/components/space/Dog.astro`
 - A crisp **silhouette** of the client's labrador in a glass bubble helmet with a back tank
   (`docs/journey/source/dog.png`), **facing left**, filled with pink / magenta / violet / blue smoke from
   `docs/journey/source/smoke.png`. No suit detail, no hose or tether. Same look as the astronauts.
@@ -127,15 +144,19 @@ the viewport, and the smoke texture.
   `aria-hidden="true"`.
 - **Matte assets** (`dog-<part>-matte.webp`: the part's alpha with RGB pure white, same pixel size as the smoke;
   `dog-<part>-knock.webp`: same alpha, RGB pure black, half the pixel size), six parts each, lossless so the edge
-  stays crisp. Generator: `docs/journey/tools/dog-matte.mjs` (sharp, reads the smoke parts listed in `dog.json`;
-  run `node docs/journey/tools/dog-matte.mjs` from the repo root, it prints every size). Weight: **63,990 bytes**
+  stays crisp. Generator: `docs/journey/tools/mattes.mjs` (sharp, reads the smoke parts listed in `dog.json` and `rig.json`, so it
+  bakes the astronaut mattes too; run `node docs/journey/tools/mattes.mjs` from the repo root, it prints every size). Weight: **63,990 bytes**
   (matte 49,954 + knock 14,036), 12 files.
 - **Glass overlay** `svg.rb-dog__glass` (vector, scales cleanly; geometry in `dog.json.helmet`): the dog's head
   inside the bubble as a darker smoke tone (face with drop ears, nose, eyes; traced from dog.png), a glass sheen, a
   bright thin rim with a faint inner ring, and three curved speculars. Gradient ids are unique per instance.
-- **`--dog-detail`** (default 1) is the opacity of the volume layer and the glass overlay. journey.ts already
-  drives it: 0 while the dog covers the screen (the helmet sits next to the 16:10 body window), fading in from
-  B 0.97 s. The frozen frame in the phone leaves it at 1.
+- **`--dog-detail`** (default 1) is the opacity of the volume layer and the glass overlay. The stage no longer
+  shows either (its dog copies use `detail={false}`); only the frozen dog in the phone has them.
+- **Tempo and amplitude**: `tempo` (number, default 1) sets `data-dog-tempo` (omitted when 1); `dog.ts` divides every
+  idle period by the leader root's tempo when it builds the tweens, so a dog that is on screen for 2 to 3 seconds
+  still visibly paddles. `setDogIdleAmp(root, n)` (exported from `dog.ts`) multiplies every idle rotation of the
+  root's group (leader and followers; a follower addresses its group) by n from the next tick on; default 1, works
+  before or after the tweens are built.
 - **Idle** (`dog.ts`, `initDogs(scope = document)`, called by the component): every leg turns ±3.6° max, the tail
   ±6°, each as two summed sines with incommensurate periods (4–9 s) and a random phase. Paused off-screen
   (IntersectionObserver), never runs under `prefers-reduced-motion`, and not at all with `idle={false}`
@@ -197,7 +218,7 @@ the viewport, and the smoke texture.
 | **total** | **478,062 (~467 KiB)** |
 
 The dog parts `dog-*.webp` add 210,586 bytes (twelve files), and the matte/knockout copies add another 63,990 bytes
-(twelve more). The star tiles are inline in the HTML; the dog's
+(twelve more). The astronaut matte/knockout copies add 109,194 bytes (32 files). The star tiles are inline in the HTML; the dog's
 `silhouette` path (~17 KB) ships in the journey script, which imports `dog.json`.
 
 ## Sources / licences
