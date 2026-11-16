@@ -14,7 +14,7 @@ const SpaceBackdrop = Object.values(bgMods)[0]?.default ?? null;
   )}
   {dog && (
     <div class="psa-dog" data-ps-dogbox>
-      {Dog ? <Dog class="psa-dog-inner" /> : (
+      {Dog ? <Dog class="psa-dog-inner" idle={false} /> : (
         <div class="psa-standin-dog" data-dog aria-hidden="true">
           <div class="rb-gradient-field psa-standin-dog-fill"></div>
         </div>

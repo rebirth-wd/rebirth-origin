@@ -82,30 +82,35 @@ the viewport, and the smoke texture.
   streaks).
 - Generator: `docs/journey/tools/smoke.py`.
 
-## `<Dog class? />`: `src/components/space/Dog.astro`
-- Original vector art: a big friendly dog, side view, **facing right**. It has a round helmet with the dog's
-  head inside (drop ear, muzzle, eye, nose), an air tank on its back, a valve and a hose curling into the back
-  of the helmet, a raised tail and four legs (far legs shaded darker).
-- Root `div.rb-dog[data-dog]`, `width: 100%`, intrinsic aspect ratio **990 : 710** (1.394).
-- The body is `div.rb-dog__fill.rb-gradient-field`, masked by ONE closed SVG silhouette path (`mask-image` +
-  `-webkit-mask-image`, data URI, `mask-size: 100% 100%`). The path has two interior holes: the gaps between
-  the legs and the belly.
-- The overlay `svg.rb-dog__detail` draws the helmet glass, rim and highlights, the head inside, the tank
-  shading and bands, and a rim light. The body itself carries no overlay detail.
-- Geometry: `dog.json`. Generator: `docs/journey/tools/dog.py` (shapely union + fillet).
-- `--body-x`, `--body-y` = **41.82%, 41.41%**. This is the centre of the largest 16:10 rectangle inside the
-  silhouette (`dogcover.py`).
-- **Cover sizes**, centred on that point:
-  - A 16:10 viewport is fully covered when the dog is **≥ 3.2 × viewport width** (e.g. 4600 px for 1440×900).
-  - A 390×844 portrait viewport needs **≥ 8.6 × viewport width** (about 3350 px).
-  - Don't go far above these sizes: the mask is rasterised at the element size.
-- **`--dog-detail`** (default 1) sets the overlay opacity. Set it to 0 while the dog fills the screen, because
-  the tank bands sit near the top of the cover rectangle. Fade it in as the dog recedes.
-- The gradient's `background-size` is relative to the dog element. While the dog is huge, the gradient looks
-  "zoomed" compared with a viewport-sized `.rb-gradient-field`. Hand over between the two with a short
-  cross-fade.
-- Verified crisp at 260 px and at 4600 px covering 1440×900, with a solid fill at the body point
-  (`v3-dogs.png`, `final-dogs-390.png`, `v4-dogcover-1440.png`, `v4-dogcover-1440-detail.png`).
+## `<Dog class? idle? />`: `src/components/space/Dog.astro`
+- A crisp **silhouette** of the client's labrador in a bubble helmet with a back tank (`docs/journey/source/dog.png`),
+  **facing left**, filled with pink / magenta / violet / blue smoke from `docs/journey/source/smoke.png`. No suit
+  detail, no hose or tether, no rim light (the clean edge reads best at every size). Same look as the astronauts.
+- Root `div.rb-dog[data-dog]`, `width: 100%`, intrinsic aspect ratio **1997 : 1885** (`dog.json.viewBox`
+  `[0, 0, 1997, 1885]`, box px). `--body-x`, `--body-y` are set on the root.
+- Six WebP parts (`src/assets/space/dog-*.webp`, **150 KB** total), nested like `<Astronaut/>`
+  (`div.rb-dog__part[data-dog-part]`, `left/top/width/height` in % of the parent box, `transform-origin` = joint):
+  `body` (torso + helmet + tank) with children `leg-front-far` (z 0, under), `tail` and `leg-hind-far` (z 1, under),
+  `leg-front-near` (z 3, over), `leg-hind-near` (z 4, over). Far legs are a touch darker for depth.
+  Each limb reaches 28 px (box) fully opaque under its neighbours, then tapers, so no seam opens up to ±8°; the smoke
+  is sampled once in rest-pose box coordinates, so the texture is continuous across the joints at rest.
+- **Idle** (`dog.ts`, `initDogs(scope = document)`, called by the component): every leg turns ±3.6° max, the tail
+  ±6°, each as two summed sines with incommensurate periods (4–9 s) and a random phase. Paused off-screen
+  (IntersectionObserver), never runs under `prefers-reduced-motion`, and not at all with `idle={false}`
+  (`data-dog-idle="false"`): the dog in the phone (`SpaceArt.astro`) is a frozen frame at the rest pose.
+- Geometry: `dog.json`. Generator: `docs/journey/tools/dog_silhouette.py` (GrabCut + hand polygons, fitted helmet
+  ellipse, SDF-smoothed ~2 px anti-aliased edge; asserts at the end; `--shots DIR` writes the contact sheets).
+  - `body` = **36.05%, 42.92%**: the centre of the largest 16:10 rectangle (768 × 480 box px) that is 100% opaque in
+    the `body` part alone (asserted on the decoded WebP).
+  - `silhouette` = one closed SVG path (box px) of the **stable** outline: the area covered in every idle pose
+    (limbs at their idle extremes), so a cover computed from it (journey.ts `dogCoverWidth`, isPointInFill) holds
+    while the legs move. It is a little inside the rest outline at the limbs; don't use it as a visual mask.
+- **Cover sizes**, centred on `body`: a 16:10 viewport is covered from ≈ **2.65 × viewport width** (3819 px for
+  1440×900 incl. journey.ts's 3% margin); a 390×844 portrait viewport needs ≈ **8.6 × viewport width** (3351 px).
+  The parts are 1997 px wide in total, so at the cover size the smoke is upscaled ~2×: it is soft smoke, that is fine.
+- Verified (`docs/journey/shots/dog/`, gitignored): contact sheet at 260 / 900 px, legs ±8°, 4× edges; browser at
+  100–900 px; `/?journey=debug` transition B at 1440×900 and 390×844: smoke covers the screen at B 0.44 s and the
+  stage dog lands on the phone's dog rect to 0.1 px.
 
 ## `<SpaceBackdrop moon? moonPhoto? class? />`: `src/components/space/SpaceBackdrop.astro`
 - Root `div.rb-space[data-space]`, `position:absolute; inset:0` (fills its positioned parent),
@@ -141,7 +146,8 @@ the viewport, and the smoke texture.
 | smoke-pink.webp | 21,670 |
 | **total** | **456,812 (~446 KiB)** |
 
-The star tiles and dog paths are inline (about 30 KB of HTML, uncompressed). `source-figures.webp` is not
+The dog parts `dog-*.webp` add 150,460 bytes (six files). The star tiles are inline in the HTML; the dog's
+`silhouette` path (~17 KB) ships in the journey script, which imports `dog.json`. `source-figures.webp` is not
 loaded at runtime.
 
 ## Sources / licences
@@ -153,4 +159,5 @@ loaded at runtime.
   The download was kept outside the project and used only as input data. The shipped file is a new render.
 - `images.moonSurface`: Unsplash photo `1777277539249-34020e857900`, NASA (@nasa), Artemis II flyby,
   "Cratered lunar surface against a dark sky", Unsplash License. The ID was confirmed from its photo page.
-- Dog, star field, nebula, crater field: original, generated here. No branded or copyrighted characters.
+- Dog: the OUTLINE of the client-supplied `docs/journey/source/dog.png`, filled with the client-supplied
+  `smoke.png`; no photo pixel is shipped. Star field, nebula, crater field: original, generated here.
