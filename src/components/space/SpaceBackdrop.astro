@@ -36,7 +36,7 @@ const style = `--stars-1:${s1};--stars-2:${s2};--stars-3:${s3}`;
   <div class="rb-space__stars rb-space__stars--3"></div>
   {moon && (
     <div class="rb-space__moon" data-moon>
-      <img class="rb-space__moon-local" src={moonLocal.src} width={moonLocal.width} height={moonLocal.height} alt="" decoding="async" />
+      <img class="rb-space__moon-local" src={moonLocal.src} width={moonLocal.width} height={moonLocal.height} alt="" decoding="async" fetchpriority="high" />
       {moonPhoto && (
         <img class="rb-space__moon-photo" src={photo.src} srcset={`${photo.srcSmall} 900w, ${photo.src} 2000w`} sizes="100vw"
           alt="" decoding="async" fetchpriority="low" onload="this.parentNode.classList.add('has-photo')" />

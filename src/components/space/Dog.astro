@@ -17,7 +17,7 @@ const kids = (name: string | null) => parts.filter((p) => p.parent === name);
 const render = (p: P, parentZ: number): string => {
   const c = p.css;
   const style = `left:${c.left}%;top:${c.top}%;width:${c.width}%;height:${c.height}%;transform-origin:${c.ox}% ${c.oy}%;z-index:${p.parent ? p.z - parentZ : 0}`;
-  return `<div class="rb-dog__part" data-dog-part="${p.name}" style="${style}"><img src="${url(p.file)}" alt="" draggable="false" decoding="async" /><img class="rb-dog__vol" src="${url(p.shade_file)}" alt="" draggable="false" decoding="async" />${kids(p.name).map((k) => render(k, p.z)).join('')}</div>`;
+  return `<div class="rb-dog__part" data-dog-part="${p.name}" style="${style}"><img src="${url(p.file)}" alt="" draggable="false" decoding="async" fetchpriority="low" /><img class="rb-dog__vol" src="${url(p.shade_file)}" alt="" draggable="false" decoding="async" fetchpriority="low" />${kids(p.name).map((k) => render(k, p.z)).join('')}</div>`;
 };
 const html = kids(null).map((p) => render(p, 0)).join('');
 const [, , vw, vh] = dog.viewBox;
