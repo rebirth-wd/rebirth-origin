@@ -38,7 +38,7 @@ import smoke from '../../assets/space/smoke-pink.webp';
           <Astronaut who="left" />
           <!-- smoke-pink.webp: exactly the left box's chest window; JS moves it into the torso part so it follows the
                figure's idle motion pixel for pixel, then cross-fades it in before the screen is all smoke -->
-          <img class="sj-smoke" data-sj-smoke src={smoke.src} width={smoke.width} height={smoke.height} alt="" decoding="async" />
+          <img class="sj-smoke" data-sj-smoke src={smoke.src} width={smoke.width} height={smoke.height} alt="" decoding="async" fetchpriority="low" />
         </div>
       </div>
       <div class="sj-l sj-hero" data-sj-hero>
@@ -144,6 +144,8 @@ import smoke from '../../assets/space/smoke-pink.webp';
   /* the act-3 wrapper covers the stage from the start: let taps / clicks through to the hero until the showcase
      itself (hidden + inert before play()) is shown */
   :global(html.sj-motion) .sj-act3 { pointer-events: none; }
+  /* until journey.ts has armed the showcase (module JS still downloading) act 3 must not paint over the hero */
+  :global(html.sj-motion:not(.sj-ready)) .sj-act3 { visibility: hidden; }
   :global(html.sj-motion) .sj-act3 > * { pointer-events: auto; }
   :global(html.sj-motion) .sj-fx { z-index: 3; }
   :global(html.sj-motion) .sj-world-left { z-index: 1; }
