@@ -10,14 +10,15 @@ import rig from '@/components/space/rig.json';
 // rotate each box so its head points at the other figure (top-left -> bottom-right diagonal ~ 32deg)
 const leftRot = 30 - rig.left.headAngle;            // head towards bottom-right
 const rightRot = -150 - rig.right.headAngle;        // head towards top-left
-// source arrangement (hands clasped at --reach:1): both boxes at the same scale, offsets from rig.json
-const L = rig.left, Rr = rig.right, sc = L.scale;
-const spanW = (Math.max(L.source_box[2], Rr.source_box[2]) - L.source_box[0]) * sc;
-const spanH = (Math.max(L.source_box[3], Rr.source_box[3]) - Math.min(L.source_box[1], Rr.source_box[1])) * sc;
-const top0 = Math.min(L.source_box[1], Rr.source_box[1]);
+// clasp arrangement (hands meet at --reach:1): both boxes at rotation 0, placed with rig.clasp (left-box widths)
+const L = rig.left, Rr = rig.right, C = rig.clasp;
+const lh = L.height / L.width, rw = C.rightRelW, rh = rw * Rr.height / Rr.width;
+const x0 = Math.min(0, C.off[0]), y0 = Math.min(0, C.off[1]);
+const spanW = Math.max(1, C.off[0] + rw) - x0;
+const spanH = Math.max(lh, C.off[1] + rh) - y0;
 const pct = (v: number, t: number) => (v / t * 100).toFixed(3) + '%';
-const leftBox = `left:0;top:${pct((L.source_box[1] - top0) * sc, spanH)};width:${pct(L.width, spanW)}`;
-const rightBox = `left:${pct((Rr.source_box[0] - L.source_box[0]) * sc, spanW)};top:${pct((Rr.source_box[1] - top0) * sc, spanH)};width:${pct(Rr.width, spanW)}`;
+const leftBox = `left:${pct(-x0, spanW)};top:${pct(-y0, spanH)};width:${pct(1, spanW)}`;
+const rightBox = `left:${pct(C.off[0] - x0, spanW)};top:${pct(C.off[1] - y0, spanH)};width:${pct(rw, spanW)}`;
 ---
 <Base>
   <main class="bg-black text-white">
@@ -32,7 +33,7 @@ const rightBox = `left:${pct((Rr.source_box[0] - L.source_box[0]) * sc, spanW)};
 
     <section class="relative h-[100svh] overflow-hidden" id="clasp">
       <SpaceBackdrop />
-      <p class="absolute left-4 top-4 z-10 rounded bg-black/60 px-3 py-2 font-mono text-xs">source arrangement, --reach: 1 (hands meet)</p>
+      <p class="absolute left-4 top-4 z-10 rounded bg-black/60 px-3 py-2 font-mono text-xs">clasp arrangement (rig.clasp), --reach: 1 (hands meet)</p>
       <div class="absolute left-1/2 top-1/2 w-[80vw] -translate-x-1/2 -translate-y-1/2" style={`aspect-ratio:${spanW}/${spanH}`}>
         <div class="absolute" style={leftBox}><Astronaut who="left" class="pv-clasp" /></div>
         <div class="absolute" style={rightBox}><Astronaut who="right" class="pv-clasp" /></div>
