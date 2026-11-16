@@ -1,4 +1,17 @@
-# Agent B: pinned SpaceJourney stage (as built)
+# Agent B: SpaceJourney stage
+
+> **Now trigger-and-autoplay (supersedes the pin/scrub description below).** The stage is one 100svh block at the
+> top of the page with three stops, `hero` → `section2` → `appdesign`. The first scroll intent at a stop (wheel,
+> trackpad, swipe, keys) plays transition A (act 1) or B (act 2 + flash) **by time** to the next stop; going back
+> plays the same timeline in reverse. Page scrolling is locked (GSAP Observer + `html.sj-locked`) except at
+> `appdesign`. Every timing is in `src/components/sections/spacejourney/timing.ts`, with the table in
+> `docs/journey/TIMING.md` (regenerate with `node docs/journey/tools/timing-doc.mjs`). Review with `/?journey=debug`.
+> Verification: `docs/journey/tools/auto/verify.mjs` (shots in `docs/journey/shots/auto/`). The layering, camera
+> maths, dog cover/recede geometry and staging below are unchanged. The "vh of scroll" positions were converted to
+> seconds (A ≈ 1.25 s per vh, B ≈ 1.385 s per vh). The old `docs/journey/tools/b/*` scripts drive the removed
+> ScrollTrigger and no longer apply.
+
+## As first built (scroll-scrubbed, historical)
 
 Files: `src/components/sections/SpaceJourney.astro` (markup, layering, fallback CSS),
 `src/components/sections/spacejourney/journey.ts` (pin + master timeline + camera maths),

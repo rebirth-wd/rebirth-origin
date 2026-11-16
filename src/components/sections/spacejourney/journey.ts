@@ -1,38 +1,59 @@
-// SpaceJourney controller: pinned stage + ONE scrubbed master timeline (acts 1–2) + the flash hand-off to act 3.
-// Plan, timing table and staging choices: docs/journey/PLAN-B.md.
+// SpaceJourney controller: one 100svh stage with three stops (hero → section2 → appdesign) and two transitions that
+// play by TIME once a scroll intent triggers them (no scrubbing):
+//   A = hero → section2 (act 1), B = section2 → appdesign (act 2 + the flash hand-off to act 3).
+// Every timing lives in ./timing.ts. Docs: docs/journey/TIMING.md, docs/journey/PLAN-B.md.
 //
+// ONE paused master timeline in seconds holds both transitions: A on [0, LA], B on [LA, LA + LB]. A transition is a
+// tween of the master's time from one stop to the next (forwards at speed 1, backwards at TIMING.global.reverseSpeed).
 // The timeline tweens a plain state object (`st`); `render()` turns it into transforms using geometry measured in
-// `measure()` (re-run on every ScrollTrigger refresh: resize, orientation change, fonts). That keeps the maths exact:
-// the left chest is the zoom focus, the hands meet in Agent A's source arrangement at `fill`, and the dog ends exactly
-// on the rect where Agent C's frozen frame shows it.
+// `measure()` (re-run on resize at a stop, or on arrival if the resize happened mid-transition). That keeps the
+// maths exact: the left chest is the zoom focus, the hands meet in Agent A's source arrangement at the end of
+// A.handsTouch, and the dog ends exactly on the rect where Agent C's frozen frame shows it.
+//
+// Input: GSAP Observer (wheel + touch, preventDefault) while the page is locked at hero / section2 / mid-transition;
+// at appdesign native scrolling is released and a second, passive Observer only watches for an upward intent at
+// scrollY 0. Gestures are separated by TIMING.global.inputQuietGap of silence; a gesture that started a transition,
+// or that scrolled the page natively, never starts another one.
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { Observer } from 'gsap/Observer';
 import { SplitText } from 'gsap/SplitText';
 import { setReach, setIdle, handPoint } from '../../space/astronaut';
 import { initPhoneShowcase } from '../phoneshowcase/controller';
 import dogGeo from '../../space/dog.json';
 import rig from '../../space/rig.json';
+import { TIMING, resolveTiming, transitionLength, type Beat, type TransitionA, type TransitionB } from './timing';
 
-gsap.registerPlugin(ScrollTrigger, SplitText);
+gsap.registerPlugin(Observer, SplitText);
 
-/** Timeline positions in viewport-heights of scroll (desktop; mobile maps the same timeline onto `len` x). */
-export const T = {
-  hero: 0,
-  approach: 0,
-  fill: 2.4, // screen 100% smoke AND the hands touch
-  s2in: 2.4,
-  s2hold: 3.3,
-  dog: 4.3,
-  dogFade: 4.4, // plain gradient → the screen-covering dog (cross-fade 4.4–4.62)
-  dogMove: 4.62, // the dog recedes + drifts left → centre until 6.15
-  dogEnd: 6.15,
-  beam: 6.25,
-  flash: 6.9,
-  end: 7.1,
-};
-const A = T.fill; // approach length
-/** approach fractions */
-const P = { reachIn: 0.12, reachDone: 0.66, turnIn: 0.04, turnDone: 0.7, freeze: 0.72, gapClose: 0.78, smokeIn: 0.88, smokeDone: 0.98 };
+export type Stop = 'hero' | 'section2' | 'appdesign';
+export const STOPS: Stop[] = ['hero', 'section2', 'appdesign'];
+type Dir = 1 | -1;
+type Name = 'A' | 'B';
+export type RunInfo = { name: Name; dir: Dir; from: Stop; to: Stop; started: number; ended?: number };
+
+/** What the `?journey=debug` overlay (./debug.ts) and the verification scripts use. */
+export interface JourneyCtl {
+  stop(): Stop;
+  running(): RunInfo | null;
+  last(): RunInfo | null;
+  /** transition-local time: which transition the playhead is in and its position in seconds */
+  local(): { name: Name; t: number; len: number };
+  active(): string[];
+  isPaused(): boolean;
+  setPaused(on: boolean): void;
+  step(dt: number): void;
+  replay(): void;
+  jump(stop: Stop): void;
+  beats: { A: TransitionA; B: TransitionB };
+  lens: { A: number; B: number };
+  log: RunInfo[];
+}
+
+// Section-2 elements in DOM order ([data-sj-s2-item]: heading, sub line, badges 1–4) → their beats.
+const S2_IN = ['s2Heading', 's2Sub', 's2Badge1', 's2Badge2', 's2Badge3', 's2Badge4'] as const;
+const S2_OUT = ['s2HeadingOut', 's2SubOut', 's2Badge1Out', 's2Badge2Out', 's2Badge3Out', 's2Badge4Out'] as const;
+/** wait for the showcase's own resize handler (150 ms debounce) before re-measuring its dog rect */
+const RESIZE_SETTLE_MS = 250;
 
 // Agent A facts (docs/journey/ASSETS.md): source "hands clasped" arrangement, both boxes at rotation 0, same scale.
 const L_AR = rig.left.width / rig.left.height; // 1.306
@@ -49,11 +70,10 @@ type Cfg = {
   alpha: number; // share of the convergence travelled by the left figure
   sHold: number; // camera scale of the held two-shot at `freeze` (hands still in frame)
   hold: Pt; // where the left chest sits on screen during the two-shot (fractions of W/H); it reaches the centre at fill
-  len: number; // scroll length multiplier
   dogCtrlX: number; // dog drift: bezier control point for the dog's centre (fraction of W): left of centre
 };
-const DESKTOP: Cfg = { L: { x: 0.1, y: 0.215 }, R: { x: 0.875, y: 0.79 }, wL: 0.235, wMin: 230, wMax: 470, alpha: 0.5, sHold: 3.2, hold: { x: 0.5, y: 0.5 }, len: 1, dogCtrlX: 0.02 };
-const MOBILE: Cfg = { L: { x: 0.06, y: 0.15 }, R: { x: 0.88, y: 0.925 }, wL: 0.27, wMin: 96, wMax: 200, alpha: 0.5, sHold: 2.1, hold: { x: 0.3, y: 0.42 }, len: 0.82, dogCtrlX: -0.05 };
+const DESKTOP: Cfg = { L: { x: 0.1, y: 0.215 }, R: { x: 0.875, y: 0.79 }, wL: 0.235, wMin: 230, wMax: 470, alpha: 0.5, sHold: 3.2, hold: { x: 0.5, y: 0.5 }, dogCtrlX: 0.02 };
+const MOBILE: Cfg = { L: { x: 0.06, y: 0.15 }, R: { x: 0.88, y: 0.925 }, wL: 0.27, wMin: 96, wMax: 200, alpha: 0.5, sHold: 2.1, hold: { x: 0.3, y: 0.42 }, dogCtrlX: -0.05 };
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const bez = (a: number, c: number, b: number, t: number) => (1 - t) * (1 - t) * a + 2 * (1 - t) * t * c + t * t * b;
@@ -175,8 +195,12 @@ function privatiseSvgIds(scope: HTMLElement, prefix: string) {
   scope.querySelectorAll<SVGElement>('[id]').forEach((el) => { el.id = prefix + el.id; });
 }
 
+
+const end = (b: Beat) => b.start + b.dur;
+
 export function initSpaceJourney(root: HTMLElement) {
   const q = (s: string) => root.querySelector<HTMLElement>(s)!;
+  const html = document.documentElement;
   const stage = q('[data-sj-stage]');
   const act1 = q('[data-sj-act1]');
   const act2 = q('[data-sj-act2]');
@@ -200,7 +224,9 @@ export function initSpaceJourney(root: HTMLElement) {
   const figR = q('[data-sj-fig="right"]');
   const astroL = q('[data-sj-fig="left"] [data-astronaut]');
   const astroR = q('[data-sj-fig="right"] [data-astronaut]');
-  const showcase = initPhoneShowcase(q('[data-sj-showcase] [data-phoneshowcase]'));
+  const skip = root.querySelector<HTMLAnchorElement>('[data-sj-skip]');
+  const showcaseRoot = q('[data-sj-showcase] [data-phoneshowcase]');
+  const showcase = initPhoneShowcase(showcaseRoot);
 
   mountSmoke(figL, smoke);
   privatiseSvgIds(dogbox, 'sj-');
@@ -208,6 +234,35 @@ export function initSpaceJourney(root: HTMLElement) {
   const rimW = rim ? parseFloat(rim.getAttribute('stroke-width') || '5') : 5;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!reduce) { heroLoadIn(root); heroCards(root); }
+
+  // ---------- where to start (survives a desktop ↔ mobile rebuild) ----------
+  // Reload / back-forward: we restore the scroll position ourselves (scrollRestoration = manual), and only when the
+  // visitor had left the stage at `appdesign` (i.e. was scrolling the page below it). Otherwise always `hero` at y 0.
+  const KEY = `sj:${location.pathname}`;
+  let stopNow: Stop = 'hero';
+  let restoreY = 0;
+  let firstBuild = true;
+  const decideStart = () => {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(KEY) || 'null');
+      if (saved && (nav?.type === 'reload' || nav?.type === 'back_forward') && saved.stop === 'appdesign' && saved.y > 0) {
+        stopNow = 'appdesign'; restoreY = saved.y;
+      }
+    } catch { /* storage blocked: start at hero */ }
+    const id = location.hash ? decodeURIComponent(location.hash.slice(1)) : '';
+    const target = id ? document.getElementById(id) : null;
+    if (target && (!root.contains(target) || target.closest('[data-sj-showcase]'))) stopNow = 'appdesign';
+    if (window.scrollY > 0) { stopNow = 'appdesign'; restoreY = restoreY || window.scrollY; }
+    addEventListener('pagehide', () => {
+      try { sessionStorage.setItem(KEY, JSON.stringify({ stop: stopNow, y: Math.round(window.scrollY) })); } catch { /* ignore */ }
+    });
+  };
+
+  const handle: { ctl: JourneyCtl | null } = { ctl: null };
+  (root as any).__sj = handle; // verification handle (docs/journey/tools/auto/*) and the debug overlay
+  const debug = new URLSearchParams(location.search).get('journey') === 'debug';
 
   const mm = gsap.matchMedia();
   mm.add({
@@ -218,16 +273,26 @@ export function initSpaceJourney(root: HTMLElement) {
     const c = ctx.conditions as Record<string, boolean>;
     if (c.reduce) {
       // three static stacked blocks (CSS); the showcase renders its own final state under reduced motion
-      document.documentElement.classList.remove('sj-motion');
+      html.classList.remove('sj-motion', 'sj-locked', 'sj-gutter');
       return;
     }
-    document.documentElement.classList.add('sj-motion');
-    return buildMotion(c.mobile ? MOBILE : DESKTOP);
+    html.classList.add('sj-motion');
+    if (firstBuild) { firstBuild = false; decideStart(); }
+    return buildMotion(c.mobile ? MOBILE : DESKTOP, !!c.mobile);
   });
 
-  function buildMotion(cfg: Cfg) {
+  if (debug && !reduce) import('./debug').then((m) => m.mountDebug(handle));
+
+  function buildMotion(cfg: Cfg, mobile: boolean) {
+    const { A, B } = resolveTiming(mobile);
+    const LA = transitionLength(A), LB = transitionLength(B);
+    for (const [n, beats] of [['A', A], ['B', B]] as const) {
+      for (const [k, b] of Object.entries(beats)) if (end(b) > beats.arrival.start + 1e-6) console.warn(`[journey] ${n}.${k} ends at ${end(b).toFixed(2)}s, after ${n}.arrival (${beats.arrival.start}s): the transition is extended`);
+    }
+    const T0: Record<Stop, number> = { hero: 0, section2: LA, appdesign: LA + LB };
+
     // ---------- state driven by the timeline ----------
-    const st = { conv: 0, turn: 0, reach: 0, zoom: 0, focus: 0, centre: 0, fix: 0, smoke: 0, dog: 0, detail: 0 };
+    const st = { conv: 0, turn: 0, reach: 0, push: 0, rush: 0, focus: 0, centre: 0, fix: 0, smoke: 0, space: 0, dogK: 0, dogP: 0, detail: 0 };
     // ---------- geometry ----------
     let W = 0, H = 0, sFill = 10;
     const figs = {} as { L: Fig; R: Fig };
@@ -281,10 +346,13 @@ export function initSpaceJourney(root: HTMLElement) {
       L.c1 = { x: L.c0.x + cfg.alpha * D.x, y: L.c0.y + cfg.alpha * D.y };
       R.c1 = { x: L.c1.x + dC.x, y: L.c1.y + dC.y };
       P0 = toWorld(L, L.chest, L.c0, L.rot0);
-      // zoom at `fill`: the (possibly slightly rolled) chest window must cover the stage
+      // zoom at fill: the (possibly slightly rolled) chest window must cover the stage
       const rw = SMOKE_RECT.w * wL, rh = SMOKE_RECT.h * hL, co = Math.cos(ROLL_MAX), si = Math.sin(ROLL_MAX);
       sFill = (Math.max((W * co + H * si) / rw, (W * si + H * co) / rh) * 1.03) / (1 - 2 * FEATHER);
+      space.style.transformOrigin = `${P0.x.toFixed(2)}px ${P0.y.toFixed(2)}px`;
       measureDog();
+      // reserve the scrollbar only if the page can scroll at all (content below the stage): no gutter strip otherwise
+      html.classList.toggle('sj-gutter', html.scrollHeight > innerHeight + 1);
     };
 
     // ---------- render ----------
@@ -301,20 +369,23 @@ export function initSpaceJourney(root: HTMLElement) {
         f.el.style.transform = `translate(${(p.c.x - f.w / 2).toFixed(2)}px, ${(p.c.y - f.h / 2).toFixed(2)}px) rotate(${p.rot.toFixed(3)}deg)`;
       }
       setReach(L.root, st.reach); setReach(R.root, st.reach);
-      // camera: the left chest travels from its rest position to the stage centre while the scale grows
-      const s = Math.exp(st.zoom * Math.log(sFill));
+      // camera (log scale): push to the held two-shot, then the rush to the cover scale where the chest fills the stage
+      const lHold = Math.log(cfg.sHold);
+      const s = Math.exp(st.push * lHold + st.rush * (Math.log(sFill) - lHold));
       const Pw = toWorld(L, L.chest, pL.c, pL.rot);
       Pw.x += eC.x * st.fix; Pw.y += eC.y * st.fix;
-      // focus 0 = neutral camera (the chest is where the figure's own drift puts it), 1 = chest on the stage centre
+      // focus 0 = neutral camera (the chest is where the figure's own drift puts it), 1 = chest on the framing point;
+      // centre moves that point to the exact stage centre during the rush
       const tx = lerp(cfg.hold.x * W, W / 2, st.centre), ty = lerp(cfg.hold.y * H, H / 2, st.centre);
       const Q = { x: lerp(Pw.x, tx, st.focus), y: lerp(Pw.y, ty, st.focus) };
       cam = { s, x: Q.x - s * Pw.x, y: Q.y - s * Pw.y };
       const t = `translate(${cam.x.toFixed(2)}px, ${cam.y.toFixed(2)}px) scale(${s.toFixed(5)})`;
       for (const w of worlds) w.style.transform = t;
+      space.style.transform = `scale(${(1 + 0.35 * st.space).toFixed(5)})`;
       smoke.style.opacity = st.smoke.toFixed(4);
       // dog: log-scale recede from cover (k = 1) to C's rect; its centre on a bezier (centre → left → middle)
-      const e = st.dog;
-      const k = Math.exp(lerp(0, Math.log(k1), e));
+      const k = Math.exp(lerp(0, Math.log(k1), st.dogK));
+      const e = st.dogP;
       const cx = bez(C0.x, Cc.x, C1.x, e), cy = bez(C0.y, Cc.y, C1.y, e);
       dogbox.style.transform = `translate(${(cx - (k * Lw) / 2).toFixed(2)}px, ${(cy - (k * Lh) / 2).toFixed(2)}px) scale(${k.toFixed(6)})`;
       dogRoot.style.setProperty('--dog-detail', st.detail.toFixed(3));
@@ -345,118 +416,352 @@ export function initSpaceJourney(root: HTMLElement) {
       render();
     };
 
-    // ---------- the master timeline ----------
+    // ---------- the master timeline (seconds; built ONLY from timing.ts) ----------
     const tl = gsap.timeline({ defaults: { ease: 'none' }, paused: true, onUpdate: () => { render(); sync(); } });
-    const at = (f: number) => f * A;
+    const stTo = (key: keyof typeof st, to: number, b: Beat, off = 0) => tl.to(st, { [key]: to, duration: b.dur, ease: b.ease }, off + b.start);
+    const ab = (b: Beat) => ({ duration: b.dur, ease: b.ease });
 
-    // act 1: approach. Everything starts on the first pixel of scroll and overlaps.
-    tl.addLabel('hero', T.hero).addLabel('approach', T.approach);
-    tl.to(hero, { autoAlpha: 0, y: -46, duration: at(0.24), ease: 'power2.in' }, 0);
-    tl.set(worldL, { zIndex: 4 }, at(0.25)); // copy gone: the left figure (zoom target) is nearest the camera
-    // the hands close the last ~1.5% visibly in the held two-shot; expo.out lands them within a pixel by ~0.88 of the
-    // approach (still in frame) and exactly on `fill`
-    tl.to(st, { conv: 0.95, duration: at(0.6), ease: 'power2.inOut' }, 0);
-    tl.to(st, { conv: 0.985, duration: at(P.gapClose - 0.6), ease: 'sine.inOut' }, at(0.6));
-    tl.to(st, { conv: 1, duration: at(1 - P.gapClose), ease: 'expo.out' }, at(P.gapClose));
-    tl.to(st, { turn: 1, duration: at(P.turnDone - P.turnIn), ease: 'sine.inOut' }, at(P.turnIn));
-    tl.to(st, { reach: 1, duration: at(P.reachDone - P.reachIn), ease: 'power2.inOut' }, at(P.reachIn));
-    tl.to(st, { zoom: () => Math.log(cfg.sHold) / Math.log(sFill), duration: at(P.freeze), ease: 'power2.in' }, 0);
-    // power4.in: the hands stay in frame while they meet, then the camera rushes into the chest smoke
-    tl.to(st, { zoom: 1, duration: at(1 - P.freeze), ease: 'power4.in' }, at(P.freeze));
-    tl.to(st, { focus: 1, duration: at(0.8), ease: 'power2.inOut' }, at(0.06));
-    tl.to(st, { centre: 1, duration: at(1 - P.freeze), ease: 'power2.in' }, at(P.freeze));
-    tl.to(st, { fix: 1, duration: at(1 - P.freeze), ease: 'sine.inOut' }, at(P.freeze));
-    tl.to(st, { smoke: 1, duration: at(P.smokeDone - P.smokeIn), ease: 'power1.inOut' }, at(P.smokeIn));
-    tl.fromTo(space, { scale: 1 }, { scale: 1.35, duration: A, ease: 'power2.in', transformOrigin: () => `${P0.x}px ${P0.y}px` }, 0);
-    tl.addLabel('fill', T.fill);
+    // A: hero → section2
+    tl.addLabel('hero', 0);
+    tl.to(hero, { autoAlpha: 0, y: -46, ...ab(A.heroOut) }, A.heroOut.start);
+    tl.set(worldL, { zIndex: 4 }, A.leftFigureToFront.start); // copy gone: the left figure (zoom target) is nearest
+    stTo('conv', 0.95, A.converge);
+    stTo('conv', 0.985, A.convergeSlow);
+    stTo('conv', 1, A.handsTouch); // contact in the source arrangement at the end of this beat
+    stTo('turn', 1, A.turn);
+    stTo('reach', 1, A.reach);
+    stTo('push', 1, A.cameraTwoShot);
+    stTo('focus', 1, A.cameraFocus);
+    stTo('rush', 1, A.cameraRush); // the hands stay in frame while they meet, then the camera rushes into the smoke
+    stTo('centre', 1, A.cameraCentre);
+    stTo('fix', 1, A.idleCorrection);
+    stTo('smoke', 1, A.smokeIn);
+    stTo('space', 1, A.spaceZoom);
+    // smoke → gradient, section 2 in
+    tl.set(act2, { autoAlpha: 1 }, A.gradientIn.start);
+    tl.fromTo(grad, { autoAlpha: 0 }, { autoAlpha: 1, ...ab(A.gradientIn) }, A.gradientIn.start);
+    tl.set(act1, { autoAlpha: 0 }, end(A.gradientIn));
+    tl.set(s2, { autoAlpha: 1 }, A.gradientIn.start);
+    s2items.forEach((el, i) => {
+      const b = A[S2_IN[i]];
+      if (b) tl.fromTo(el, { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, ...ab(b) }, b.start);
+    });
+    tl.set({}, {}, LA);
+    tl.addLabel('section2', LA);
 
-    // act 2: section 2 (the smoke fades fairly quickly into the moving gradient while the copy staggers in)
-    tl.addLabel('section2-in', T.s2in);
-    tl.set(act2, { autoAlpha: 1 }, T.s2in);
-    tl.fromTo(grad, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.24, ease: 'power1.inOut' }, T.s2in);
-    tl.set(act1, { autoAlpha: 0 }, T.s2in + 0.26);
-    tl.set(s2, { autoAlpha: 1 }, T.s2in);
-    tl.fromTo(s2items, { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: 0.3, stagger: 0.09, ease: 'power2.out' }, T.s2in + 0.06);
-    tl.addLabel('section2-hold', T.s2hold);
+    // B: section2 → appdesign. Section-2 elements out; the gradient turns out to be the inside of a screen-covering dog.
+    let outEnd = 0;
+    s2items.forEach((el, i) => {
+      const b = B[S2_OUT[i]];
+      if (!b) return;
+      tl.to(el, { autoAlpha: 0, y: -20, ...ab(b) }, LA + b.start);
+      outEnd = Math.max(outEnd, end(b));
+    });
+    tl.set(s2, { autoAlpha: 0 }, LA + outEnd);
+    tl.set([space2, dogwrap], { autoAlpha: 1 }, LA + B.gradToDog.start);
+    tl.to(grad, { autoAlpha: 0, ...ab(B.gradToDog) }, LA + B.gradToDog.start);
+    stTo('dogK', 1, B.dogRecede, LA);
+    stTo('dogP', 1, B.dogDrift, LA);
+    stTo('detail', 1, B.dogDetail, LA);
+    // light: a thin beam from the centre to both edges, the bloom, the screen-wide flash
+    tl.fromTo(beam, { opacity: 0 }, { opacity: 1, ...ab(B.beamIgnite) }, LA + B.beamIgnite.start);
+    tl.fromTo(beam, { scaleX: 0 }, { scaleX: 1, ...ab(B.beamGrow) }, LA + B.beamGrow.start);
+    tl.fromTo(bloom, { opacity: 0, scaleY: 0.02 }, { opacity: 1, scaleY: 1.6, ...ab(B.bloom) }, LA + B.bloom.start);
+    tl.fromTo(flash, { opacity: 0 }, { opacity: 1, ...ab(B.flashIn) }, LA + B.flashIn.start);
+    tl.set(act2, { autoAlpha: 0 }, LA + B.flashPeak.start); // showcase.play() at the same time, see sync()
+    // (B.whiteHold: nothing moves) then the white fades off the showcase
+    tl.fromTo(fx, { opacity: 1 }, { opacity: 0, ...ab(B.whiteFade) }, LA + B.whiteFade.start);
+    tl.set({}, {}, LA + LB);
+    tl.addLabel('appdesign', LA + LB);
 
-    // act 2: the dog. Copy out (reverse order); the gradient turns out to be the inside of a screen-covering dog.
-    tl.addLabel('dog', T.dog);
-    tl.to(s2items, { autoAlpha: 0, y: -20, duration: 0.24, stagger: { each: 0.035, from: 'end' }, ease: 'power2.in' }, T.dog);
-    tl.set(s2, { autoAlpha: 0 }, T.dog + 0.45);
-    tl.set([space2, dogwrap], { autoAlpha: 1 }, T.dog);
-    tl.to(grad, { autoAlpha: 0, duration: T.dogMove - T.dogFade, ease: 'power1.inOut' }, T.dogFade);
-    tl.to(st, { dog: 1, duration: T.dogEnd - T.dogMove, ease: 'power2.inOut' }, T.dogMove);
-    tl.to(st, { detail: 1, duration: (T.dogEnd - T.dogMove) * 0.4, ease: 'power1.inOut' }, T.dogMove + (T.dogEnd - T.dogMove) * 0.25);
-
-    // light: a thin beam from the centre to both edges, then the screen-wide flash
-    tl.addLabel('beam', T.beam);
-    tl.fromTo(beam, { opacity: 0 }, { opacity: 1, duration: 0.05 }, T.beam);
-    tl.fromTo(beam, { scaleX: 0 }, { scaleX: 1, duration: 0.38, ease: 'expo.out' }, T.beam);
-    tl.fromTo(bloom, { opacity: 0, scaleY: 0.02 }, { opacity: 1, scaleY: 1.6, duration: 0.3, ease: 'power2.in' }, T.flash - 0.3);
-    tl.fromTo(flash, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'power2.in' }, T.flash - 0.2);
-    tl.addLabel('flash', T.flash);
-    tl.set(act2, { autoAlpha: 0 }, T.flash);
-    tl.to({}, { duration: T.end - T.flash }, T.flash);
-
-    // ---------- discrete hand-offs: idle freeze, and the flash → act 3 (time-based, not scrubbed) ----------
+    // ---------- discrete hand-offs: idle freeze, and the flash → act 3 ----------
+    const FLASH_T = LA + B.flashPeak.start - 1e-4;
     let flashed = false, dogStale = false;
-    let fxFade: gsap.core.Tween | null = null;
     function sync() {
       const t = tl.time();
-      freeze(t >= at(P.freeze)); // stays frozen while act 1 is hidden (no idle work off-stage)
-      const past = t >= T.flash - 1e-4;
+      freeze(t >= A.idleFreeze.start); // stays frozen while act 1 is hidden (no idle work off-stage)
+      const past = t >= FLASH_T;
       if (past === flashed) return;
       flashed = past;
-      fxFade?.kill();
-      if (past) {
-        showcase.play();
-        fxFade = gsap.fromTo(fx, { opacity: 1 }, { opacity: 0, duration: 0.5, delay: 0.15, ease: 'power1.inOut' });
-      } else {
+      if (past) showcase.play();
+      else {
         showcase.reset();
-        gsap.set(fx, { opacity: 1 });
         if (dogStale) { dogStale = false; measureDog(); render(); }
       }
     }
 
-    measure();
-    render();
-    const trigger = ScrollTrigger.create({
-      id: 'space-journey',
-      trigger: root,
-      pin: stage,
-      start: 'top top',
-      end: () => `+=${Math.round(T.end * stage.offsetHeight * cfg.len)}`,
-      scrub: 0.8,
-      anticipatePin: 1,
-      invalidateOnRefresh: true,
-      refreshPriority: 10, // pin measured before every later ScrollTrigger (higher = earlier in GSAP 3.15)
-      animation: tl,
-      onRefresh: () => {
-        measure();
-        // the showcase is running: its dog rect is no longer the t=0 frame (the dog is hidden anyway); re-measure the
-        // dog's end rect when reset() puts the frozen frame back
-        if (flashed) dogStale = true;
-        if (frozen) freeze(false); // sync() re-freezes and re-measures the idle corrections with the new geometry
-        render(); sync();
-      },
+    const remeasure = () => {
+      pendingMeasure = false;
+      measure();
+      // the showcase is running: its dog rect is no longer the t=0 frame (the dog is hidden anyway); re-measure the
+      // dog's end rect when reset() puts the frozen frame back
+      if (flashed) dogStale = true;
+      if (frozen) freeze(false); // sync() re-freezes and re-measures the idle corrections with the new geometry
+      render(); sync();
+    };
+
+    // ---------- stops, runs, locking ----------
+    let idx = STOPS.indexOf(stopNow);
+    let run: (RunInfo & { tween: gsap.core.Tween | null }) | null = null;
+    let last: RunInfo | null = null;
+    const log: RunInfo[] = [];
+    let arrivedAt = -Infinity;
+    let pendingMeasure = false;
+    let dbgPaused = false;
+    // gestures: a new one starts after `inputQuietGap` of input silence, on touchstart and on every key press
+    let gesture = 0, usedGesture = -1, lastInput = -Infinity;
+    const G = TIMING.global;
+    const now = () => performance.now();
+
+    const emit = (type: string, detail: object) => root.dispatchEvent(new CustomEvent(type, { detail }));
+    const setLocked = (on: boolean) => {
+      html.classList.toggle('sj-locked', on);
+      if (on) { lockObs.enable(); freeObs.disable(); if (window.scrollY !== 0) window.scrollTo(0, 0); }
+      else { lockObs.disable(); freeObs.enable(); }
+    };
+    const markStop = () => {
+      stopNow = STOPS[idx];
+      root.dataset.sjStop = stopNow;
+      if (run) root.dataset.sjRun = `${run.name}${run.dir > 0 ? '+' : '-'}`; else delete root.dataset.sjRun;
+    };
+
+    const drive = () => {
+      if (!run) return;
+      run.tween?.kill();
+      const target = T0[run.to], toIdx = STOPS.indexOf(run.to);
+      const speed = run.dir > 0 ? 1 : G.reverseSpeed;
+      run.tween = gsap.to(tl, { time: target, duration: Math.abs(target - tl.time()) / speed, ease: 'none', overwrite: true, onComplete: () => arrive(toIdx) });
+      if (dbgPaused) run.tween.pause();
+    };
+
+    const begin = (dir: Dir) => {
+      const to = idx + dir;
+      if (to < 0 || to > 2) return false;
+      const from = STOPS[idx];
+      const name: Name = dir > 0 ? (idx === 0 ? 'A' : 'B') : (idx === 2 ? 'B' : 'A');
+      run = { name, dir, from, to: STOPS[to], started: now(), tween: null };
+      setLocked(true);
+      markStop();
+      emit('sj:start', { name, dir, from, to: STOPS[to] });
+      drive();
+      return true;
+    };
+
+    const arrive = (i: number) => {
+      const r = run;
+      idx = i; run?.tween?.kill(); run = null;
+      arrivedAt = now();
+      if (r) { last = { name: r.name, dir: r.dir, from: r.from, to: r.to, started: r.started, ended: arrivedAt }; log.push(last); }
+      markStop();
+      if (pendingMeasure) remeasure();
+      setLocked(stopNow !== 'appdesign');
+      emit('sj:arrive', { stop: stopNow, run: last && r ? last : null });
+    };
+
+    const jump = (stop: Stop, cooldown = true) => {
+      run?.tween?.kill(); run = null;
+      tl.time(T0[stop]); render(); sync();
+      idx = STOPS.indexOf(stop);
+      arrivedAt = cooldown ? now() : -Infinity;
+      markStop();
+      if (pendingMeasure) remeasure();
+      setLocked(stop !== 'appdesign');
+    };
+
+    const intent = (dir: Dir) => {
+      if (run || dbgPaused) return;
+      if (gesture === usedGesture) return; // the same gesture already started a transition (or scrolled the page)
+      const to = idx + dir;
+      if (to < 0 || to > 2) return;
+      usedGesture = gesture;
+      if (now() - arrivedAt < G.arrivalCooldown * 1000) return; // consumed by the cool-down
+      begin(dir);
+    };
+
+    const noteInput = (fresh = false) => {
+      const t = now();
+      if (fresh || t - lastInput >= G.inputQuietGap * 1000) gesture++;
+      lastInput = t;
+    };
+    const onWheelNote = () => noteInput();
+    const onTouchStartNote = (e: TouchEvent) => noteInput(e.touches.length === 1);
+    const onTouchMoveNote = () => noteInput();
+    const onScroll = () => {
+      if (html.classList.contains('sj-locked')) {
+        // locked: nothing may move the page (focus / anchors / scripts); focus outside the stage is handled below
+        if (window.scrollY !== 0) window.scrollTo(0, 0);
+        return;
+      }
+      usedGesture = gesture; // native scrolling at appdesign: this gesture may not also start the reverse transition
+    };
+
+    // wheel / trackpad / touch. wheelSpeed -1 maps wheel-down and finger-up to the same "up" (= next stop)
+    const ignoreCheck = (e: Event, isPointerOrTouch: boolean) => {
+      if (isPointerOrTouch) {
+        const pe = e as PointerEvent & TouchEvent;
+        return (!!pe.pointerType && pe.pointerType !== 'touch') || (!!pe.touches && pe.touches.length > 1); // mouse drags, pinch-zoom
+      }
+      const we = e as WheelEvent;
+      return e.type === 'wheel' && (we.ctrlKey || Math.abs(we.deltaX) > Math.abs(we.deltaY)); // zoom, horizontal swipes
+    };
+    const vertical = (s: Observer) => Math.abs(s.deltaY) >= Math.abs(s.deltaX);
+    const lockObs = Observer.create({
+      target: window, type: 'wheel,touch', wheelSpeed: -1, tolerance: G.tolerance, preventDefault: true, ignoreCheck,
+      onUp: (s) => { if (vertical(s)) intent(1); },
+      onDown: (s) => { if (vertical(s)) intent(-1); },
+    });
+    const freeObs = Observer.create({
+      target: window, type: 'wheel,touch', wheelSpeed: -1, tolerance: G.tolerance, ignoreCheck,
+      onDown: (s) => { if (vertical(s) && window.scrollY <= 0) intent(-1); },
     });
 
-    // verification handle (docs/journey/tools/b/*)
-    (root as any).__sj = { tl, trigger, st, T, cfg, get geo() { return { W, H, sFill, Lw, k1, C0, C1, eH, eC, figs, cam }; } };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      let dir = 0;
+      switch (e.key) {
+        case 'ArrowDown': case 'PageDown': case 'End': dir = 1; break;
+        case 'ArrowUp': case 'PageUp': case 'Home': dir = -1; break;
+        case ' ': case 'Spacebar':
+          if (t && (t.tagName === 'BUTTON' || t.getAttribute('role') === 'button')) return; // Space activates buttons
+          dir = e.shiftKey ? -1 : 1; break;
+        default: return;
+      }
+      const locked = !!run || idx < 2;
+      if (!locked && (dir > 0 || window.scrollY > 0)) return; // appdesign: native keyboard scrolling
+      e.preventDefault();
+      if (e.repeat) return;
+      noteInput(true);
+      intent(dir as Dir);
+    };
+
+    // focus moving outside the stage (not the navbar) while locked → we are past the journey: release it
+    const onFocusIn = (e: FocusEvent) => {
+      const t = e.target as HTMLElement;
+      if (!html.classList.contains('sj-locked') || !(t instanceof HTMLElement) || root.contains(t) || t.closest('[data-section="Navbar"]')) return;
+      jump('appdesign');
+      requestAnimationFrame(() => t.scrollIntoView({ block: 'nearest' }));
+    };
+    const onHash = () => {
+      const id = decodeURIComponent(location.hash.slice(1));
+      const el = id ? document.getElementById(id) : null;
+      if (!el || (root.contains(el) && !el.closest('[data-sj-showcase]'))) return;
+      jump('appdesign');
+      requestAnimationFrame(() => el.scrollIntoView());
+    };
+    const onSkip = (e: MouseEvent) => {
+      e.preventDefault();
+      jump('appdesign');
+      const title = showcaseRoot.querySelector<HTMLElement>('#ps-title') ?? showcaseRoot;
+      if (!title.hasAttribute('tabindex')) title.setAttribute('tabindex', '-1');
+      title.focus({ preventScroll: true });
+    };
+
+    let rzT = 0;
+    const onResize = () => {
+      clearTimeout(rzT);
+      rzT = window.setTimeout(() => { if (run) pendingMeasure = true; else remeasure(); }, RESIZE_SETTLE_MS);
+    };
+    const onSettled = () => { if (run) pendingMeasure = true; else remeasure(); };
+
+    addEventListener('wheel', onWheelNote, { capture: true, passive: true });
+    addEventListener('touchstart', onTouchStartNote, { capture: true, passive: true });
+    addEventListener('touchmove', onTouchMoveNote, { capture: true, passive: true });
+    addEventListener('scroll', onScroll, { passive: true });
+    addEventListener('keydown', onKey);
+    addEventListener('resize', onResize);
+    addEventListener('hashchange', onHash);
+    document.addEventListener('focusin', onFocusIn);
+    skip?.addEventListener('click', onSkip);
+    // fonts and images change layout → re-measure once they settle
+    document.fonts?.ready.then(onSettled);
+    if (document.readyState !== 'complete') addEventListener('load', onSettled, { once: true });
+
+    // ---------- start ----------
+    measure();
+    render(); sync();
+    jump(stopNow, false);
+    if (restoreY && stopNow === 'appdesign') {
+      const y = restoreY; restoreY = 0;
+      window.scrollTo(0, y);
+      if (document.readyState !== 'complete') addEventListener('load', () => window.scrollTo(0, y), { once: true });
+    }
+
+    // ---------- control surface (debug overlay + verification) ----------
+    const segOf = (t: number): Name => (t < LA - 1e-6 ? 'A' : t > LA + 1e-6 ? 'B' : (run?.name ?? last?.name ?? (idx === 2 ? 'B' : 'A')));
+    const ctl: JourneyCtl = {
+      stop: () => STOPS[idx],
+      running: () => (run ? { name: run.name, dir: run.dir, from: run.from, to: run.to, started: run.started } : null),
+      last: () => last,
+      local: () => {
+        const t = tl.time();
+        const name = run?.name ?? segOf(t);
+        return { name, t: name === 'A' ? t : t - LA, len: name === 'A' ? LA : LB };
+      },
+      active: () => {
+        const { name, t } = ctl.local();
+        const beats = (name === 'A' ? A : B) as Record<string, Beat>;
+        return Object.entries(beats).filter(([, b]) => (b.dur > 0 ? t >= b.start - 1e-6 && t <= end(b) + 1e-6 : Math.abs(t - b.start) < 0.06)).map(([k]) => k);
+      },
+      isPaused: () => dbgPaused,
+      setPaused: (on) => {
+        dbgPaused = on;
+        if (on) run?.tween?.pause();
+        else if (run) drive(); // re-drive from wherever stepping left the playhead
+      },
+      step: (dt) => {
+        if (!dbgPaused) return;
+        if (!run) {
+          const dir: Dir = dt > 0 ? 1 : -1;
+          if (!begin(dir)) return; // begins paused (dbgPaused)
+        }
+        const r = run!;
+        const a = T0[r.from], b = T0[r.to];
+        const t = clamp(Math.round((tl.time() + dt) * 1000) / 1000, Math.min(a, b), Math.max(a, b));
+        r.tween?.kill(); r.tween = null;
+        tl.time(t);
+        if (Math.abs(t - b) < 1e-6) arrive(STOPS.indexOf(r.to));
+        else if (Math.abs(t - a) < 1e-6) { run = null; arrive(STOPS.indexOf(r.from)); }
+      },
+      replay: () => {
+        const ref = run ?? last ?? { name: 'A' as Name, dir: 1 as Dir };
+        const from = ref.name === 'A' ? (ref.dir > 0 ? 'hero' : 'section2') : (ref.dir > 0 ? 'section2' : 'appdesign');
+        jump(from);
+        begin(ref.dir);
+      },
+      jump: (stop) => jump(stop),
+      beats: { A, B },
+      lens: { A: LA, B: LB },
+      log,
+    };
+    handle.ctl = ctl;
 
     return () => {
-      fxFade?.kill();
+      // desktop ↔ mobile rebuild (or reduced motion switched on): a running transition snaps to its destination
+      if (run) stopNow = run.to;
+      run?.tween?.kill(); run = null;
+      clearTimeout(rzT);
+      removeEventListener('wheel', onWheelNote, { capture: true });
+      removeEventListener('touchstart', onTouchStartNote, { capture: true });
+      removeEventListener('touchmove', onTouchMoveNote, { capture: true });
+      removeEventListener('scroll', onScroll);
+      removeEventListener('keydown', onKey);
+      removeEventListener('resize', onResize);
+      removeEventListener('hashchange', onHash);
+      document.removeEventListener('focusin', onFocusIn);
+      skip?.removeEventListener('click', onSkip);
+      lockObs.kill(); freeObs.kill();
+      html.classList.remove('sj-locked');
       if (flashed) showcase.reset();
       if (frozen) { setIdle(astroL, true); setIdle(astroR, true); }
       [figL, figR, dogbox].forEach((el) => { el.style.transform = ''; el.style.width = ''; });
       worlds.forEach((w) => { w.style.transform = ''; });
+      space.style.transform = ''; space.style.transformOrigin = '';
       smoke.style.opacity = '';
       setReach(astroL, 0); setReach(astroR, 0);
-      trigger.kill();
+      tl.kill();
+      if (handle.ctl === ctl) handle.ctl = null;
     };
   }
-
-  // fonts and images change layout → re-measure once they settle
-  document.fonts?.ready.then(() => ScrollTrigger.refresh());
-  if (document.readyState !== 'complete') addEventListener('load', () => ScrollTrigger.refresh(), { once: true });
 }
