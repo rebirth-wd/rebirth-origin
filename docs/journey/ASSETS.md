@@ -3,84 +3,98 @@
 Status: **final (v2)**. The contract surface hasn't changed since v1. The numbers below changed a little in v2
 (chest point, box sizes), so read them from `rig.json` / CSS rather than hard-coding them.
 Preview: `http://localhost:4321/preview/space`. It has the hero (moon, both figures, `--reach` slider), the
-two figures in their source "hands clasped" arrangement at `--reach:1`, dogs at 260/520/900 px, a dog covering
+two figures in their clasp arrangement (`rig.clasp`) at `--reach:1`, dogs at 260/520/900 px, a dog covering
 the viewport, and the smoke texture.
 
 ## `<Astronaut who="left|right" class? />`: `src/components/space/Astronaut.astro` + `astronaut.ts`
 
 - Root: `div.rb-astro[data-astronaut="left|right"]` with `position: relative; width: 100%` and an intrinsic
-  `aspect-ratio`. left is 2034×1557 (1.306), right is 1335×1683 (0.793). Set its width on a wrapper or class.
+  `aspect-ratio`. left is 1852×1664 (1.113), right is 1666×1830 (0.910). Set its width on a wrapper or class.
   Every part is positioned in %, so the figure scales with the width. Put your transforms (position, rotation,
   scale) on the root or on a wrapper. The component only transforms its inner `[data-rig]` (bob/roll) and the
-  `[data-part]` elements (limbs).
-- **Unrotated pose**: both figures keep the orientation they have in `source-figures.webp`.
-  - **left** (purple/pink, red legs): head at the top-right, reaching arm going down-right from the chest,
-    other arm up-left, legs trailing to the lower-left. `--head-angle: -32.5deg` (head points right and a little
-    up). To point it head-first at a figure to its lower-right (about +30°), rotate the box by about **+62°**.
-  - **right** (blue): head at the top-left, reaching arm going left, knees bent, shins to the lower-right.
-    `--head-angle: -126deg` (head points up-left). To point it at a figure to its upper-left (about -150°),
-    rotate the box by about **-24°**.
-  - `--head-angle` uses screen axes: 0 = right, 90 = down.
-  - **Important for act 1:** the hands meet only in the source arrangement, where both boxes have rotation 0,
-    the same scale, and the offsets below. The head-first hero rotations (+62° / -24°) point the arms elsewhere.
-    So during `approach` tween each box's rotation from its hero angle to 0 (or to any rotation the two share)
-    while `--reach` goes 0 → 1.
-- **Source arrangement (hands clasped)**: use the same pixel scale for both boxes. Then
-  right box origin = left box origin + `((703-63)*3, (179-60)*3)` = **(+1920, +357)** in box-pixel units, where
-  the left box is 2034 px wide. As fractions of the left box width that is
-  **(+94.40%, +17.55%)**, and the right box width is **65.63%** of the left box width.
-  `rig.json` → `source_box`, `scale`, `width`, `height` has the raw values. Preview section `#clasp` builds
-  exactly this arrangement (`docs/journey/shots/A/clasp.png`, `clasp-hands-zoom.png`). The hands overlap by
-  about 5 source px, so there is no seam.
-- CSS variables on the root (read them with `getComputedStyle`, or `import rig from '@/components/space/rig.json'`):
-  - `--chest-x`, `--chest-y`: % of the box. This is the centre of the largest fully opaque 16:10 rectangle on
-    the figure (upper chest), i.e. the act-1 zoom target. **left: 69.91%, 22.35%**; right: 45.39%, 26.92%.
-  - `--hand-x`, `--hand-y`: % of the box. This is the reaching hand tip at `--reach: 1` with the figure at
-    rest. **left: 98.08%, 63.20%** (right edge of the box); **right: 4.72%, 36.54%**.
+  `[data-part]` elements (limbs). Always read numbers from `rig.json` (it is regenerated), not from this page.
+- **Look**: crisp astronaut silhouettes filled with the client's smoke. Each silhouette is cut from the outline
+  of a client photo (`docs/journey/source/astronaut-a.png` = left, `astronaut-b.png` mirrored = right).
+  - Outline: smoothed like a vector curve, with the fingers kept. The head is a clean helmet dome over a
+    backpack.
+  - Inside: a dark smoke visor with a soft specular, a faint groove around the helmet shell, and a slightly
+    denser backpack.
+  - Volume: an inner edge shade and a faint rim light from the upper left.
+  - No photo pixel is shipped. Left is pink/magenta/violet; right is blue/violet (its smoke is mirrored and
+    hue-shifted).
+  - The right figure's clenched fist is replaced by the open glove outline from photo a, so the reaching hands
+    meet fingertip to fingertip.
+- **Rotation 0 of both boxes is the clasp pose** (each figure is pre-rotated in the generator):
+  - **left**: lying diagonally, helmet at the upper right, reaching arm pointing right (12°), other arm up,
+    legs trailing to the lower left. `--head-angle: -37.5deg`.
+  - **right**: upright, leaning slightly left, reaching arm pointing left (168°), other arm hanging.
+    `--head-angle: -104deg`.
+  - `--head-angle` uses screen axes: 0 = right, 90 = down. To point a figure head-first in a direction θ, rotate
+    its box by θ − headAngle. Any head-first hero rotation points the arms elsewhere, so during `approach` tween
+    each box's rotation back to 0 while `--reach` goes 0 → 1.
+- **Clasp arrangement (hands meet)**: both boxes at rotation 0 and the same pixel scale.
+  - `rig.clasp.rightRelW` = right box width / left box width (**0.89957**).
+  - `rig.clasp.off` = right box origin − left box origin, in left-box widths (**[0.96403, 0.13445]**).
+  - At `--reach: 1` the two hand points then coincide; the generator asserts ≤ 2 px. The fingertips overlap by
+    about 6 box px, so there is no gap.
+  - The bodies touch nowhere else (asserted).
+  - Preview section `#clasp` (`dev-previews/space.astro`) builds exactly this.
+- CSS variables on the root (or `import rig from '@/components/space/rig.json'`):
+  - `--chest-x`, `--chest-y`: % of the box. This is the centre of the largest fully opaque 16:10 window in the
+    torso, kept clear of the helmet and backpack detail. It is the act-1 zoom target. **left: 54.54%, 49.52%**;
+    right: 56.69%, 36.97%.
+  - `rig.left.smokeRect = { l, t, w, h }` (fractions of the left box) is that window:
+    **0.43898, 0.42127, 0.21274, 0.14784**.
+    - It is 100% opaque in the torso part alone, and no shading touches it (both asserted).
+    - `smoke-pink.webp` is exactly this window.
+  - `--hand-x`, `--hand-y`: % of the box. This is the reaching fingertip at `--reach: 1` with the figure at
+    rest. **left: 98.201%, 58.323%**; **right: 1.999%, 39.426%**.
   - `--head-angle`: see above.
 - **Reach**: tween the inline custom property, for example `gsap.to(root, { '--reach': 1 })`. Each tick the
   script reads `root.style.getPropertyValue('--reach')`. That reads the inline style only, so it never forces a
-  style recalc. You can also call `setReach(root, n)`. 0 = arm relaxed and bent towards the body. 1 = arm fully
-  extended in the source pose. The arm moves with a smoothstep, and the idle sway on the reaching arm fades
-  to 10% as reach → 1 so the hand is steady at contact. Changes are applied even while the idle loop is paused,
-  through a MutationObserver on `style`.
+  style recalc. You can also call `setReach(root, n)`.
+  - 0 = arm folded towards the body (shoulder −16°/+14°, elbow −30°/+26°, left/right).
+  - 1 = arm fully extended in the clasp pose.
+  - The arm moves with a smoothstep, and the idle sway on the reaching arm fades to 10% as reach → 1, so the
+    hand is steady at contact.
+  - Changes are applied even while the idle loop is paused, through a MutationObserver on `style`.
 - Live points: `handPoint(root)` and `chestPoint(root)` return viewport `{x, y}`. They include idle motion,
-  reach and your transforms (they use marker elements and `getBoundingClientRect`, so call them sparingly,
-  e.g. once on refresh, not every scrub frame).
-- **Idle spacewalk**: one GSAP timeline per figure. Each limb gets two overlapping `sine.inOut` yoyo tweens
-  with different periods (3.3–10 s, ±0.5–6.5°), and every figure gets ±10% random period jitter and a random
-  start phase. Child limbs nest inside their parent, so a lower leg inherits the thigh's swing. The whole figure
-  also bobs and rolls on `[data-rig]` (xPercent ±1, yPercent ±1.4, rotation ±1.6–1.8°, 7–14 s). It runs by
-  itself and pauses when the root is off-screen (IntersectionObserver, 10% margin). It never runs under
-  `prefers-reduced-motion` (reach still works). `setIdle(root, false|true)` stops or restarts it manually, for
-  example while the screen is full of smoke. Writes go through `gsap.quickSetter` (transforms only).
+  reach and your transforms (they use marker elements and `getBoundingClientRect`, so call them sparingly).
+- **Idle spacewalk**: one GSAP timeline per figure.
+  - Each limb gets two overlapping `sine.inOut` yoyo tweens with different periods (3.3–10 s, ±0.5–6.5°).
+  - Every figure gets ±10% random period jitter and a random start phase.
+  - Child limbs nest inside their parent, so a lower leg inherits the thigh's swing.
+  - The whole figure also bobs and rolls on `[data-rig]` (xPercent ±1, yPercent ±1.4, rotation ±1.6–1.8°,
+    7–14 s).
+  - It runs by itself and pauses when the root is off-screen (IntersectionObserver, 10% margin). It never runs
+    under `prefers-reduced-motion` (reach still works).
+  - `setIdle(root, false|true)` stops or restarts it.
+  - `setIdleAmp(root, n)` multiplies every idle term (limb sway and the rig bob and roll) by n. The default is
+    1 and 0 is the rest pose. It applies at once, even while paused, and does not affect reach. Use it to fade
+    the idle out so contact is exact without a freeze.
+  - Writes go through `gsap.quickSetter` (transforms only).
 - Exports of `astronaut.ts`: `initAstronaut(root)`, `initAll(scope?)` (the component calls it on load),
-  `setReach(root, n)`, `handPoint(root)`, `chestPoint(root)`, `setIdle(root, on)`. Debug handle:
-  `root.rbAstronaut`.
-- Rig parts (z-order low → high):
-  - left: legs a/b (upper→lower), arm-back, torso+head, reaching arm upper→lower.
-  - right: shins, legs-upper, torso+head, arm-other, reaching arm upper→lower.
-  - Pivots are at the shoulders, elbows, hips and knees. Each part overlaps its neighbour by about 10 source px
-    with a feathered edge.
-  - Checked at ±7–8° on every joint at once (`seam8.png`, `seam-8.png`, `seam-alt7-*-dpr2.png`): no gaps. The
-    only effect is a faint double texture at the left hip at the extremes. Idle amplitudes are smaller than that.
-- Assets: `src/assets/space/astronaut-{left,right}-*.webp`, 15 files, **156 KB** total. Pipeline:
-  - Figures separated by the hand split at x = 722 ± 5 px plus connectivity.
-  - Paint specks dropped. Kept: the detached shoe of the left figure's upper leg.
-  - Colours pushed outward under the alpha before resampling, so there is no dark fringe.
-  - ×3 Lanczos, then two bilateral passes (de-block), then a light unsharp.
-  - Binary alpha → blurred smoothstep edge (about 4–6 px soft at 3×).
-  - Generator: `docs/journey/tools/rig.py`.
+  `setReach(root, n)`, `setIdleAmp(root, n)`, `handPoint(root)`, `chestPoint(root)`, `setIdle(root, on)`.
+  Debug handle: `root.rbAstronaut`.
+- Rig parts, the same 8 for both figures: `torso` (with helmet and backpack), `arm-reach-upper`,
+  `arm-reach-lower`, `arm-other`, `leg-a-upper`, `leg-a-lower`, `leg-b-upper`, `leg-b-lower`.
+  - Every child paints above its parent.
+  - Pivots sit at the middle of hand-placed joint cuts (shoulders, elbows, hips, knees).
+  - Across each cut, the parent reaches fully under the child for 36 box px and then tapers over another
+    36 px. The child has a 20 px soft edge over the parent.
+  - The smoke is sampled once per figure in rest-pose box coordinates, so there is no seam at the joints.
+  - The generator asserts no hole at any joint with every joint at ±8° (all one way and alternating).
+- Assets: `src/assets/space/astronaut-{left,right}-*.webp`, 16 files, **175 KB** total. Alpha is lossless.
+- Generator: `python3 docs/journey/tools/silhouette.py astronauts [--shots docs/journey/shots/t1]`. It prints
+  `OK astronauts` when every assert passes. `--shots` writes the contact sheets.
 
 ## `smoke-pink.webp`: `src/assets/space/smoke-pink.webp`
-- **2560 × 1600, 21.7 KB.** It is exactly the left figure's 16:10 chest window: box rect
-  `left 57.08%, top 11.88%, width 25.57%, height 20.87%` of the left Astronaut box, centred on
-  `--chest-x/--chest-y`. If you overlay it on that rect (`object-fit: fill`), it lines up with the figure
-  before you cross-fade.
-- Processing: bilateral → ×6.7 bicubic → Gaussian σ6 → faint large-scale noise. Soft, no blocks.
-- **Average colour `#6c67b2`** (lavender-violet; the chest of the source figure is lavender/blue with pink
-  streaks).
-- Generator: `docs/journey/tools/smoke.py`.
+- **2560 × 1600, 24 KB.** It is exactly the left figure's `smokeRect` window, rendered from the same smoke
+  field as the figure, so it lines up when you overlay it on that rect (`object-fit: fill`) before the
+  cross-fade.
+- At this magnification (×18 of smoke.png) it is smoothed rather than sharpened, so no pixel grid shows.
+- **Average colour `#fb57ba`** (hot pink).
+- Generator: `silhouette.py astronauts` (same run).
 
 ## `<Dog class? idle? />`: `src/components/space/Dog.astro`
 - A crisp **silhouette** of the client's labrador in a glass bubble helmet with a back tank
@@ -151,18 +165,17 @@ the viewport, and the smoke texture.
 ## Weight (hero-related, on disk)
 | asset | bytes |
 |---|---|
-| astronaut parts (15 WebP) | 156,362 |
+| astronaut parts (16 WebP) | 175,490 |
 | moon-surface.webp | 278,780 |
-| smoke-pink.webp | 21,670 |
-| **total** | **456,812 (~446 KiB)** |
+| smoke-pink.webp | 24,050 |
+| **total** | **478,320 (~467 KiB)** |
 
 The dog parts `dog-*.webp` add 210,586 bytes (twelve files). The star tiles are inline in the HTML; the dog's
-`silhouette` path (~17 KB) ships in the journey script, which imports `dog.json`. `source-figures.webp` is not
-loaded at runtime.
+`silhouette` path (~17 KB) ships in the journey script, which imports `dog.json`.
 
 ## Sources / licences
-- `source-figures.webp`: the client's existing hero art (provided). Every `astronaut-*` part and
-  `smoke-pink.webp` are derived from it.
+- Astronauts: the OUTLINES of the client-supplied `docs/journey/source/astronaut-a.png` / `astronaut-b.png`,
+  filled with the client-supplied `smoke.png`; no photo pixel is shipped. `smoke-pink.webp` is from `smoke.png`.
 - Lunar albedo/detail: `moon_1024.jpg` from the three.js repository
   (`https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg`). three.js is
   MIT-licensed; the planet textures there are commonly credited as derived from NASA public-domain imagery.

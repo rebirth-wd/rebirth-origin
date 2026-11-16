@@ -13,6 +13,7 @@ interface State {
   root: HTMLElement; who: Who; parts: Part[]; rig: HTMLElement;
   rigSet: { x: (v: number) => void; y: (v: number) => void; r: (v: number) => void }; rigP: { x: number; y: number; r: number };
   tl: gsap.core.Timeline | null; running: boolean; visible: boolean; enabled: boolean; reach: number; lastReachStr: string; tick: () => void;
+  amp: number;
 }
 const states = new WeakMap<HTMLElement, State>();
 
@@ -20,7 +21,7 @@ const states = new WeakMap<HTMLElement, State>();
 const IDLE: Record<Who, Record<string, [number, number, number, number]>> = {
   left: {
     torso: [1.2, 9.3, 0.6, 5.7],
-    'arm-back': [5.5, 6.1, 2.0, 3.9],
+    'arm-other': [5.5, 6.1, 2.0, 3.9],
     'arm-reach-upper': [4.0, 7.3, 1.5, 4.4],
     'arm-reach-lower': [5.0, 5.2, 1.8, 3.3],
     'leg-a-upper': [3.5, 8.1, 1.2, 4.9],
@@ -33,15 +34,18 @@ const IDLE: Record<Who, Record<string, [number, number, number, number]>> = {
     'arm-reach-upper': [4.0, 6.9, 1.4, 4.7],
     'arm-reach-lower': [5.0, 5.5, 1.7, 3.5],
     'arm-other': [6.5, 6.3, 2.0, 4.2],
-    'legs-upper': [3.0, 8.7, 1.0, 5.1],
-    'shin-a': [5.5, 7.1, 1.6, 3.8],
-    'shin-b': [6.5, 6.0, 1.8, 4.5],
+    'leg-a-upper': [3.0, 8.7, 1.0, 5.1],
+    'leg-a-lower': [5.5, 7.1, 1.6, 3.8],
+    'leg-b-upper': [3.2, 7.9, 1.1, 4.8],
+    'leg-b-lower': [6.5, 6.0, 1.8, 4.5],
   },
 };
-// rotation (deg) added at reach = 0 (relaxed arm); at reach = 1 it is 0 (source pose)
+// rotation (deg) added at reach = 0 (relaxed arm); at reach = 1 it is 0 (clasp pose). The signs fold each reaching
+// arm towards its own body: the shoulder swings the hand towards the torso and the elbow bends further (checked
+// against rig.json: left hand 757 -> 634 box px from the torso, elbow 57 -> 87 deg; right 881 -> 839, 20 -> 46 deg).
 const RELAX: Record<Who, Record<string, number>> = {
-  left: { 'arm-reach-upper': 16, 'arm-reach-lower': 30 },
-  right: { 'arm-reach-upper': -14, 'arm-reach-lower': -26 },
+  left: { 'arm-reach-upper': -16, 'arm-reach-lower': -30 },
+  right: { 'arm-reach-upper': 14, 'arm-reach-lower': 26 },
 };
 // whole-figure bob/roll: [x %, y %, rotation deg] amplitudes and periods
 const FLOAT: Record<Who, [number, number, number, number, number, number]> = {
@@ -64,11 +68,12 @@ function apply(s: State) {
   readReach(s);
   const r = s.reach;
   const ease = r * r * (3 - 2 * r); // smooth arrival of the hand
+  const k = s.amp;                   // idle amplitude (setIdleAmp); reach is not scaled
   for (const p of s.parts) {
     const damp = p.reachDamp ? 1 - 0.9 * ease : 1;
-    p.set((p.a.r + p.a.s) * damp + (p.reach ?? 0) * (1 - ease));
+    p.set((p.a.r + p.a.s) * damp * k + (p.reach ?? 0) * (1 - ease));
   }
-  s.rigSet.x(s.rigP.x); s.rigSet.y(s.rigP.y); s.rigSet.r(s.rigP.r);
+  s.rigSet.x(s.rigP.x * k); s.rigSet.y(s.rigP.y * k); s.rigSet.r(s.rigP.r * k);
 }
 
 function build(s: State) {
@@ -125,6 +130,7 @@ export function initAstronaut(root: HTMLElement) {
       x: gsap.quickSetter(rig, 'xPercent') as any, y: gsap.quickSetter(rig, 'yPercent') as any, r: gsap.quickSetter(rig, 'rotation', 'deg') as any,
     },
     rigP: { x: 0, y: 0, r: 0 }, tl: null, running: false, visible: false, enabled: true, reach: 0, lastReachStr: '\u0000', tick: () => apply(s),
+    amp: 1,
   };
   states.set(root, s);
   (root as any).rbAstronaut = s; // debug/inspection handle (used by the preview shots)
@@ -152,6 +158,13 @@ export function handPoint(root: HTMLElement) {
 export function chestPoint(root: HTMLElement) {
   const r = root.querySelector('[data-chest-marker]')!.getBoundingClientRect();
   return { x: r.left, y: r.top };
+}
+/** Scale every idle term (limb sway, whole-figure bob and roll) by n (default 1; 0 = rest pose, idle clock keeps
+ *  running). Applied at once, also while the idle loop is paused. Reach is not affected. */
+export function setIdleAmp(root: HTMLElement, n: number): void {
+  const s = states.get(root); if (!s) return;
+  s.amp = n;
+  if (!s.running) apply(s);
 }
 /** Pause / resume idle motion manually (e.g. during the full-screen smoke phase). */
 export function setIdle(root: HTMLElement, on: boolean) {

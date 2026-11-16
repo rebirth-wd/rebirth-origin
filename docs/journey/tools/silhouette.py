@@ -29,9 +29,12 @@ S = 1.6          # source px -> box px
 PAD = 28         # box px around the silhouette
 OV = 36          # box px a part reaches (fully, then tapering over another OV) under the neighbour above it
 FADE = 20        # box px soft edge of a part over the neighbour below it
-EDGE = 2.0       # width (box px) of the anti-aliased silhouette edge
+EDGE = 1.4       # width (box px) of the anti-aliased silhouette edge (a ~1 px coverage ramp)
+SMOOTH = 7.0     # source px: outline smoothing on the body (removes cloth wrinkles / segmentation wobble)
+SMOOTH_FINE = 1.6  # source px: outline smoothing on the gloves (keeps the fingers)
 TIP_INSET = 3.0  # box px: the hand point sits this far inside the fingertip, so the clasped hands overlap a little
 WEBP_Q = 82
+SRC_PAD = 200     # source px of padding (right / bottom) around each photo mask
 SMOKE_OUT = (2560, 1600)
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -49,10 +52,14 @@ FIG = {
         reach_from=(622, 300), reach_to=(835, 65),
         head=(470, 160), neck=(488, 300),
         erase=[],
+        # clean helmet shell + visor (ellipses cx, cy, rx, ry) and backpack (rounded rect x0, y0, x1, y1, r) replace
+        # the photo's head inside `zone`; `fine`: circles (cx, cy, r) smoothed lightly (gloves: keep the fingers)
+        helmet=dict(zone=(330, 60, 598, 276), shell=(471, 188, 100, 102), visor=(472, 196, 70, 72), pack=(348, 128, 598, 330, 40)),
+        fine=[(130, 230, 120), (805, 125, 120)],
         smoke=dict(c=(600, 300), mag=3.3, sat=1.05),                 # pink / magenta / violet
         parts=[
             ('torso', None, 2, None, None, [(480, 450), (470, 160), (520, 600)]),
-            ('arm-other', 'torso', 3, [(330, 266), (353, 414)], None, [(250, 340), (120, 220)]),
+            ('arm-other', 'torso', 3, [(326, 246), (352, 430)], None, [(250, 340), (120, 220)]),
             ('arm-reach-upper', 'torso', 4, [(610, 214), (647, 372)], None, [(665, 300)]),
             ('arm-reach-lower', 'arm-reach-upper', 5, [(708, 220), (742, 352)], None, [(780, 200), (830, 75)]),
             ('leg-a-upper', 'torso', 3, [(378, 632), (548, 702)], None, [(455, 760)]),
@@ -66,15 +73,21 @@ FIG = {
         arm_angle=168.0,
         reach_from=(662, 385), reach_to=(940, 330),
         head=(500, 190), neck=(500, 330),
+        helmet=dict(zone=(322, 40, 680, 300), shell=(503, 205, 108, 136), visor=(502, 234, 92, 98), pack=(322, 112, 680, 315, 52)),
+        fine=[(160, 700, 120)],
+        # the photo's clenched fist -> the open glove of photo a (outline beyond its cuff line), scaled and turned to
+        # reach along this arm, joined to the arm by a tapered forearm from the `stump` line
+        glove=dict(src='left', cuff=((757, 200), (835, 200)), tip=(815, 62), box=(40, 214, 700, 900),
+                   wrist=(880, 395), angle=-8.0, scale=1.2, stump=((780, 280), (800, 530))),
         # tether wires and a wrist clip on the hanging arm, the hose loop beside the chest (suit detail, not outline)
         erase=[[(258, 524), (296, 524), (296, 568), (258, 568)], [(80, 516), (123, 516), (123, 542), (80, 542)],
                [(296, 492), (326, 484), (338, 560), (343, 614), (320, 614), (292, 560)]],
-        smoke=dict(c=(232, 330), mag=3.45, flipv=True, hue=18, sat=1.05),  # blue / violet (mirrored, cooled)
+        smoke=dict(c=(246, 330), mag=3.45, flipv=True, hue=18, sat=1.05),  # blue / violet (mirrored, cooled)
         parts=[
             ('torso', None, 2, None, None, [(500, 500), (500, 190), (500, 760)]),
             ('arm-other', 'torso', 3, [(314, 276), (305, 498)], None, [(220, 500), (160, 720)]),
-            ('arm-reach-upper', 'torso', 4, [(686, 286), (688, 488)], None, [(720, 420)]),
-            ('arm-reach-lower', 'arm-reach-upper', 5, [(778, 300), (806, 515)], None, [(860, 380), (930, 330)]),
+            ('arm-reach-upper', 'torso', 4, [(692, 278), (688, 488)], None, [(720, 420)]),
+            ('arm-reach-lower', 'arm-reach-upper', 5, [(778, 300), (806, 515)], None, [(850, 400), (950, 385)]),
             ('leg-a-upper', 'torso', 3, [(300, 715), (492, 800)], None, [(400, 860)]),
             ('leg-a-lower', 'leg-a-upper', 3, [(300, 968), (474, 962)], None, [(400, 1080)]),
             ('leg-b-upper', 'torso', 3, [(492, 800), (700, 712)], None, [(590, 860)]),
@@ -102,7 +115,18 @@ def largest(m):
 
 
 # ------------------------------------------------------------------ silhouette (source resolution)
+def _side(m, p0, p1):
+    """> 0 left of p0 -> p1 (screen axes), per pixel of m's grid"""
+    yy, xx = np.mgrid[0:m.shape[0], 0:m.shape[1]]
+    return (p1[0] - p0[0]) * (yy - p0[1]) - (p1[1] - p0[1]) * (xx - p0[0])
+
+
+_masks = {}
+
+
 def source_mask(F):
+    if F['src'] in _masks:
+        return _masks[F['src']].copy()
     rgb = np.array(Image.open(SRC / F['src']).convert('RGB')).astype(np.int16)
     m = (255 - rgb.min(-1)) > 4                      # background is pure white (255); anything else is figure
     m = largest(m)
@@ -114,13 +138,92 @@ def source_mask(F):
     m = largest(m)
     m = cv2.morphologyEx(m.astype(np.uint8), cv2.MORPH_CLOSE, disk(1)).astype(bool)  # 1 px nicks closed
     m = ndi.binary_fill_holes(m)                      # visor, highlights, watermark: all inside
-    return m
+    m = np.pad(m, ((0, SRC_PAD), (0, SRC_PAD)))       # room for a transplanted glove (right / bottom only:
+    g = F.get('glove')                                # source coordinates stay valid)
+    if g:
+        # the photo's clenched fist is replaced by the OPEN glove outline of the other photo, on a tapered forearm
+        donor = source_mask(FIG[g['src']])
+        gm = donor & (_side(donor, *g['cuff']) < 0)
+        y0, y1, x0, x1 = g['box']
+        box = np.zeros_like(gm); box[y0:y1, x0:x1] = True; gm &= box
+        wa = (np.array(g['cuff'][0], float) + g['cuff'][1]) / 2
+        da = np.array(g['tip'], float) - wa
+        rot = g['angle'] - math.degrees(math.atan2(da[1], da[0]))
+        c, s_ = math.cos(math.radians(rot)), math.sin(math.radians(rot))
+        M = np.array([[c, -s_], [s_, c]]) * g['scale']; t = np.array(g['wrist'], float) - M @ wa
+        gw = cv2.warpAffine(gm.astype(np.float32), np.hstack([M, t[:, None]]), m.shape[::-1], flags=cv2.INTER_LINEAR) > 0.5
+        st = g['stump']
+        keep = m & (_side(m, *st) > 0)
+        ts = np.linspace(0, 1, 600)
+        px = st[0][0] + ts * (st[1][0] - st[0][0]); py = st[0][1] + ts * (st[1][1] - st[0][1])
+        on = np.nonzero(m[py.astype(int), px.astype(int)])[0]
+        top, bot = (px[on[0]], py[on[0]]), (px[on[-1]], py[on[-1]])
+        ca, cb = (M @ np.array(c_, float) + t for c_ in g['cuff'])
+        fa = np.zeros(m.shape, np.uint8)
+        cv2.fillPoly(fa, [np.array([top, bot, cb, ca] if cb[1] > ca[1] else [top, bot, ca, cb], np.int32)], 1)
+        fa = cv2.dilate(fa, disk(2))
+        m = largest(keep | gw | fa.astype(bool))
+        g['tip_out'] = tuple((M @ np.array(g['tip'], float) + t).tolist())
+    _masks[F['src']] = m
+    return m.copy()
 
 
-def sdf(m):
-    """signed distance (source px), + inside, zero on the pixel-edge boundary, lightly smoothed (no staircase)"""
-    d = np.where(m, ndi.distance_transform_edt(m) - 0.5, -(ndi.distance_transform_edt(~m) - 0.5)).astype(np.float32)
-    return cv2.GaussianBlur(d, (0, 0), 1.25)
+def sdf_raw(m):
+    """signed distance (source px), + inside, zero on the pixel-edge boundary"""
+    return np.where(m, ndi.distance_transform_edt(m) - 0.5, -(ndi.distance_transform_edt(~m) - 0.5)).astype(np.float32)
+
+
+def sd_ellipse(X, Y, e):
+    cx, cy, rx, ry = e
+    k = np.sqrt(((X - cx) / rx) ** 2 + ((Y - cy) / ry) ** 2)
+    return ((1 - k) * min(rx, ry)).astype(np.float32)
+
+
+def sd_rrect(X, Y, r_):
+    x0, y0, x1, y1, r = r_
+    qx = np.abs(X - (x0 + x1) / 2) - ((x1 - x0) / 2 - r)
+    qy = np.abs(Y - (y0 + y1) / 2) - ((y1 - y0) / 2 - r)
+    out = np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) + np.minimum(np.maximum(qx, qy), 0) - r
+    return (-out).astype(np.float32)
+
+
+def smax(a, b, k):
+    """smooth union of two inside-positive distance fields (fillet of size ~k)"""
+    h = np.maximum(k - np.abs(a - b), 0) / k
+    return np.maximum(a, b) + h * h * k * 0.25
+
+
+def flip_shape(kind, v, Ws):
+    if kind == 'ellipse':
+        return (Ws - 1 - v[0], v[1], v[2], v[3])
+    return (Ws - 1 - v[2], v[1], Ws - 1 - v[0], v[3], v[4])
+
+
+def silhouette_sdf(m, F, fx, Ws):
+    """outline as a clean distance field: the photo outline smoothed like a vector curve (strongly on the body, lightly
+    on the gloves so the fingers survive), the head replaced by a clean helmet + backpack"""
+    d = sdf_raw(m)
+    coarse, fine = cv2.GaussianBlur(d, (0, 0), SMOOTH), cv2.GaussianBlur(d, (0, 0), SMOOTH_FINE)
+    yy, xx = np.mgrid[0:m.shape[0], 0:m.shape[1]].astype(np.float32)
+    w = np.zeros(m.shape, np.float32)
+    fine_c = list(F['fine'])
+    if F.get('glove'):
+        g = F['glove']; wv = np.array(g['wrist'], float); tv = np.array(g['tip_out'])
+        fine_c.append((*((wv + tv) / 2), 0.6 * np.hypot(*(tv - wv)) + 70))
+    for (cx, cy, r) in fine_c:
+        cx, cy = fx((cx, cy))
+        w = np.maximum(w, 1 - smoothstep(r * 0.75, r, np.hypot(xx - cx, yy - cy)))
+    d = w * fine + (1 - w) * coarse
+    h = F['helmet']
+    fl = (lambda k, v: flip_shape(k, v, Ws)) if F['flip'] else (lambda k, v: v)
+    zx0, zy0, zx1, zy1 = fl('rect', (*h['zone'], 0))[:4]
+    zone = sd_rrect(xx, yy, (zx0, zy0, zx1, zy1, 0))
+    d = np.minimum(d, -zone)                                         # photo head off ...
+    shapes = np.maximum(sd_ellipse(xx, yy, fl('ellipse', h['shell'])), sd_rrect(xx, yy, fl('rect', h['pack'])))
+    out = smax(d, shapes, 24.0)                                      # ... clean helmet + pack on, filleted in
+    pin = out > 0
+    holes = cv2.dilate((ndi.binary_fill_holes(pin) & ~pin).astype(np.uint8), disk(3)).astype(bool)
+    return np.where(holes, np.maximum(out, 3.0), out), d               # pinholes where pack meets shoulder: closed
 
 
 # ------------------------------------------------------------------ smoke
@@ -172,6 +275,48 @@ def render_smoke(cfg, W, H, rect=None, out=None):
 
 
 # ------------------------------------------------------------------ figure
+VOL_SHADE = 0.16   # inner edge shade (fraction darker at the outline, fading over VOL_W px)
+VOL_W = 34
+RIM = 0.16         # rim light on edges facing the light (upper left), over ~5 px
+LIGHT = (-0.55, -0.83)
+PACK_TONE = 0.84   # backpack a little denser than the helmet shell
+GROOVE = 0.34      # dark line where the helmet shell meets the pack / body
+VISOR = 0.36       # visor: dense dark smoke
+
+
+def shading(F, dist, body, X, Y, Ws, P):
+    """per-pixel RGB gain and additive light in rest box coordinates (applied to the smoke, seamless across parts)"""
+    H, W = dist.shape
+    gain = 1 - VOL_SHADE * (1 - smoothstep(0, VOL_W, dist))
+    gy, gx = np.gradient(cv2.GaussianBlur(dist, (0, 0), 1.5))
+    n = np.hypot(gx, gy) + 1e-6
+    facing = np.clip(-(gx * LIGHT[0] + gy * LIGHT[1]) / n, 0, 1) ** 1.5
+    add = RIM * facing * (1 - smoothstep(0.5, 6, dist)) * (dist > -1)
+    h = F['helmet']
+    fl = (lambda k, v: flip_shape(k, v, Ws)) if F['flip'] else (lambda k, v: v)
+    shell = sd_ellipse(X, Y, fl('ellipse', h['shell'])) * S
+    pack = sd_rrect(X, Y, fl('rect', h['pack'])) * S
+    visor = sd_ellipse(X, Y, fl('ellipse', h['visor'])) * S
+    in_shell, in_pack = smoothstep(-1, 1, shell), smoothstep(-1, 1, pack)
+    in_pack = in_pack * (1 - smoothstep(-8, 8, body))                 # only where the pack shows beside the body
+    gain = gain * (1 - (1 - PACK_TONE) * in_pack * (1 - in_shell))
+    gain = gain * (1 - GROOVE * np.exp(-(shell / 2.4) ** 2) * smoothstep(4, 10, dist))
+    v = smoothstep(-1.1, 1.1, visor)
+    depth = smoothstep(0, 0.6 * h['visor'][2] * S, visor)            # deeper towards the visor centre
+    gain = gain * (1 - v) + v * (VISOR + 0.10 * (1 - depth))
+    # specular: a soft curved streak up-left on the visor and a small glint opposite
+    c = np.array(P(h['visor'][:2])); r = h['visor'][2] * S
+    oy, ox = np.mgrid[0:H, 0:W].astype(np.float32)
+    for off, a_, lu, lv, k in [((-0.42, -0.42), 0.55, 0.36, 0.10, 1.0), ((0.40, 0.44), 0.22, 0.12, 0.05, 1.0)]:
+        o = np.array(off) / np.hypot(*off)
+        hc = c + np.array(off) * r
+        du, dv = ox - hc[0], oy - hc[1]
+        rad = du * o[0] + dv * o[1]; tan = -du * o[1] + dv * o[0]
+        add = add + a_ * v * np.exp(-((tan / (lu * r)) ** 2 + (rad / (lv * r)) ** 2))
+    add = add * (dist > -2)
+    return gain[..., None].astype(np.float32), np.repeat(add[..., None], 3, -1).astype(np.float32)
+
+
 def build(who):
     F = FIG[who]
     m = source_mask(F)
@@ -179,20 +324,23 @@ def build(who):
     fx = (lambda p: (Ws - 1 - p[0], p[1])) if F['flip'] else (lambda p: p)
     if F['flip']:
         m = m[:, ::-1].copy()
-    d = sdf(m)
-    a0, a1 = np.array(fx(F['reach_from']), float), np.array(fx(F['reach_to']), float)
+    d, d_body = silhouette_sdf(m, F, fx, Ws)
+    reach_to = F['glove']['tip_out'] if F.get('glove') else F['reach_to']
+    a0, a1 = np.array(fx(F['reach_from']), float), np.array(fx(reach_to), float)
     rot = F['arm_angle'] - math.degrees(math.atan2(a1[1] - a0[1], a1[0] - a0[0]))
     c, s_ = math.cos(math.radians(rot)), math.sin(math.radians(rot))
     L = S * np.array([[c, -s_], [s_, c]])
-    ys, xs = np.nonzero(cv2.morphologyEx(m.astype(np.uint8), cv2.MORPH_GRADIENT, disk(1)))
+    ys, xs = np.nonzero(cv2.morphologyEx((d > 0).astype(np.uint8), cv2.MORPH_GRADIENT, disk(1)))
     q = L @ np.vstack([xs, ys])
-    t = -q.min(1) + PAD
-    W, H = int(math.ceil(q[0].max() + t[0] + PAD)), int(math.ceil(q[1].max() + t[1] + PAD))
-    A = np.hstack([L, t[:, None]])
+    t_ = -q.min(1) + PAD
+    W, H = int(math.ceil(q[0].max() + t_[0] + PAD)), int(math.ceil(q[1].max() + t_[1] + PAD))
+    A = np.hstack([L, t_[:, None]])
     P = lambda p: tuple((A @ np.array([*fx(p), 1.0])).tolist())
 
     dist = cv2.warpAffine(d, A, (W, H), flags=cv2.INTER_CUBIC, borderValue=-50.0) * S
+    body = cv2.warpAffine(d_body, A, (W, H), flags=cv2.INTER_LINEAR, borderValue=-50.0) * S
     alpha = smoothstep(-EDGE / 2, EDGE / 2, dist).astype(np.float32)
+    alpha *= largest(alpha > 0)                          # one figure, no stray specks
     inside = alpha > 0.004
 
     # ---- cut into parts along the joint lines
@@ -211,6 +359,12 @@ def build(who):
             prev = np.unique(own[lab == l])
             assert set(prev.tolist()) <= {-1, i}, f'{who}/{name}: cut lines leak into {[parts[j][0] for j in prev if j >= 0]}'
             own[lab == l] = i
+    idx = ndi.distance_transform_edt(own < 0, return_distances=False, return_indices=True)
+    own = np.where(inside, own[idx[0], idx[1]], -1)
+    for i, (_, _, _, _, _, seeds) in enumerate(parts):     # cut-line pixels left stranded -> their neighbour
+        lab, _ = ndi.label(own == i)
+        sl = {lab[int(round(P(sp)[1])), int(round(P(sp)[0]))] for sp in seeds}
+        own[(lab > 0) & ~np.isin(lab, list(sl))] = -1
     idx = ndi.distance_transform_edt(own < 0, return_distances=False, return_indices=True)
     own = np.where(inside, own[idx[0], idx[1]], -1)
 
@@ -232,7 +386,6 @@ def build(who):
     rank = {i: order.index(i) for i in range(len(parts))}
     byname = {p[0]: i for i, p in enumerate(parts)}
 
-    smoke = render_smoke(F['smoke'], W, H)
     out = []
     for i, (name, par, z, cut, piv, seeds) in enumerate(parts):
         mine = own == i
@@ -243,25 +396,50 @@ def build(who):
         for j in nb:
             # under a neighbour that paints above: reach across fully for OV, then taper over another OV (hidden at
             # rest, fills the joint when bent, and its end never shows as a step in the outline)
-            # over a neighbour that paints below: a short soft edge (FADE px) across the cut, so the cut never shows as
-            # a line at rest and no long feathered flap sticks out of the outline when the joint bends
+            # over a neighbour that paints below: a soft edge (FADE px) across the cut, so the cut never shows as a
+            # line at rest; when the joint opens outwards it fills the corner the bend leaves in the outline
             if rank[j] > rank[i]:
                 w = np.where((own == j) & (dd <= 2 * OV), 1 - smoothstep(OV, 2 * OV, dd), w)
             else:
                 w = np.where((own == j) & (dd <= FADE), 1 - smoothstep(0.3 * FADE, FADE, dd), w)
         a = alpha * w
+        lab_, _ = ndi.label(a > 0.5 / 255)               # only what hangs together with the part itself (no stray
+        keep = np.unique(lab_[mine & (lab_ > 0)])        # pieces of a band across a gap, e.g. between the legs)
+        a = np.where(np.isin(lab_, keep), a, 0).astype(np.float32)
         yy, xx = np.nonzero(a > 1 / 255)
         bx0, by0, bx1, by1 = int(xx.min()), int(yy.min()), int(xx.max()) + 1, int(yy.max()) + 1
-        rgba = np.dstack([smoke[by0:by1, bx0:bx1] * 255, a[by0:by1, bx0:bx1] * 255])
-        ideal = np.dstack([np.zeros((by1 - by0, bx1 - bx0, 3)), (alpha * mine)[by0:by1, bx0:bx1] * 255])
-        rgba = np.clip(np.round(rgba), 0, 255).astype(np.uint8)
         if cut:
             pv = P(piv) if piv else tuple(((np.array(P(cut[0])) + P(cut[1])) / 2).tolist())
         else:
             pv = (float(np.mean(np.nonzero(mine)[1])), float(np.mean(np.nonzero(mine)[0])))
+        ideal = np.dstack([np.zeros((by1 - by0, bx1 - bx0, 3)), (alpha * mine)[by0:by1, bx0:bx1] * 255])
         out.append(dict(name=name, parent=par, z=z, file=f'astronaut-{who}-{name}.webp',
-                        box=[bx0, by0, bx1, by1], pivot=[round(pv[0], 2), round(pv[1], 2)], rgba=rgba,
+                        box=[bx0, by0, bx1, by1], pivot=[round(pv[0], 2), round(pv[1], 2)], a=a[by0:by1, bx0:bx1],
                         ideal=np.clip(np.round(ideal), 0, 255).astype(np.uint8)))
+
+    # ---- zoom window (largest fully opaque 16:10 rect in the torso), then the smoke with its shading
+    t = out[byname['torso']]
+    ta = np.round(t['a'] * 255)
+    Linv = np.linalg.inv(L)
+    oy, ox = np.mgrid[0:H, 0:W].astype(np.float32)
+    X = Linv[0, 0] * (ox - t_[0]) + Linv[0, 1] * (oy - t_[1])
+    Y = Linv[1, 0] * (ox - t_[0]) + Linv[1, 1] * (oy - t_[1])
+    hm_ = F['helmet']; fl = (lambda k, v: flip_shape(k, v, Ws)) if F['flip'] else (lambda k, v: v)
+    head = np.maximum(sd_ellipse(X, Y, fl('ellipse', hm_['shell'])), np.minimum(sd_rrect(X, Y, fl('rect', hm_['pack'])), -body / S)) * S
+    window = opaque_window(ta, t['box'], W, H, exclude=head > -48)   # the chest, clear of helmet and pack detail
+    gain, add = shading(F, dist, body, X, Y, Ws, P)
+    if who == 'left':                                   # nothing may touch the zoom window (smoke-pink.webp = it)
+        wx, wy, ww, wh = window
+        rect = np.zeros((H, W), np.uint8); rect[wy - 2:wy + wh + 2, wx - 2:wx + ww + 2] = 1
+        keep = smoothstep(0, 40, ndi.distance_transform_edt(rect == 0)).astype(np.float32)[..., None]
+        gain = 1 + (gain - 1) * keep; add = add * keep
+    smoke = render_smoke(F['smoke'], W, H)
+    col = np.clip(smoke * gain + add, 0, 1)
+    for p in out:
+        bx0, by0, bx1, by1 = p['box']
+        pa = p.pop('a') * 255
+        rgba = np.dstack([col[by0:by1, bx0:bx1] * 255, np.where(pa < 1.5, 0, pa)])
+        p['rgba'] = np.clip(np.round(rgba), 0, 255).astype(np.uint8)
 
     # ---- hand tip: furthest silhouette pixel of the reaching hand along the arm, pulled in by TIP_INSET
     sh_ = np.array(P(F['reach_from']))
@@ -272,16 +450,18 @@ def build(who):
     tip = np.array([hx[far].mean(), hy[far].mean()]) - dirv * TIP_INSET
     head, neck = np.array(P(F['head'])), np.array(P(F['neck']))
     cuts = {n: (P(c[0]), P(c[1])) for (n, _, _, c, _, _) in parts if c}
-    return dict(who=who, W=W, H=H, rot=rot, cuts=cuts, alpha=alpha, own=own, parts=out, tip=tip, smoke_cfg=F['smoke'],
+    return dict(who=who, W=W, H=H, rot=rot, cuts=cuts, window=window, gain=gain, add=add, alpha=alpha, own=own, parts=out, tip=tip, smoke_cfg=F['smoke'],
                 headAngle=round(math.degrees(math.atan2(head[1] - neck[1], head[0] - neck[0])), 1))
 
 
-def opaque_window(torso_a, box, W, H, margin=3):
+def opaque_window(torso_a, box, W, H, margin=3, exclude=None):
     """largest 16:10 rect fully opaque in the torso part (box px)"""
     bx0, by0, bx1, by1 = box
     full = np.zeros((H, W), np.uint8)
     full[by0:by1, bx0:bx1] = torso_a >= 255
     full = cv2.erode(full, disk(margin))
+    if exclude is not None:
+        full[exclude] = 0
     lo, hi, best = 16, 2000, None
     while lo <= hi:
         w = (lo + hi) // 2; h = int(round(w / 1.6))
@@ -378,12 +558,12 @@ def astronauts(shots=None):
                             width=round(pw / qw * 100, 3), height=round(ph / qh * 100, 3),
                             ox=round((p['pivot'][0] - bx0) / pw * 100, 3), oy=round((p['pivot'][1] - by0) / ph * 100, 3))
         t = by['torso']
-        win = opaque_window(t['img'][..., 3], t['box'], W, H)
+        win = fig['window']
         fig['window'] = win
         cx, cy = win[0] + win[2] / 2, win[1] + win[3] / 2
         hp = by['arm-reach-lower']; hb = hp['box']
         meta[who] = dict(
-            width=W, height=H, source=FIG[who]['src'], mirrored=FIG[who]['flip'], rotation=round(fig['rot'], 2), scale=S,
+            width=W, height=H, source=FIG[who]['src'], mirrored=FIG[who]['flip'], rotation=round((fig['rot'] + 180) % 360 - 180, 2), scale=S,
             parts=[{k: p[k] for k in ('name', 'parent', 'z', 'file', 'box', 'pivot', 'css')} for p in fig['parts']],
             chest=[round(cx / W * 100, 2), round(cy / H * 100, 2)],
             hand=[round(fig['tip'][0] / W * 100, 3), round(fig['tip'][1] / H * 100, 3)],
@@ -436,6 +616,7 @@ def astronauts(shots=None):
     tb = t['box']
     assert t['img'][y0 - tb[1]:y1 - tb[1], x0 - tb[0]:x1 - tb[0], 3].min() == 255, 'smokeRect not fully opaque'
     assert abs(sr['w'] * L['W'] / (sr['h'] * L['H']) - 1.6) < 0.01, 'smokeRect is not 16:10'
+    assert np.all(L['gain'][y0:y1, x0:x1] == 1) and np.all(L['add'][y0:y1, x0:x1] == 0), 'shading reaches into smokeRect'
     ch = rig['left']['chest']
     assert abs((sr['l'] + sr['w'] / 2) * 100 - ch[0]) < 0.05 and abs((sr['t'] + sr['h'] / 2) * 100 - ch[1]) < 0.05, 'chest is not the smokeRect centre'
     # clasp arrangement (asserted below)
@@ -452,10 +633,9 @@ def astronauts(shots=None):
     if shots:
         contact_sheets(figs, rig, Path(shots), (al, ar, (hx, hy)))
     # 3. no hole at the joints with every joint at +-8 deg (all one way, and alternating parent/child).
-    #    What a continuous body would cover at a joint: the parent piece plus the child piece swept from 0 to its
-    #    angle (the wedge a bend opens), inside a 25 px band along the cut, less a 3 px rim (an outline that
-    #    shifts by <= 3 px at a bent corner is not a hole). The shipped parts, posed, must cover all of it except
-    #    components of <= 6 px^2.
+    #    At each joint, what was body before the bend must still be covered after it: the parent piece plus the
+    #    child piece at its rest angle (relative to the posed parent), i.e. the wedge a bend vacates, inside a 25 px
+    #    band along the cut, less a 3 px rim. The shipped parts, posed, must cover it except components <= 6 px^2.
     holes = {}
     for who, fig in figs.items():
         pad = int(0.3 * max(fig['W'], fig['H']))
@@ -464,12 +644,13 @@ def astronauts(shots=None):
         names = [p['name'] for p in fig['parts'] if p['parent']]
         by = {p['name']: p for p in fig['parts']}
         depth = {n: 1 + (by[n]['parent'] != 'torso') for n in names}
+        rest_in = cv2.erode((assemble(fig, view, size)[..., 3] > 0.5).astype(np.uint8), disk(3)).astype(bool)
         worst = 0
         for case, f in [('+8', lambda n: 8), ('-8', lambda n: -8), ('alt', lambda n: 8 if depth[n] == 1 else -8), ('alt2', lambda n: -8 if depth[n] == 1 else 8)]:
             ang = {n: f(n) for n in names}
             G = {}
             u = assemble(fig, view, size, ang, glob_out=G)[..., 3] > 0.5
-            hm = ndi.binary_fill_holes(u) & ~u
+            hm = ndi.binary_fill_holes(u) & ~u & rest_in   # see-through pockets inside the rest silhouette
             for n in names:
                 par = by[n]['parent']
                 c0, c1 = (view @ G[par] @ np.array([*c, 1.0]) for c in fig['cuts'][n])
@@ -478,9 +659,8 @@ def astronauts(shots=None):
                 sub = np.array([[1, 0, -x0], [0, 1, -y0], [0, 0, 1]], float) @ view
                 bs = (x1 - x0, y1 - y0)
                 need = assemble(fig, sub, bs, ang, key='ideal', only={par})[..., 3]
-                for k in range(7):
-                    a2 = dict(ang); a2[n] = ang[n] * k / 6
-                    need = np.maximum(need, assemble(fig, sub, bs, a2, key='ideal', only={n})[..., 3])
+                a0 = dict(ang); a0[n] = 0.0
+                need = np.maximum(need, assemble(fig, sub, bs, a0, key='ideal', only={n})[..., 3])
                 band = np.zeros((bs[1], bs[0]), np.uint8)
                 cv2.line(band, (int(c0[0]) - x0, int(c0[1]) - y0), (int(c1[0]) - x0, int(c1[1]) - y0), 1, 51)
                 need = cv2.erode((need > 0.5).astype(np.uint8), disk(3)).astype(bool) & band.astype(bool)
