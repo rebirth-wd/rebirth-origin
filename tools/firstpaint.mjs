@@ -27,7 +27,8 @@ async function open(blockJs) {
 const state = (page) => page.evaluate(() => {
   const sc = document.querySelector('[data-phoneshowcase]');
   const word = sc.querySelector('[data-ps-word]');
-  return { visibility: getComputedStyle(sc).visibility, shown: word.checkVisibility({ visibilityProperty: true, opacityProperty: true }), ready: document.documentElement.classList.contains('sj-ready') };
+  const figs = [...document.querySelectorAll('[data-sj-fig] [data-astronaut]')].map((f) => f.checkVisibility({ visibilityProperty: true }));
+  return { figs, visibility: getComputedStyle(sc).visibility, shown: word.checkVisibility({ visibilityProperty: true, opacityProperty: true }), ready: document.documentElement.classList.contains('sj-ready') };
 });
 
 // 1. module JS never arrives (= the moment before it runs on a slow connection)
@@ -35,6 +36,7 @@ let page = await open(true);
 let s = await state(page);
 check('before JS: showcase is hidden', s.visibility === 'hidden', s);
 check('before JS: showcase headline is not painted over the hero', !s.shown, s);
+check('before JS: the two figures are not painted (they are unpositioned until journey.ts runs)', s.figs.length === 2 && s.figs.every((v) => !v), s);
 await page.close();
 
 // 2. JS runs: hero first, showcase still reachable
@@ -42,6 +44,7 @@ page = await open(false);
 await page.waitForFunction(() => document.documentElement.classList.contains('sj-ready'), null, { timeout: 5000 }).catch(() => {});
 s = await state(page);
 check('after JS: html.sj-ready set', s.ready, s);
+check('after JS: both figures painted', s.figs.length === 2 && s.figs.every(Boolean), s);
 check('after JS: showcase still hidden at the hero stop', s.visibility === 'hidden' && !s.shown, s);
 await page.evaluate(() => document.querySelector('[data-sj-skip]').click());
 await page.waitForTimeout(2500);

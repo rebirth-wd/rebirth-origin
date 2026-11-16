@@ -146,6 +146,8 @@ import smoke from '../../assets/space/smoke-pink.webp';
   :global(html.sj-motion) .sj-act3 { pointer-events: none; }
   /* until journey.ts has armed the showcase (module JS still downloading) act 3 must not paint over the hero */
   :global(html.sj-motion:not(.sj-ready)) .sj-act3 { visibility: hidden; }
+  /* same guard for the two figures: with sj-motion they sit unpositioned at 0,0 until journey.ts places them */
+  :global(html.sj-motion:not(.sj-ready)) .sj-world { visibility: hidden; }
   :global(html.sj-motion) .sj-act3 > * { pointer-events: auto; }
   :global(html.sj-motion) .sj-fx { z-index: 3; }
   :global(html.sj-motion) .sj-world-left { z-index: 1; }
