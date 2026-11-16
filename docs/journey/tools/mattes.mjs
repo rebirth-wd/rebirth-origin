@@ -34,7 +34,10 @@ for (const [file, base] of jobs) {
   const m = `${dir}/${base}-matte.webp`;
   const sm = await flat(alpha, w, h, 255, m);
   const [kw, kh] = [Math.round(w / 2), Math.round(h / 2)];
-  const half = await sharp(alpha, { raw: { width: w, height: h, channels: 1 } }).resize(kw, kh, { kernel: 'lanczos3' }).raw().toBuffer();
+  // extractChannel pins the resized plane to ONE channel: without it sharp hands back three per pixel and the buffer,
+  // read as one, comes out as striped rows (see-through knockouts with lines and boxes around every part)
+  const { data: half, info: hi } = await sharp(alpha, { raw: { width: w, height: h, channels: 1 } }).resize(kw, kh, { kernel: 'lanczos3' }).extractChannel(0).raw().toBuffer({ resolveWithObject: true });
+  if (hi.channels !== 1 || half.length !== kw * kh) throw new Error(`knockout plane of ${src} is not one channel`);
   const k = `${dir}/${base}-knock.webp`;
   const sk = await flat(half, kw, kh, 0, k);
   console.log(`${m}  ${w}x${h}  ${sm}`);
