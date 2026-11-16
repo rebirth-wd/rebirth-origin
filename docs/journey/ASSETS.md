@@ -16,9 +16,10 @@ the viewport, and the smoke texture.
 - **Look**: crisp astronaut silhouettes filled with the client's smoke. Each silhouette is cut from the outline
   of a client photo (`docs/journey/source/astronaut-a.png` = left, `astronaut-b.png` mirrored = right).
   - Outline: smoothed like a vector curve, with the fingers kept. The head is a clean helmet dome over a
-    backpack.
-  - Inside: a dark smoke visor with a soft specular, a faint groove around the helmet shell, and a slightly
-    denser backpack.
+    backpack. The dome itself is the outline: the backpack (and on the left figure the shoulders under the helmet)
+    never reaches past the shell, so there is no second, offset circle.
+  - Inside: a dark smoke visor with a soft specular, a faint groove only where the helmet shell meets the body or
+    pack (it fades out along the outline), and a slightly denser backpack.
   - Volume: an inner edge shade and a faint rim light from the upper left.
   - No photo pixel is shipped. Left is pink/magenta/violet; right is blue/violet (its smoke is mirrored and
     hue-shifted).
@@ -60,6 +61,12 @@ the viewport, and the smoke texture.
   - Changes are applied even while the idle loop is paused, through a MutationObserver on `style`.
 - Live points: `handPoint(root)` and `chestPoint(root)` return viewport `{x, y}`. They include idle motion,
   reach and your transforms (they use marker elements and `getBoundingClientRect`, so call them sparingly).
+- Pose maths (no layout): `posePoint(root, part, rest)` takes a rest-pose point of `part` in box fractions (e.g.
+  `rig.left.hand / 100` on `arm-reach-lower`, `rig.left.chest / 100` on `torso`) and returns where it is in the
+  current pose (idle × amplitude, reach, rig bob / roll) in box fractions, plus the part's total rotation `rot`
+  (deg). It is computed from `rig.json` and the same values the idle paints this frame, so it is exact and cheap
+  every frame. journey.ts uses it to keep the hands and the chest window exact while the figures keep floating.
+  `idleRollMax(who, part)` is the largest total idle rotation of a part (deg), used for the zoom cover.
 - **Idle spacewalk**: one GSAP timeline per figure.
   - Each limb gets two overlapping `sine.inOut` yoyo tweens with different periods (3.3–10 s, ±0.5–6.5°).
   - Every figure gets ±10% random period jitter and a random start phase.
@@ -70,11 +77,12 @@ the viewport, and the smoke texture.
     under `prefers-reduced-motion` (reach still works).
   - `setIdle(root, false|true)` stops or restarts it.
   - `setIdleAmp(root, n)` multiplies every idle term (limb sway and the rig bob and roll) by n. The default is
-    1 and 0 is the rest pose. It applies at once, even while paused, and does not affect reach. Use it to fade
-    the idle out so contact is exact without a freeze.
+    1 and 0 is the rest pose. It applies at once, even while paused, and does not affect reach. (journey.ts does
+    not use it: the figures float at full amplitude right up to the contact, corrected with `posePoint`.)
   - Writes go through `gsap.quickSetter` (transforms only).
 - Exports of `astronaut.ts`: `initAstronaut(root)`, `initAll(scope?)` (the component calls it on load),
-  `setReach(root, n)`, `setIdleAmp(root, n)`, `handPoint(root)`, `chestPoint(root)`, `setIdle(root, on)`.
+  `setReach(root, n)`, `setIdleAmp(root, n)`, `handPoint(root)`, `chestPoint(root)`, `posePoint(root, part, rest)`,
+  `idleRollMax(who, part?)`, `setIdle(root, on)`.
   Debug handle: `root.rbAstronaut`.
 - Rig parts, the same 8 for both figures: `torso` (with helmet and backpack), `arm-reach-upper`,
   `arm-reach-lower`, `arm-other`, `leg-a-upper`, `leg-a-lower`, `leg-b-upper`, `leg-b-lower`.
@@ -84,7 +92,7 @@ the viewport, and the smoke texture.
     36 px. The child has a 20 px soft edge over the parent.
   - The smoke is sampled once per figure in rest-pose box coordinates, so there is no seam at the joints.
   - The generator asserts no hole at any joint with every joint at ±8° (all one way and alternating).
-- Assets: `src/assets/space/astronaut-{left,right}-*.webp`, 16 files, **175 KB** total. Alpha is lossless.
+- Assets: `src/assets/space/astronaut-{left,right}-*.webp`, 16 files, **175,232 bytes** total. Alpha is lossless.
 - Generator: `python3 docs/journey/tools/silhouette.py astronauts [--shots docs/journey/shots/t1]`. It prints
   `OK astronauts` when every assert passes. `--shots` writes the contact sheets.
 
@@ -137,6 +145,8 @@ the viewport, and the smoke texture.
   screen at B 0.44 s and the stage dog lands on the phone's dog rect to 0.1 px.
 
 ## `<SpaceBackdrop moon? moonPhoto? class? />`: `src/components/space/SpaceBackdrop.astro`
+- Used three times: act 1 (with the moon), act 2 behind the dog, and behind the App Design phone showcase
+  (`PhoneShowcase.astro`, first child under `.ps-glow`), so the flash hands over to the same sky.
 - Root `div.rb-space[data-space]`, `position:absolute; inset:0` (fills its positioned parent),
   `contain: strict`, `pointer-events: none`.
 - Layers:
@@ -165,10 +175,10 @@ the viewport, and the smoke texture.
 ## Weight (hero-related, on disk)
 | asset | bytes |
 |---|---|
-| astronaut parts (16 WebP) | 175,490 |
+| astronaut parts (16 WebP) | 175,232 |
 | moon-surface.webp | 278,780 |
 | smoke-pink.webp | 24,050 |
-| **total** | **478,320 (~467 KiB)** |
+| **total** | **478,062 (~467 KiB)** |
 
 The dog parts `dog-*.webp` add 210,586 bytes (twelve files). The star tiles are inline in the HTML; the dog's
 `silhouette` path (~17 KB) ships in the journey script, which imports `dog.json`.

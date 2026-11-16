@@ -22,6 +22,10 @@ tank moves away from the camera, revealing open space again (no moon surface thi
 moves left → right until it is in the middle of the page. Then a flash: a thin beam of light in the middle of the
 screen shooting out horizontally in both directions, becoming a screen-wide flash for half a second.
 
+> Client changes (Nov 2026): the figures keep floating without a pause until their hands touch, at the moment the
+> screen is fully smoke; the thin beam is gone (the white flash stays); the App Design screen has the star field
+> behind the phones. Current beats: `docs/journey/TIMING.md`.
+
 **Automatic, act 3 (triggered by the flash, not scrubbed).** As the flash quickly fades a mobile phone has appeared
 (like the phone in the other sections) and the dog + space background are now frozen inside the phone's screen.
 At the same instant a title + tagline about the **App Design** service appear. Then the dog-in-space image on the

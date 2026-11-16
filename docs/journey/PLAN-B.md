@@ -10,6 +10,12 @@
 > maths, dog cover/recede geometry and staging below are unchanged. The "vh of scroll" positions were converted to
 > seconds (A ≈ 1.25 s per vh, B ≈ 1.385 s per vh). The old `docs/journey/tools/b/*` scripts drive the removed
 > ScrollTrigger and no longer apply.
+>
+> **Smoke silhouettes (Nov 2026), also superseding the rows below:** the figures no longer slow down or freeze
+> before contact. `A.approach` is one continuous beat ending at 3.00 s (= the end of `A.cameraRush`); the idle
+> keeps running, and its live effect on the hands and the chest window is computed every frame from `rig.json`
+> (`posePoint`) and folded into the right figure's position and the camera target. There is no beam: a soft band
+> of light (`B.bloom`) swells into the white flash. The App Design screen sits on the star field.
 
 ## As first built (scroll-scrubbed, historical)
 
