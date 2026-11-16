@@ -33,6 +33,14 @@ EDGE = 2.0       # width (box px) of the anti-aliased silhouette edge
 SDF_SIGMA = 3.2  # source px: smoothing of the signed distance (removes segmentation jaggies)
 FAR_SHADE = 0.8  # far legs a touch darker for depth
 WEBP_Q = 88
+SHADE_Q = 80
+SHADE_SCALE = 0.5
+# volume (a separate per-part layer, faded by --dog-detail): light from the upper left
+LIGHT = (-0.6, -0.8)       # direction the light comes FROM (screen axes)
+SHADE_W = 70               # box px: inner shade width
+SHADE_MAX = 0.34           # inner shade opacity at the edge, on the side away from the light
+RIM_W = 7                  # box px: rim light width
+RIM_MAX = 0.5              # rim light opacity on the side facing the light
 BUDGET = 300_000
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -45,14 +53,44 @@ GC_OUTER = [(240, 140), (490, 140), (510, 280), (640, 300), (680, 330), (700, 40
             (250, 660), (205, 650), (210, 600), (270, 520), (300, 430), (250, 380), (240, 260)]
 GC_CORE = [(320, 420), (560, 400), (700, 470), (760, 600), (700, 620), (560, 540), (420, 560), (330, 520)]
 HELMET_GUESS = (367, 262, 118)
+
+
+def capsule(a, b, r, n=24):
+    """polygon of a capsule (stadium) from a to b with radius r"""
+    a, b = np.array(a, float), np.array(b, float)
+    ang = math.atan2(*(b - a)[::-1])
+    pts = [b + r * np.array([math.cos(ang + t), math.sin(ang + t)]) for t in np.linspace(-math.pi / 2, math.pi / 2, n)]
+    pts += [a + r * np.array([math.cos(ang + t), math.sin(ang + t)]) for t in np.linspace(math.pi / 2, 3 * math.pi / 2, n)]
+    return [tuple(p) for p in pts]
+
+
+# the back tank: a deliberate rounded cylinder (the photo's tank top is lumpy with caps, labels and hose rings)
+TANK = capsule((548, 336), (646, 376), 24)
+# the back line from under the tank end to the tail root, as one smooth slope (no hose connector bump)
+BACK = [(664, 396), (690, 406), (715, 420), (740, 437), (762, 450)]
+# the head inside the bubble (source px, traced from dog.png): face + ears + muzzle, the two drop ears, nose, eyes
+HEAD = [(300, 224), (320, 212), (345, 204), (372, 201), (402, 204), (428, 212), (448, 222), (462, 234), (466, 252),
+        (464, 272), (458, 290), (447, 304), (432, 318), (420, 333), (412, 350), (406, 364), (360, 372), (334, 366),
+        (326, 350), (316, 340), (306, 330), (301, 316), (294, 320), (286, 312), (280, 292), (278, 268), (284, 244)]
+EARS = [[(305, 220), (313, 237), (313, 263), (310, 287), (302, 310), (293, 319), (287, 310), (280, 290), (278, 263),
+         (288, 237)],
+        [(427, 215), (448, 222), (463, 233), (467, 263), (460, 290), (447, 303), (440, 296), (438, 270), (431, 240)]]
+NOSE = [(307, 285), (316, 279), (332, 279), (345, 285), (346, 294), (338, 301), (327, 304), (316, 300), (308, 293)]
+EYES = [(320, 248), (390, 248)]
 # added (dark fur / cuffs the segmentation misses against the stars and Earth)
 ADD = [
+    TANK,
+    # under the back line (whatever the erase below took off the suit)
+    BACK + [(762, 470), (700, 470), (640, 440), (600, 380)],
+    # far hind leg below its cuff: a clean leg and paw (the photo's is thin and ragged against Earth)
+    [(706, 688), (746, 672), (747, 700), (747, 738), (748, 760), (748, 777), (745, 789), (738, 797), (727, 800),
+     (718, 797), (713, 789), (712, 776), (714, 760), (717, 744), (719, 728), (719, 712), (716, 699), (708, 693)],
     # near hind leg below the trouser cuff, down to the paw
     [(806, 664), (820, 652), (836, 632), (844, 642), (850, 647), (856, 658), (868, 680), (880, 704), (890, 726),
      (897, 744), (899, 758), (896, 770), (890, 776), (882, 779), (874, 774), (866, 760), (860, 740), (854, 720),
      (846, 704), (836, 690), (824, 677), (812, 674)],
     # fillet from the helmet bubble to the tank where the hose loop was (no hose stub)
-    [(462, 350), (474, 322), (486, 330), (500, 334), (514, 333), (526, 331), (526, 352)],
+    [(470, 340), (478, 300), (486, 314), (498, 321), (512, 321), (528, 316), (545, 312), (560, 330), (540, 350)],
     # the Earth highlight between the far hind cuff and the near hind trouser: closed, so the far leg's front edge
     # runs straight up into the near trouser (a keyhole notch there reads as a glitch)
     [(724, 652), (744, 634), (752, 640), (747, 676), (724, 676)],
@@ -70,6 +108,12 @@ ERASE = [
     # tether: everything below the belly line between the near front leg and the far hind thigh
     [(503, 590), (530, 581), (558, 572), (584, 575), (598, 581), (606, 594), (611, 616), (617, 640), (640, 700),
      (640, 1030), (300, 1030), (445, 700), (447, 650), (456, 626), (470, 606), (488, 594)],
+    # everything above the tank + back line (the tank and the slope are re-added as clean shapes)
+    [(552, 240), (790, 240), (790, 452)] + BACK[::-1] + [(560, 350)],
+    # the far hind leg below the cuff (redrawn above)
+    [(700, 694), (712, 688), (760, 688), (760, 820), (700, 820)],
+    # above that fillet: the tank cap and the hose loop's root
+    [(482, 262), (552, 262), (552, 311), (545, 310), (528, 314), (512, 319), (498, 319), (486, 312), (480, 300)],
     # hose loop above the shoulders (the helmet ellipse is re-added afterwards)
     [(478, 268), (540, 268), (536, 300), (527, 322), (515, 330), (500, 330), (488, 320)],
 ]
@@ -247,6 +291,15 @@ def build():
         touch[i] = {int(j) for j in np.unique(own[dil]) if j >= 0 and j != i}
 
     rim = ndi.distance_transform_edt(alpha > 0.5)     # box px from the outline, inwards
+    # volume layer: soft inner shade (stronger away from the light) + thin rim light on the lit edges
+    g = cv2.GaussianBlur(dist, (0, 0), 10)
+    gy, gx = np.gradient(g)
+    nn = np.hypot(gx, gy) + 1e-6
+    facing = (-gx / nn) * LIGHT[0] + (-gy / nn) * LIGHT[1]          # outward normal . towards-light
+    sh = SHADE_MAX * (1 - smoothstep(0, SHADE_W, rim)) ** 1.6 * (0.35 + 0.65 * (1 - facing) / 2)
+    rl = RIM_MAX * (1 - smoothstep(1.0, RIM_W, rim)) * np.clip(facing, 0, 1) ** 1.4
+    vol_a = rl + sh * (1 - rl)
+    vol_rgb = (np.array([255, 236, 250], np.float32) * (rl / np.maximum(vol_a, 1e-6))[..., None])
     smoke, corners = render_smoke(W, H)
     out = []
     for i, (name, par, z, cut, piv, seeds) in enumerate(PARTS):
@@ -273,14 +326,60 @@ def build():
             din = ndi.distance_transform_edt(own == i)[by0:by1, bx0:bx1]
             col = col * (1 - (1 - FAR_SHADE) * smoothstep(0, 70, din))[..., None]
         rgba = np.dstack([col * 255, a[by0:by1, bx0:bx1] * 255])
+        shade = np.dstack([vol_rgb[by0:by1, bx0:bx1], (vol_a * a)[by0:by1, bx0:bx1] * 255])
         ideal = np.dstack([np.zeros((by1 - by0, bx1 - bx0, 3)), (alpha * mine)[by0:by1, bx0:bx1] * 255])
         pv = P(piv) if piv else (float(np.mean(np.nonzero(mine)[1])), float(np.mean(np.nonzero(mine)[0])))
         out.append(dict(name=name, parent=par, z=z, file=f'dog-{name}.webp', box=[bx0, by0, bx1, by1],
                         pivot=[round(pv[0], 2), round(pv[1], 2)],
                         rgba=np.clip(np.round(rgba), 0, 255).astype(np.uint8),
+                        shade_rgba=np.clip(np.round(shade), 0, 255).astype(np.uint8), shade_file=f'dog-{name}-shade.webp',
                         ideal=np.clip(np.round(ideal), 0, 255).astype(np.uint8)))
     cuts = [[P(c) for c in cut] for (_, _, _, cut, _, _) in PARTS if cut]
-    return dict(W=W, H=H, alpha=alpha, own=own, parts=out, cuts=cuts, ell=ell, mask=m, smoke=smoke, corners=corners, P=P)
+    Pb = lambda p: (S * p[0] + t[0] + 0.5 * S - 0.5, S * p[1] + t[1] + 0.5 * S - 0.5)   # source px centre -> box px
+    return dict(W=W, H=H, alpha=alpha, own=own, parts=out, cuts=cuts, ell=ell, mask=m, smoke=smoke, corners=corners, P=P,
+                Pb=Pb, helmet=helmet_geometry(ell, Pb, W, H))
+
+
+def smooth_path(mask, sigma, eps=0.8):
+    d = np.where(mask, ndi.distance_transform_edt(mask), -ndi.distance_transform_edt(~mask)).astype(np.float32)
+    return contour_path(cv2.GaussianBlur(d, (0, 0), sigma) > 0, eps)
+
+
+def helmet_geometry(ell, Pb, W, H):
+    """the glass bubble overlay (box px): ellipse, the head inside it, and the glass highlights"""
+    (ex, ey), (ea, eb), et = ell[:3]
+    cx, cy = Pb((ex, ey)); rx, ry = ea * S / 2, eb * S / 2
+    inner = np.zeros((H, W), np.uint8)
+    cv2.ellipse(inner, ((cx, cy), (2 * rx - 36, 2 * ry - 36), et), 1, -1)
+    inner = inner.astype(bool)
+
+    def chaikin(pts, n=4):        # hand-traced polygons -> smooth closed curves
+        pts = np.array(pts, float)
+        for _ in range(n):
+            q = np.roll(pts, -1, 0)
+            pts = np.stack([0.75 * pts + 0.25 * q, 0.25 * pts + 0.75 * q], 1).reshape(-1, 2)
+        return pts
+
+    def fill(poly):
+        m = np.zeros((H, W), np.uint8)
+        cv2.fillPoly(m, [np.round(np.array([Pb(p) for p in chaikin(poly)]) * 4).astype(np.int32)], 1, shift=2)
+        return m.astype(bool)
+    head = fill(HEAD) & inner
+    ears = (fill(EARS[0]) | fill(EARS[1])) & head
+    nose = fill(NOSE)
+    th = math.radians(et)
+
+    def on(a, k=1.0):     # point on the ellipse (scaled by k) at screen angle a (deg)
+        u, v = k * rx * math.cos(math.radians(a)), k * ry * math.sin(math.radians(a))
+        return cx + u * math.cos(th) - v * math.sin(th), cy + u * math.sin(th) + v * math.cos(th)
+
+    def arc(a0, a1, k, n=24):
+        pts = [on(a, k) for a in np.linspace(a0, a1, n)]
+        return 'M' + ' '.join(f'{x:.1f} {y:.1f}' for x, y in pts)
+    return dict(cx=round(cx, 1), cy=round(cy, 1), rx=round(rx, 1), ry=round(ry, 1), angle=round(et, 2),
+                head=smooth_path(head, 5), ears=smooth_path(ears, 4), nose=smooth_path(nose, 4),
+                eyes=[[round(v, 1) for v in Pb(e)] for e in EYES],
+                spec=[arc(196, 248, 0.84), arc(256, 268, 0.84), arc(18, 52, 0.86)])
 
 
 # ------------------------------------------------------------------ helpers shared by asserts / sheets
@@ -298,20 +397,21 @@ def paint_order(parts):
         sorted([p for p in kids if p['z'] >= root['z']], key=lambda p: p['z'])
 
 
-def assemble(fig, view, size, angles=None, bg=None, key='img'):
+def assemble(fig, view, size, angles=None, bg=None, key='img', shade=False):
     """premultiplied RGBA float canvas; view: 3x3 box px -> canvas px; angles: {part: deg}"""
     angles = angles or {}
     acc = np.zeros((size[1], size[0], 4), np.float32)
     if bg is not None:
         acc[..., :3] = np.array(bg, np.float32) / 255; acc[..., 3] = 1
     for p in paint_order(fig['parts']):
-        im = p[key].astype(np.float32) / 255
-        im[..., :3] *= im[..., 3:]
         bx0, by0 = p['box'][:2]
         G = rot_about(p['pivot'], angles.get(p['name'], 0.0))
         M = (view @ G @ np.array([[1, 0, bx0], [0, 1, by0], [0, 0, 1]]))[:2]
-        w = cv2.warpAffine(im, M, size, flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
-        acc = w + acc * (1 - w[..., 3:])
+        for k in ([key, 'shade'] if shade else [key]):
+            im = p[k].astype(np.float32) / 255
+            im[..., :3] *= im[..., 3:]
+            w = cv2.warpAffine(im, M, size, flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+            acc = w + acc * (1 - w[..., 3:])
     return acc
 
 
@@ -353,7 +453,7 @@ def main(shots=None):
     fig = build()
     W, H = fig['W'], fig['H']
     for f in sorted(ASSET.glob('dog-*.webp')):
-        if f.name not in {p['file'] for p in fig['parts']}:
+        if f.name not in {p['file'] for p in fig['parts']} | {p['shade_file'] for p in fig['parts']}:
             f.unlink()
     total = 0
     for p in fig['parts']:
@@ -362,6 +462,14 @@ def main(shots=None):
         (ASSET / p['file']).write_bytes(buf.getvalue())
         p['bytes'] = len(buf.getvalue()); total += p['bytes']
         p['img'] = np.array(Image.open(ASSET / p['file']).convert('RGBA'))   # asserts run on the shipped pixels
+        buf = io.BytesIO()
+        sh_im = Image.fromarray(p['shade_rgba'], 'RGBA')   # soft layer: shipped at half resolution (CSS stretches it)
+        sh_im = sh_im.resize((max(1, round(sh_im.width * SHADE_SCALE)), max(1, round(sh_im.height * SHADE_SCALE))), Image.LANCZOS)
+        sh_im.save(buf, 'WEBP', quality=SHADE_Q, method=6, alpha_quality=80)
+        (ASSET / p['shade_file']).write_bytes(buf.getvalue())
+        p['shade_bytes'] = len(buf.getvalue()); total += p['shade_bytes']
+        sh_back = Image.open(ASSET / p['shade_file']).convert('RGBA').resize(p['shade_rgba'].shape[1::-1], Image.BILINEAR)
+        p['shade'] = np.array(sh_back)
     by = {p['name']: p for p in fig['parts']}
     body = by['body']
     for p in fig['parts']:
@@ -393,8 +501,8 @@ def main(shots=None):
     path = contour_path(stable)
     meta = dict(
         viewBox=[0, 0, W, H], body=[round(cx / W * 100, 2), round(cy / H * 100, 2)], silhouette=path,
-        source='dog.png', scale=S, window=list(win),
-        parts=[{k: p[k] for k in ('name', 'parent', 'z', 'file', 'box', 'pivot', 'css')} for p in fig['parts']],
+        source='dog.png', scale=S, window=list(win), helmet=fig['helmet'],
+        parts=[{k: p[k] for k in ('name', 'parent', 'z', 'file', 'shade_file', 'box', 'pivot', 'css')} for p in fig['parts']],
     )
     (COMP / 'dog.json').write_text(json.dumps(meta, indent=1) + '\n')
 
@@ -451,7 +559,7 @@ def main(shots=None):
     print('parts', {p['name']: (p['box'][2] - p['box'][0], p['box'][3] - p['box'][1], p['bytes']) for p in fig['parts']})
     print(f'body window {meta["window"]}  body {meta["body"]}  viewBox {meta["viewBox"]}  path {len(meta["silhouette"])} chars, '
           f'{meta["silhouette"].count("M")} rings, IoU {iou:.4f}')
-    print(f'part bytes {total}  worst joint hole px^2 {worst}')
+    print(f'part bytes {total} (smoke {sum(p["bytes"] for p in fig["parts"])}, volume {sum(p["shade_bytes"] for p in fig["parts"])})  worst joint hole px^2 {worst}')
     print('OK dog')
 
 
@@ -481,21 +589,21 @@ def contact_sheets(fig, out, win, stable):
     pad = int(0.08 * max(W, H))
     size = (W + 2 * pad, H + 2 * pad)
     view = np.array([[1, 0, pad], [0, 1, pad], [0, 0, 1]], float)
-    rest = flat(assemble(fig, view, size, bg=BG))
+    rest = flat(assemble(fig, view, size, bg=BG, shade=True))
     Image.fromarray(rest).save(out / 'rest-full.png')
     poses = []
     for a in (8, -8):
         ang = {n: (a * 1.5 if n == 'tail' else a) for n in names}
-        poses.append(label(fit(flat(assemble(fig, view, size, ang, bg=BG)), 900), f'legs {a:+d}, tail {a * 1.5:+.0f} deg'))
+        poses.append(label(fit(flat(assemble(fig, view, size, ang, bg=BG, shade=True)), 900), f'legs {a:+d}, tail {a * 1.5:+.0f} deg'))
     alt = {n: (8 if ('front' in n or n == 'tail') else -8) for n in names}
-    poses.append(label(fit(flat(assemble(fig, view, size, alt, bg=BG)), 900), 'front/tail +8, hind -8'))
+    poses.append(label(fit(flat(assemble(fig, view, size, alt, bg=BG, shade=True)), 900), 'front/tail +8, hind -8'))
     r900 = label(fit(rest, 900), 'rest 900 px')
     r260 = fit(rest, 260)
     tile = np.zeros_like(r900); tile[:] = BG
     tile[80:80 + r260.shape[0], 40:40 + 260] = r260
     cv2.putText(tile, 'rest 260 px', (40, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (200, 200, 220), 2)
     # 4x edge zooms: helmet top, front paw, tail tip, hind paw
-    restb = flat(assemble(fig, np.eye(3), (W, H), bg=BG))
+    restb = flat(assemble(fig, np.eye(3), (W, H), bg=BG, shade=True))
     P = fig['P']
     zooms = []
     for (sx, sy) in [(330, 150), (225, 650), (895, 395), (890, 776)]:

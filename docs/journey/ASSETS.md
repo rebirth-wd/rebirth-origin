@@ -83,34 +83,44 @@ the viewport, and the smoke texture.
 - Generator: `docs/journey/tools/smoke.py`.
 
 ## `<Dog class? idle? />`: `src/components/space/Dog.astro`
-- A crisp **silhouette** of the client's labrador in a bubble helmet with a back tank (`docs/journey/source/dog.png`),
-  **facing left**, filled with pink / magenta / violet / blue smoke from `docs/journey/source/smoke.png`. No suit
-  detail, no hose or tether, no rim light (the clean edge reads best at every size). Same look as the astronauts.
-- Root `div.rb-dog[data-dog]`, `width: 100%`, intrinsic aspect ratio **1997 : 1885** (`dog.json.viewBox`
-  `[0, 0, 1997, 1885]`, box px). `--body-x`, `--body-y` are set on the root.
-- Six WebP parts (`src/assets/space/dog-*.webp`, **150 KB** total), nested like `<Astronaut/>`
-  (`div.rb-dog__part[data-dog-part]`, `left/top/width/height` in % of the parent box, `transform-origin` = joint):
-  `body` (torso + helmet + tank) with children `leg-front-far` (z 0, under), `tail` and `leg-hind-far` (z 1, under),
-  `leg-front-near` (z 3, over), `leg-hind-near` (z 4, over). Far legs are a touch darker for depth.
-  Each limb reaches 28 px (box) fully opaque under its neighbours, then tapers, so no seam opens up to ±8°; the smoke
-  is sampled once in rest-pose box coordinates, so the texture is continuous across the joints at rest.
+- A crisp **silhouette** of the client's labrador in a glass bubble helmet with a back tank
+  (`docs/journey/source/dog.png`), **facing left**, filled with pink / magenta / violet / blue smoke from
+  `docs/journey/source/smoke.png`. No suit detail, no hose or tether. Same look as the astronauts.
+- Root `div.rb-dog[data-dog]`, `width: 100%`, intrinsic aspect ratio **1997 : 1891** (`dog.json.viewBox`
+  `[0, 0, 1997, 1891]`, box px). `--body-x`, `--body-y` are set on the root.
+- Six parts nested like `<Astronaut/>` (`div.rb-dog__part[data-dog-part]`, `left/top/width/height` in % of the
+  parent box, `transform-origin` = joint): `body` (torso + helmet + tank) with children `leg-front-far` (z 0, under),
+  `tail` and `leg-hind-far` (z 1, under), `leg-front-near` (z 3, over), `leg-hind-near` (z 4, over). Far legs are a
+  touch darker for depth. Each limb reaches 28 px (box) fully opaque under its neighbours, then tapers, so no seam
+  opens up to ±8°; the smoke is sampled once in rest-pose box coordinates, so the texture is continuous at rest.
+- Each part has two images: the smoke (`dog-<part>.webp`) and a **volume layer** (`dog-<part>-shade.webp`,
+  `img.rb-dog__vol`, half resolution): a soft inner shade along the edges (stronger away from the light, upper
+  left) and a thin rim light on the lit edges.
+- **Glass overlay** `svg.rb-dog__glass` (vector, scales cleanly; geometry in `dog.json.helmet`): the dog's head
+  inside the bubble as a darker smoke tone (face with drop ears, nose, eyes; traced from dog.png), a glass sheen, a
+  bright thin rim with a faint inner ring, and three curved speculars. Gradient ids are unique per instance.
+- **`--dog-detail`** (default 1) is the opacity of the volume layer and the glass overlay. journey.ts already
+  drives it: 0 while the dog covers the screen (the helmet sits next to the 16:10 body window), fading in from
+  B 0.97 s. The frozen frame in the phone leaves it at 1.
 - **Idle** (`dog.ts`, `initDogs(scope = document)`, called by the component): every leg turns ±3.6° max, the tail
   ±6°, each as two summed sines with incommensurate periods (4–9 s) and a random phase. Paused off-screen
   (IntersectionObserver), never runs under `prefers-reduced-motion`, and not at all with `idle={false}`
   (`data-dog-idle="false"`): the dog in the phone (`SpaceArt.astro`) is a frozen frame at the rest pose.
-- Geometry: `dog.json`. Generator: `docs/journey/tools/dog_silhouette.py` (GrabCut + hand polygons, fitted helmet
-  ellipse, SDF-smoothed ~2 px anti-aliased edge; asserts at the end; `--shots DIR` writes the contact sheets).
-  - `body` = **36.05%, 42.92%**: the centre of the largest 16:10 rectangle (768 × 480 box px) that is 100% opaque in
+- Generator: `docs/journey/tools/dog_silhouette.py` (GrabCut + hand-tuned shapes: fitted helmet ellipse, a capsule
+  tank and one smooth back line, a redrawn far hind leg, paw undersides; SDF-smoothed ~2 px anti-aliased edge;
+  asserts at the end; `--shots DIR` writes the contact sheets). Weight: **210,586 bytes** (smoke 151,896 + volume
+  58,690), 12 files.
+  - `body` = **36.43%, 42.54%**: the centre of the largest 16:10 rectangle (783 × 489 box px) that is 100% opaque in
     the `body` part alone (asserted on the decoded WebP).
   - `silhouette` = one closed SVG path (box px) of the **stable** outline: the area covered in every idle pose
     (limbs at their idle extremes), so a cover computed from it (journey.ts `dogCoverWidth`, isPointInFill) holds
     while the legs move. It is a little inside the rest outline at the limbs; don't use it as a visual mask.
-- **Cover sizes**, centred on `body`: a 16:10 viewport is covered from ≈ **2.65 × viewport width** (3819 px for
-  1440×900 incl. journey.ts's 3% margin); a 390×844 portrait viewport needs ≈ **8.6 × viewport width** (3351 px).
-  The parts are 1997 px wide in total, so at the cover size the smoke is upscaled ~2×: it is soft smoke, that is fine.
+- **Cover sizes**, centred on `body`: a 16:10 viewport is covered from ≈ **2.6 × viewport width** (3747 px for
+  1440×900 incl. journey.ts's 3% margin); a 390×844 portrait viewport needs ≈ **7.9 × viewport width** (3073 px).
+  The parts are 1997 px wide, so at the cover size the smoke is upscaled ~2×: soft smoke, that is fine.
 - Verified (`docs/journey/shots/dog/`, gitignored): contact sheet at 260 / 900 px, legs ±8°, 4× edges; browser at
-  100–900 px; `/?journey=debug` transition B at 1440×900 and 390×844: smoke covers the screen at B 0.44 s and the
-  stage dog lands on the phone's dog rect to 0.1 px.
+  100–900 px incl. the glass at 4×; `/?journey=debug` transition B at 1440×900 and 390×844: smoke covers the
+  screen at B 0.44 s and the stage dog lands on the phone's dog rect to 0.1 px.
 
 ## `<SpaceBackdrop moon? moonPhoto? class? />`: `src/components/space/SpaceBackdrop.astro`
 - Root `div.rb-space[data-space]`, `position:absolute; inset:0` (fills its positioned parent),
@@ -146,7 +156,7 @@ the viewport, and the smoke texture.
 | smoke-pink.webp | 21,670 |
 | **total** | **456,812 (~446 KiB)** |
 
-The dog parts `dog-*.webp` add 150,460 bytes (six files). The star tiles are inline in the HTML; the dog's
+The dog parts `dog-*.webp` add 210,586 bytes (twelve files). The star tiles are inline in the HTML; the dog's
 `silhouette` path (~17 KB) ships in the journey script, which imports `dog.json`. `source-figures.webp` is not
 loaded at runtime.
 

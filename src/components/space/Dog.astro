@@ -2,27 +2,54 @@
 // The dog: a crisp silhouette of the labrador in a bubble helmet with a back tank, filled with pink/violet/blue
 // smoke (no suit detail), facing left. Six parts (body + four legs + tail) nested so each limb turns about its joint;
 // dog.ts adds a slow floating idle. Parts, layout and geometry: dog.json, built by docs/journey/tools/dog_silhouette.py.
+// Detail (faded by --dog-detail, default 1; 0 while the dog covers the screen): a soft volume layer per part (inner
+// shade + rim light) and the glass bubble (rim, highlights, the dog's head inside as a darker smoke tone).
 // Contract (cover sizes, `body`, `silhouette`): docs/journey/ASSETS.md.
 import dog from './dog.json';
 interface Props { class?: string; idle?: boolean }
 const { class: cls = '', idle = true } = Astro.props;
 const files = import.meta.glob<{ default: { src: string } }>('../../assets/space/dog-*.webp', { eager: true });
 const url = (f: string) => files[`../../assets/space/${f}`].default.src;
-type P = { name: string; parent: string | null; z: number; file: string; css: any };
+type P = { name: string; parent: string | null; z: number; file: string; shade_file: string; css: any };
 const parts: P[] = dog.parts as P[];
 const kids = (name: string | null) => parts.filter((p) => p.parent === name);
 // nested so children follow their parent; z-index relative to the parent (negative = painted under it)
 const render = (p: P, parentZ: number): string => {
   const c = p.css;
   const style = `left:${c.left}%;top:${c.top}%;width:${c.width}%;height:${c.height}%;transform-origin:${c.ox}% ${c.oy}%;z-index:${p.parent ? p.z - parentZ : 0}`;
-  return `<div class="rb-dog__part" data-dog-part="${p.name}" style="${style}"><img src="${url(p.file)}" alt="" draggable="false" decoding="async" />${kids(p.name).map((k) => render(k, p.z)).join('')}</div>`;
+  return `<div class="rb-dog__part" data-dog-part="${p.name}" style="${style}"><img src="${url(p.file)}" alt="" draggable="false" decoding="async" /><img class="rb-dog__vol" src="${url(p.shade_file)}" alt="" draggable="false" decoding="async" />${kids(p.name).map((k) => render(k, p.z)).join('')}</div>`;
 };
 const html = kids(null).map((p) => render(p, 0)).join('');
 const [, , vw, vh] = dog.viewBox;
 const style = `aspect-ratio:${vw}/${vh};--body-x:${dog.body[0]}%;--body-y:${dog.body[1]}%`;
+const h = dog.helmet;
+const uid = `rbdg${Math.random().toString(36).slice(2, 8)}`; // per instance: several dogs can share a page
+const rot = `rotate(${h.angle} ${h.cx} ${h.cy})`;
 ---
-<div class:list={['rb-dog', cls]} data-dog data-dog-idle={idle ? undefined : 'false'} style={style} role="img" aria-label="Silhouette of a dog in a space helmet with an air tank, made of pink and violet smoke">
+<div class:list={['rb-dog', cls]} data-dog data-dog-idle={idle ? undefined : 'false'} style={style} role="img" aria-label="Silhouette of a dog in a glass space helmet with an air tank, made of pink and violet smoke">
   <div class="rb-dog__rig" set:html={html} />
+  <svg class="rb-dog__glass" viewBox={`0 0 ${vw} ${vh}`} preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <radialGradient id={`${uid}-glass`} cx="0.36" cy="0.3" r="0.78">
+        <stop offset="0" stop-color="#fff" stop-opacity="0.14" />
+        <stop offset="0.6" stop-color="#fff" stop-opacity="0.02" />
+        <stop offset="0.9" stop-color="#1a0a3a" stop-opacity="0.10" />
+        <stop offset="1" stop-color="#1a0a3a" stop-opacity="0.22" />
+      </radialGradient>
+    </defs>
+    <!-- the dog's head inside the bubble: a denser, darker smoke tone -->
+    <path d={h.head} fill="#170735" fill-opacity="0.34" />
+    <path d={h.ears} fill="#100426" fill-opacity="0.30" />
+    <path d={h.nose} fill="#0b0220" fill-opacity="0.62" />
+    {h.eyes.map(([x, y]) => <circle cx={x} cy={y} r="11" fill="#0b0220" fill-opacity="0.55" />)}
+    <!-- glass: sheen, rim, highlights -->
+    <ellipse cx={h.cx} cy={h.cy} rx={h.rx} ry={h.ry} transform={rot} fill={`url(#${uid}-glass)`} />
+    <ellipse cx={h.cx} cy={h.cy} rx={h.rx - 7} ry={h.ry - 7} transform={rot} fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="10" />
+    <ellipse cx={h.cx} cy={h.cy} rx={h.rx - 24} ry={h.ry - 24} transform={rot} fill="none" stroke="#fff" stroke-opacity="0.16" stroke-width="5" />
+    <path d={h.spec[0]} fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="22" stroke-linecap="round" />
+    <path d={h.spec[1]} fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="14" stroke-linecap="round" />
+    <path d={h.spec[2]} fill="none" stroke="#fff" stroke-opacity="0.32" stroke-width="11" stroke-linecap="round" />
+  </svg>
 </div>
 
 <style is:global>
@@ -30,6 +57,8 @@ const style = `aspect-ratio:${vw}/${vh};--body-x:${dog.body[0]}%;--body-y:${dog.
   .rb-dog__rig { position: absolute; inset: 0; }
   .rb-dog__part { position: absolute; }
   .rb-dog__part > img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; max-width: none; }
+  .rb-dog__part > img.rb-dog__vol, .rb-dog__glass { opacity: var(--dog-detail, 1); }
+  .rb-dog__glass { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 1; }
 </style>
 
 <script>
