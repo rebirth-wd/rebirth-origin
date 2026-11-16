@@ -54,7 +54,7 @@ FIG = {
         erase=[],
         # clean helmet shell + visor (ellipses cx, cy, rx, ry) and backpack (rounded rect x0, y0, x1, y1, r) replace
         # the photo's head inside `zone`; `fine`: circles (cx, cy, r) smoothed lightly (gloves: keep the fingers)
-        helmet=dict(zone=(330, 60, 598, 276), shell=(471, 188, 100, 102), visor=(472, 196, 70, 72), pack=(348, 128, 598, 330, 40)),
+        helmet=dict(zone=(320, 60, 612, 226), shell=(471, 188, 100, 102), visor=(472, 196, 70, 72), pack=(326, 206, 606, 336, 48)),
         fine=[(130, 230, 120), (805, 125, 120)],
         smoke=dict(c=(600, 300), mag=3.3, sat=1.05),                 # pink / magenta / violet
         parts=[
