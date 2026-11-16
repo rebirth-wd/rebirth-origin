@@ -4,31 +4,40 @@
 // dog.ts adds a slow floating idle. Parts, layout and geometry: dog.json, built by docs/journey/tools/dog_silhouette.py.
 // Detail (faded by --dog-detail, default 1; 0 while the dog covers the screen): a soft volume layer per part (inner
 // shade + rim light) and the glass bubble (rim, highlights, the dog's head inside as a darker smoke tone).
+// Props: `idle` (false = frozen frame), `fill` picks the first image of every part: 'smoke' (default, the coloured
+// smoke), 'white' (flat white matte), 'black' (flat black knockout, half resolution) or 'none' (no fill image).
+// `detail={false}` leaves out the volume layers and the glass, so the copy is just the fill. `sync` puts the root in a
+// sync group (data-dog-sync): dog.ts moves every dog of one group with the same idle, so a black, a white and a
+// detail-only copy stacked on each other keep their legs and tail together. Any copy that is not the plain smoke dog
+// is decorative and carries no role/aria-label.
 // Contract (cover sizes, `body`, `silhouette`): docs/journey/ASSETS.md.
 import dog from './dog.json';
-interface Props { class?: string; idle?: boolean }
-const { class: cls = '', idle = true } = Astro.props;
+interface Props { class?: string; idle?: boolean; fill?: 'smoke' | 'white' | 'black' | 'none'; detail?: boolean; sync?: string }
+const { class: cls = '', idle = true, fill = 'smoke', detail = true, sync } = Astro.props;
 const files = import.meta.glob<{ default: { src: string } }>('../../assets/space/dog-*.webp', { eager: true });
 const url = (f: string) => files[`../../assets/space/${f}`].default.src;
 type P = { name: string; parent: string | null; z: number; file: string; shade_file: string; css: any };
 const parts: P[] = dog.parts as P[];
 const kids = (name: string | null) => parts.filter((p) => p.parent === name);
 // nested so children follow their parent; z-index relative to the parent (negative = painted under it)
+const fillFile = (p: P) => (fill === 'white' ? `dog-${p.name}-matte.webp` : fill === 'black' ? `dog-${p.name}-knock.webp` : p.file);
+const img = (f: string, c = '') => `<img${c ? ` class="${c}"` : ''} src="${url(f)}" alt="" draggable="false" decoding="async" fetchpriority="low" />`;
 const render = (p: P, parentZ: number): string => {
   const c = p.css;
   const style = `left:${c.left}%;top:${c.top}%;width:${c.width}%;height:${c.height}%;transform-origin:${c.ox}% ${c.oy}%;z-index:${p.parent ? p.z - parentZ : 0}`;
-  return `<div class="rb-dog__part" data-dog-part="${p.name}" style="${style}"><img src="${url(p.file)}" alt="" draggable="false" decoding="async" fetchpriority="low" /><img class="rb-dog__vol" src="${url(p.shade_file)}" alt="" draggable="false" decoding="async" fetchpriority="low" />${kids(p.name).map((k) => render(k, p.z)).join('')}</div>`;
+  return `<div class="rb-dog__part" data-dog-part="${p.name}" style="${style}">${fill === 'none' ? '' : img(fillFile(p))}${detail ? img(p.shade_file, 'rb-dog__vol') : ''}${kids(p.name).map((k) => render(k, p.z)).join('')}</div>`;
 };
 const html = kids(null).map((p) => render(p, 0)).join('');
 const [, , vw, vh] = dog.viewBox;
 const style = `aspect-ratio:${vw}/${vh};--body-x:${dog.body[0]}%;--body-y:${dog.body[1]}%`;
 const h = dog.helmet;
 const uid = `rbdg${Math.random().toString(36).slice(2, 8)}`; // per instance: several dogs can share a page
+const decorative = fill !== 'smoke' || !detail;
 const rot = `rotate(${h.angle} ${h.cx} ${h.cy})`;
 ---
-<div class:list={['rb-dog', cls]} data-dog data-dog-idle={idle ? undefined : 'false'} style={style} role="img" aria-label="Silhouette of a dog in a glass space helmet with an air tank, made of pink and violet smoke">
+<div class:list={['rb-dog', cls]} data-dog data-dog-idle={idle ? undefined : 'false'} data-dog-sync={sync} style={style} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : 'Silhouette of a dog in a glass space helmet with an air tank, made of pink and violet smoke'} aria-hidden={decorative ? 'true' : undefined}>
   <div class="rb-dog__rig" set:html={html} />
-  <svg class="rb-dog__glass" viewBox={`0 0 ${vw} ${vh}`} preserveAspectRatio="none" aria-hidden="true">
+  {detail && <svg class="rb-dog__glass" viewBox={`0 0 ${vw} ${vh}`} preserveAspectRatio="none" aria-hidden="true">
     <defs>
       <radialGradient id={`${uid}-glass`} cx="0.36" cy="0.3" r="0.78">
         <stop offset="0" stop-color="#fff" stop-opacity="0.14" />
@@ -49,7 +58,7 @@ const rot = `rotate(${h.angle} ${h.cx} ${h.cy})`;
     <path d={h.spec[0]} fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="22" stroke-linecap="round" />
     <path d={h.spec[1]} fill="none" stroke="#fff" stroke-opacity="0.6" stroke-width="14" stroke-linecap="round" />
     <path d={h.spec[2]} fill="none" stroke="#fff" stroke-opacity="0.32" stroke-width="11" stroke-linecap="round" />
-  </svg>
+  </svg>}
 </div>
 
 <style is:global>

@@ -1,7 +1,7 @@
 ---
 // SpaceJourney: one 100svh stage at the top of the page with three stops (hero → section2 → appdesign). A scroll
-// intent at a stop triggers a transition that plays by time (A: act 1, B: act 2 + the flash into Agent C's phone
-// showcase). Controller + camera maths: ./spacejourney/journey.ts; every timing: ./spacejourney/timing.ts
+// intent at a stop triggers a transition that plays by time (A: act 1, B: act 2 + the camera flash into Agent C's
+// phone showcase). Controller + camera maths: ./spacejourney/journey.ts; every timing: ./spacejourney/timing.ts
 // (table: docs/journey/TIMING.md). Without JS or with prefers-reduced-motion the same markup renders as three
 // ordinary stacked blocks (hero on space, section 2 on the gradient, the showcase in its final state).
 import HeroContent from './spacejourney/HeroContent.astro';
@@ -52,14 +52,29 @@ import smoke from '../../assets/space/smoke-pink.webp';
     </div>
 
     <!-- ================= act 2: gradient, section 2, the dog in open space ================= -->
+    <!-- In B the dog is a dog-shaped WINDOW onto the same live, screen-fixed gradient: per pixel
+         space × (1 − dog) + gradient × dog. Three copies of the dog share one box size, one transform and one idle
+         (sync="sj"; the black knockout is first in the DOM, so it leads):
+         the black dog blocks the stars; .sj-win holds the gradient with a black stage above it that has a white dog
+         cut into it (multiply: gradient inside the dog, black outside), and journey.ts blends the whole group onto the
+         stars with `screen` from B.gradToDog on; the detail-only dog (helmet glass, shading) sits on top. Before that
+         instant .sj-win blends normally and the three dogs are hidden, so A and section 2 are just the gradient. -->
     <div class="sj-act sj-act2" data-sj-act2>
       <div class="sj-l sj-space2" data-sj-space2 aria-hidden="true">
         <SpaceBackdrop moonPhoto={false} />
       </div>
-      <div class="sj-l sj-dogwrap" data-sj-dogwrap aria-hidden="true">
-        <div class="sj-dogbox" data-sj-dogbox><Dog /></div>
+      <div class="sj-l sj-dogwrap" data-sj-dogwrap="knock" aria-hidden="true">
+        <div class="sj-dogbox" data-sj-dogbox><Dog fill="black" detail={false} sync="sj" /></div>
       </div>
-      <div class="sj-l sj-grad rb-gradient-field" data-sj-grad aria-hidden="true"></div>
+      <div class="sj-l sj-win" data-sj-win aria-hidden="true">
+        <div class="sj-l sj-grad rb-gradient-field" data-sj-grad></div>
+        <div class="sj-l sj-matte" data-sj-matte>
+          <div class="sj-dogbox" data-sj-dogbox><Dog fill="white" detail={false} sync="sj" /></div>
+        </div>
+      </div>
+      <div class="sj-l sj-dogwrap" data-sj-dogwrap="detail" aria-hidden="true">
+        <div class="sj-dogbox" data-sj-dogbox><Dog fill="none" sync="sj" /></div>
+      </div>
       <div class="sj-l sj-s2" data-sj-s2>
         <Section2 />
       </div>
@@ -70,9 +85,8 @@ import smoke from '../../assets/space/smoke-pink.webp';
       <PhoneShowcase />
     </div>
 
-    <!-- ================= light: bloom, flash ================= -->
+    <!-- ================= light: the camera flash ================= -->
     <div class="sj-l sj-fx" data-sj-fx aria-hidden="true">
-      <div class="sj-bloom" data-sj-bloom></div>
       <div class="sj-l sj-flash" data-sj-flash></div>
     </div>
   </div>
@@ -93,7 +107,9 @@ import smoke from '../../assets/space/smoke-pink.webp';
   .sj-fig-right { right: 2%; bottom: 3%; width: min(13.8vw, 262px); transform: rotate(-26deg); }
   .sj-smoke { display: none; }
   .sj-act2 { position: relative; display: flex; align-items: center; min-height: 90vh; min-height: 90svh; overflow: hidden; padding: 18vh 0; }
-  .sj-space2, .sj-dogwrap, .sj-fx { display: none; }
+  /* .sj-win and the .sj-grad inside it are both inset 0 in act 2, so the static gradient still fills the block behind
+     the copy; the window's dogs are only for the motion version */
+  .sj-space2, .sj-dogwrap, .sj-matte, .sj-fx { display: none; }
   .sj-s2 { position: relative; inset: auto; width: 100%; }
   .sj-act3 { position: relative; height: 100vh; height: 100svh; overflow: hidden; }
   @media (max-width: 767px) {
@@ -129,12 +145,14 @@ import smoke from '../../assets/space/smoke-pink.webp';
     mask-composite: intersect; }
   :global(html.sj-motion) .sj-space2,
   :global(html.sj-motion) .sj-dogwrap,
+  :global(html.sj-motion) .sj-matte,
   :global(html.sj-motion) .sj-fx { display: block; }
   :global(html.sj-motion) .sj-s2 { position: absolute; inset: 0; display: flex; align-items: center; }
   /* layers that start hidden; the master timeline takes over with autoAlpha */
   :global(html.sj-motion) .sj-act2,
   :global(html.sj-motion) .sj-space2,
   :global(html.sj-motion) .sj-dogwrap,
+  :global(html.sj-motion) .sj-matte,
   :global(html.sj-motion) .sj-grad,
   :global(html.sj-motion) .sj-s2 { visibility: hidden; }
   :global(html.sj-motion) .sj-world { transform-origin: 0 0; }
@@ -158,13 +176,10 @@ import smoke from '../../assets/space/smoke-pink.webp';
   .sj-dogbox { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
   .sj-dogbox > :global([data-dog]) { width: 100%; }
 
-  /* bloom: a soft round glow centred on the resting dog (journey.ts sets its box); it swells (scale) and brightens,
-     added as light (screen blend), until the flash takes the screen to white */
-  .sj-bloom {
-    position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 50%; mix-blend-mode: screen;
-    background: radial-gradient(closest-side, #fff 0%, rgba(255,247,255,.92) 14%, rgba(246,214,255,.6) 34%, rgba(214,186,255,.26) 58%, rgba(190,170,255,.08) 80%, rgba(190,170,255,0) 100%);
-    transform: scale(0.04); opacity: 0;
-  }
+  /* the window: .sj-win is its own group (isolation) so the matte's multiply only ever meets the gradient, never
+     the stars; its blend onto the stars (normal, then screen during B) is set by journey.ts, not here */
+  .sj-win { isolation: isolate; }
+  .sj-matte { background: #000; mix-blend-mode: multiply; }
   .sj-flash { background: #fffdfe; opacity: 0; }
 </style>
 

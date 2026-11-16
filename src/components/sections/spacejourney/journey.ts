@@ -1,7 +1,14 @@
 // SpaceJourney controller: one 100svh stage with three stops (hero → section2 → appdesign) and two transitions that
 // play by TIME once a scroll intent triggers them (no scrubbing):
-//   A = hero → section2 (act 1), B = section2 → appdesign (act 2 + the flash hand-off to act 3).
+//   A = hero → section2 (act 1), B = section2 → appdesign (act 2 + the camera flash hand-off to act 3).
 // Every timing lives in ./timing.ts. Docs: docs/journey/TIMING.md, docs/journey/PLAN-B.md.
+//
+// Act 2 in B: the dog is a dog-shaped window onto the unchanged, live, screen-fixed section-2 gradient, like stepping
+// back from a keyhole. Per pixel the frame is space × (1 − M) + gradient × M (M = the dog matte), built from three
+// stacked copies of the dog that get the same width and the same transform every frame (SpaceJourney.astro): a black
+// knockout over the stars, the window group `.sj-win` (gradient × a white dog on black, multiply) blended `screen` onto
+// them, and a detail-only dog on top. At B.gradToDog the dog already covers the screen, so switching the window on is
+// invisible; the gradient itself is never faded in B. Then a sudden camera flash (no build-up) hands over to act 3.
 //
 // ONE paused master timeline in seconds holds both transitions: A on [0, LA], B on [LA, LA + LB]. A transition is a
 // tween of the master's time from one stop to the next (forwards at speed 1, backwards at TIMING.global.reverseSpeed).
@@ -197,13 +204,16 @@ export function initSpaceJourney(root: HTMLElement) {
   const smoke = q('[data-sj-smoke]');
   const space2 = q('[data-sj-space2]');
   const grad = q('[data-sj-grad]');
-  const dogwrap = q('[data-sj-dogwrap]');
-  const dogbox = q('[data-sj-dogbox]');
-  const dogRoot = q('[data-sj-dogbox] [data-dog]');
+  const win = q('[data-sj-win]');
+  const matte = q('[data-sj-matte]');
+  const knockWrap = q('[data-sj-dogwrap="knock"]');
+  const detailWrap = q('[data-sj-dogwrap="detail"]');
+  // the knockout, matte and detail dogs: always the same width and transform
+  const dogboxes = Array.from(root.querySelectorAll<HTMLElement>('[data-sj-dogbox]'));
+  const detailDog = q('[data-sj-dogwrap="detail"] [data-dog]');
   const s2 = q('[data-sj-s2]');
   const s2items = Array.from(root.querySelectorAll<HTMLElement>('[data-sj-s2-item]'));
   const fx = q('[data-sj-fx]');
-  const bloom = q('[data-sj-bloom]');
   const flash = q('[data-sj-flash]');
   const figL = q('[data-sj-fig="left"]');
   const figR = q('[data-sj-fig="right"]');
@@ -288,7 +298,7 @@ export function initSpaceJourney(root: HTMLElement) {
     const measureDog = () => {
       // laid out at the size that just covers the stage (so k = 1 there: the mask is rasterised at that size)
       Lw = Math.round(dogCoverWidth(W, H));
-      dogbox.style.width = `${Lw}px`;
+      for (const b of dogboxes) b.style.width = `${Lw}px`;
       Lh = (Lw * dogGeo.viewBox[3]) / dogGeo.viewBox[2];
       body = { x: (dogGeo.body[0] / 100) * Lw, y: (dogGeo.body[1] / 100) * Lh };
       // start: body point on the stage centre at scale 1; end: Agent C's frozen-frame rect
@@ -303,11 +313,6 @@ export function initSpaceJourney(root: HTMLElement) {
         C1 = { x: W / 2, y: H / 2 };
       }
       Cc = { x: cfg.dogCtrlX * W, y: lerp(C0.y, C1.y, 0.5) };
-      // the glow before the flash is centred on the dog's body where it comes to rest, and at full size reaches
-      // every corner of the stage (closest-side = d / 2)
-      const gx = C1.x + (body.x - Lw / 2) * k1, gy = C1.y + (body.y - Lh / 2) * k1;
-      const d = 2 * Math.max(Math.hypot(gx, gy), Math.hypot(W - gx, gy), Math.hypot(gx, H - gy), Math.hypot(W - gx, H - gy));
-      Object.assign(bloom.style, { left: `${(gx - d / 2).toFixed(1)}px`, top: `${(gy - d / 2).toFixed(1)}px`, width: `${d.toFixed(1)}px`, height: `${d.toFixed(1)}px` });
     };
 
     const measure = () => {
@@ -396,9 +401,12 @@ export function initSpaceJourney(root: HTMLElement) {
       const k = Math.exp(lerp(0, Math.log(k1), st.dogK));
       const e = st.dogP;
       const cx = bez(C0.x, Cc.x, C1.x, e), cy = bez(C0.y, Cc.y, C1.y, e);
-      dogbox.style.transform = `translate(${(cx - (k * Lw) / 2).toFixed(2)}px, ${(cy - (k * Lh) / 2).toFixed(2)}px) scale(${k.toFixed(6)})`;
-      // helmet glass + volume shading (Dog.astro): off while the dog covers the screen, in as it gets small
-      dogRoot.style.setProperty('--dog-detail', st.detail.toFixed(3));
+      // one transform for all three copies, so the knockout, the window's matte and the detail stay pixel-aligned
+      const dt = `translate(${(cx - (k * Lw) / 2).toFixed(2)}px, ${(cy - (k * Lh) / 2).toFixed(2)}px) scale(${k.toFixed(6)})`;
+      for (const b of dogboxes) b.style.transform = dt;
+      // helmet glass + volume shading (Dog.astro, detail copy only): off while the dog covers the screen, in as it
+      // gets small
+      detailDog.style.setProperty('--dog-detail', st.detail.toFixed(3));
     };
 
     // ---------- idle: always on while act 1 can be seen; off once act 1 is hidden (no idle work off-stage) ----------
@@ -414,6 +422,9 @@ export function initSpaceJourney(root: HTMLElement) {
     gsap.ticker.add(onIdleTick);
 
     // ---------- the master timeline (seconds; built ONLY from timing.ts) ----------
+    // the window group blends normally (it is just the section-2 gradient) until B.gradToDog; set before the timeline
+    // is built so the tl.set to 'screen' below records 'normal' as the value to restore when B plays in reverse
+    gsap.set(win, { mixBlendMode: 'normal' });
     const tl = gsap.timeline({ defaults: { ease: 'none' }, paused: true, onUpdate: () => { render(); sync(); } });
     const stTo = (key: keyof typeof st, to: number, b: Beat, off = 0) => tl.to(st, { [key]: to, duration: b.dur, ease: b.ease }, off + b.start);
     const ab = (b: Beat) => ({ duration: b.dur, ease: b.ease });
@@ -444,7 +455,8 @@ export function initSpaceJourney(root: HTMLElement) {
     tl.set({}, {}, LA);
     tl.addLabel('section2', LA);
 
-    // B: section2 → appdesign. Section-2 elements out; the gradient turns out to be the inside of a screen-covering dog.
+    // B: section2 → appdesign. Section-2 elements out; the gradient turns out to be the view through a dog-shaped
+    // window that covers the screen, and the window shrinks as the dog recedes.
     let outEnd = 0;
     s2items.forEach((el, i) => {
       const b = B[S2_OUT[i]];
@@ -453,14 +465,17 @@ export function initSpaceJourney(root: HTMLElement) {
       outEnd = Math.max(outEnd, end(b));
     });
     tl.set(s2, { autoAlpha: 0 }, LA + outEnd);
-    tl.set([space2, dogwrap], { autoAlpha: 1 }, LA + B.gradToDog.start);
-    tl.to(grad, { autoAlpha: 0, ...ab(B.gradToDog) }, LA + B.gradToDog.start);
+    // the window switches on: stars, the black knockout, the white matte and the detail dog appear and the window
+    // group is screened onto them. The dog covers the screen at scale 1 (and --dog-detail is 0), so the frame is
+    // still exactly the plain gradient; the gradient is never faded, act 2 is hidden at the flash peak instead.
+    // tl.set (not gsap.set) so playing B in reverse restores 'normal' and the hidden layers.
+    tl.set([space2, knockWrap, matte, detailWrap], { autoAlpha: 1 }, LA + B.gradToDog.start);
+    tl.set(win, { mixBlendMode: 'screen' }, LA + B.gradToDog.start);
     stTo('dogK', 1, B.dogRecede, LA);
     stTo('dogP', 1, B.dogDrift, LA);
     stTo('detail', 1, B.dogDetail, LA);
-    // light: as soon as the dog has arrived a soft round glow swells out of it, then the whole screen fades to white
-    tl.fromTo(bloom, { opacity: 0 }, { opacity: 1, ...ab(B.glowIn) }, LA + B.glowIn.start);
-    tl.fromTo(bloom, { scale: 0.05 }, { scale: 2, ...ab(B.glowSwell) }, LA + B.glowSwell.start); // at 2 its bright core reaches the corners
+    // light: a camera flash. After a short still beat the whole screen snaps to white in about two frames (no glow,
+    // no build-up), like a magician's flashbulb
     tl.fromTo(flash, { opacity: 0 }, { opacity: 1, ...ab(B.flashIn) }, LA + B.flashIn.start);
     tl.set(act2, { autoAlpha: 0 }, LA + B.flashPeak.start); // showcase.play() at the same time, see sync()
     // (B.whiteHold: nothing moves) then the white fades off the showcase
@@ -749,7 +764,8 @@ export function initSpaceJourney(root: HTMLElement) {
       if (flashed) showcase.reset();
       gsap.ticker.remove(onIdleTick);
       if (idleOff) { setIdle(astroL, true); setIdle(astroR, true); }
-      [figL, figR, dogbox].forEach((el) => { el.style.transform = ''; el.style.width = ''; });
+      [figL, figR, ...dogboxes].forEach((el) => { el.style.transform = ''; el.style.width = ''; });
+      win.style.mixBlendMode = '';
       worlds.forEach((w) => { w.style.transform = ''; });
       space.style.transform = ''; space.style.transformOrigin = '';
       smoke.style.opacity = '';

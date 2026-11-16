@@ -12,9 +12,9 @@ All times are seconds from the start of **that** transition. Rows are sorted by 
 | transition | from → to | length | notes |
 |---|---|---:|---|
 | **A** | hero → section2 | 4.00 s | hands touch at 3.00 s (no hold before it), screen fully smoke at 3.00 s |
-| **B** | section2 → appdesign | 4.25 s | flash peak (`showcase.play()`) at 3.60 s |
+| **B** | section2 → appdesign | 3.26 s | flash peak (`showcase.play()`) at 2.85 s |
 | A reversed | section2 → hero | 2.67 s | same timeline backwards × 1.5 |
-| B reversed | appdesign → section2 | 2.83 s | same timeline backwards × 1.5; `showcase.reset()` at the flash |
+| B reversed | appdesign → section2 | 2.17 s | same timeline backwards × 1.5; `showcase.reset()` at the flash |
 
 ## Global knobs (`TIMING.global`)
 
@@ -24,8 +24,8 @@ All times are seconds from the start of **that** transition. Rows are sorted by 
 | `global.arrivalCooldown` | 0.40 s | after arriving at a stop, intents in this window are ignored (and use up their gesture) |
 | `global.inputQuietGap` | 0.20 s | input silence that separates two gestures; a trackpad fling + its inertia is one gesture and can start only one transition |
 | `global.tolerance` | 10 px | wheel / finger travel before an intent counts (GSAP Observer) |
-| `global.flashHold` | 0.15 s | screen stays white after the flash peak (= `B.whiteHold` duration) |
-| `global.flashFade` | 0.50 s | the white fades off the phone showcase (= `B.whiteFade` duration) |
+| `global.flashHold` | 0.06 s | screen stays white after the flash peak (= `B.whiteHold` duration) |
+| `global.flashFade` | 0.35 s | the white fades off the phone showcase (= `B.whiteFade` duration) |
 
 ## Transition A: hero → section2 (4.00 s)
 
@@ -54,28 +54,26 @@ All times are seconds from the start of **that** transition. Rows are sorted by 
 
 Phones (≤ 767px): same timings as desktop (no overrides in `TIMING.mobile`).
 
-## Transition B: section2 → appdesign (4.25 s)
+## Transition B: section2 → appdesign (3.26 s)
 
 | key | start (s) | duration (s) | end (s) | ease | what happens |
 |---|---:|---:|---:|---|---|
 | `B.s2Badge4Out` | 0.00 | 0.33 | 0.33 | `power2.in` | Badge 4 fades out and lifts 20px (last in, first out) |
 | `B.s2Badge3Out` | 0.05 | 0.33 | 0.38 | `power2.in` | Badge 3 out |
 | `B.s2Badge2Out` | 0.10 | 0.33 | 0.43 | `power2.in` | Badge 2 out |
-| `B.gradToDog` | 0.14 | 0.30 | 0.44 | `power1.inOut` | The plain gradient cross-fades into the screen-covering dog (same gradient inside its silhouette) |
+| `B.gradToDog` | 0.14 | — | 0.14 | `none` | The gradient becomes the view through the screen-covering dog: a dog-shaped window onto the same live gradient (instant and invisible, the dog covers the screen) |
 | `B.s2Badge1Out` | 0.15 | 0.33 | 0.48 | `power2.in` | Badge 1 out |
 | `B.s2SubOut` | 0.20 | 0.33 | 0.53 | `power2.in` | Sub line out |
 | `B.s2HeadingOut` | 0.25 | 0.33 | 0.58 | `power2.in` | Heading out |
-| `B.dogRecede` | 0.44 | 2.12 | 2.56 | `power2.inOut` | The dog recedes from the camera (scale: covering the screen → the size in the phone) |
+| `B.dogRecede` | 0.44 | 2.12 | 2.56 | `power2.inOut` | The window shrinks: the dog recedes from the camera (scale: covering the screen → the size in the phone) |
 | `B.dogDrift` | 0.44 | 2.12 | 2.56 | `power2.inOut` | The dog drifts on a curve: out to the left, then to the centre (the phone screen) |
 | `B.dogDetail` | 0.97 | 0.85 | 1.82 | `power1.inOut` | The helmet glass and the volume shading fade in as the dog gets small (--dog-detail 0 → 1) |
-| `B.glowIn` | 2.40 | 0.60 | 3.00 | `sine.out` | As the dog settles a soft round glow lights up around it |
-| `B.glowSwell` | 2.40 | 1.20 | 3.60 | `power2.in` | The glow swells out of the dog until it fills the screen with light (no line, no band) |
 | `B.settle` | 2.56 | — | 2.56 | `none` | The dog has arrived on the phone screen rect (marker); its legs and tail keep floating |
-| `B.flashIn` | 3.32 | 0.28 | 3.60 | `power2.in` | The screen goes white |
-| `B.flashPeak` | 3.60 | — | 3.60 | `none` | Flash peak: the phone showcase starts (showcase.play()); dog and space are hidden. Going back: showcase.reset() |
-| `B.whiteHold` | 3.60 | 0.15 | 3.75 | `none` | The screen stays white (global.flashHold) |
-| `B.whiteFade` | 3.75 | 0.50 | 4.25 | `power1.inOut` | The white fades off the phone + App Design title (global.flashFade) |
-| `B.arrival` | 4.25 | — | 4.25 | `none` | App Design is displayed; native scrolling is released (the showcase keeps playing its own sequence and loops) |
+| `B.flashIn` | 2.81 | 0.04 | 2.85 | `none` | Camera flash: after a 0.25 s still beat the whole screen snaps to white (about 2 frames, no build-up) |
+| `B.flashPeak` | 2.85 | — | 2.85 | `none` | Flash peak: the phone showcase starts (showcase.play()); dog and space are hidden. Going back: showcase.reset() |
+| `B.whiteHold` | 2.85 | 0.06 | 2.91 | `none` | The screen stays white (global.flashHold) |
+| `B.whiteFade` | 2.91 | 0.35 | 3.26 | `expo.out` | The white decays fast off the phone + App Design title, like a flashbulb (global.flashFade) |
+| `B.arrival` | 3.26 | — | 3.26 | `none` | App Design is displayed; native scrolling is released (the showcase keeps playing its own sequence and loops) |
 
 Phones (≤ 767px): same timings as desktop (no overrides in `TIMING.mobile`).
 

@@ -3,7 +3,8 @@
 // The page rests only at three stops: hero → section2 → appdesign. The first scroll intent at a stop (wheel,
 // trackpad, swipe, keys) starts a transition, which then plays by TIME to the end on its own:
 //   A = hero → section2      (act 1: figures converge and reach, camera into the left chest, smoke, gradient, section 2)
-//   B = section2 → appdesign (act 2: section 2 out, the dog recedes left → centre, the flash, phone showcase)
+//   B = section2 → appdesign (act 2: section 2 out, the gradient becomes a dog-shaped window that recedes left →
+//                              centre, a sudden camera flash, phone showcase)
 // Going back plays the same timeline in reverse (at `global.reverseSpeed`).
 //
 // Every beat is { start, dur, ease, what }:
@@ -21,7 +22,9 @@
 //
 // Starting values: the previous scroll-scrubbed timeline converted to seconds (act 1 at 1.25 s per viewport-height
 // of scroll, section 2's entrance a little tighter; act 2 at 1.385 s per viewport-height), so A ≈ 4.0 s and B ≈ 3.6 s
-// to the flash peak. Several beats share a start on purpose (they overlapped in the scrubbed version too).
+// to the flash peak. Since then the swelling glow before the flash was replaced by a camera flash right after the dog
+// settles, so B reaches the flash peak at ≈ 2.85 s. Several beats share a start on purpose (they overlapped in the
+// scrubbed version too).
 
 /** `glide(k)`: starts from rest, covers most of the way early, then keeps gliding in at a slowly falling speed that
  *  never reaches zero before the end (a critically damped approach, normalised to end exactly at 1). Larger k = more
@@ -68,7 +71,7 @@ export type TransitionA = {
 export type TransitionB = {
   s2Badge4Out: Beat; s2Badge3Out: Beat; s2Badge2Out: Beat; s2Badge1Out: Beat; s2SubOut: Beat; s2HeadingOut: Beat;
   gradToDog: Beat; dogRecede: Beat; dogDrift: Beat; dogDetail: Beat; settle: Beat;
-  glowIn: Beat; glowSwell: Beat; flashIn: Beat; flashPeak: Beat;
+  flashIn: Beat; flashPeak: Beat;
   whiteHold: Beat; whiteFade: Beat;
   arrival: Beat;
 };
@@ -95,8 +98,8 @@ export type JourneyTiming = {
 };
 
 // The two flash knobs live here so `global` and the B beats can never disagree.
-const FLASH_HOLD = 0.15;
-const FLASH_FADE = 0.5;
+const FLASH_HOLD = 0.06;
+const FLASH_FADE = 0.35;
 
 export const TIMING: JourneyTiming = {
   global: {
@@ -132,7 +135,7 @@ export const TIMING: JourneyTiming = {
     arrival:           { start: 4.00, dur: 0,    ease: 'none',         what: 'Section 2 is displayed; the page rests here' },
   },
 
-  // ---------------------------------------------------------------- B: section2 → appdesign (3.6 s to the flash peak)
+  // ---------------------------------------------------------------- B: section2 → appdesign (≈ 2.85 s to the flash peak)
   B: {
     s2Badge4Out:  { start: 0.00, dur: 0.33, ease: 'power2.in',    what: 'Badge 4 fades out and lifts 20px (last in, first out)' },
     s2Badge3Out:  { start: 0.05, dur: 0.33, ease: 'power2.in',    what: 'Badge 3 out' },
@@ -140,18 +143,16 @@ export const TIMING: JourneyTiming = {
     s2Badge1Out:  { start: 0.15, dur: 0.33, ease: 'power2.in',    what: 'Badge 1 out' },
     s2SubOut:     { start: 0.20, dur: 0.33, ease: 'power2.in',    what: 'Sub line out' },
     s2HeadingOut: { start: 0.25, dur: 0.33, ease: 'power2.in',    what: 'Heading out' },
-    gradToDog:    { start: 0.14, dur: 0.30, ease: 'power1.inOut', what: 'The plain gradient cross-fades into the screen-covering dog (same gradient inside its silhouette)' },
-    dogRecede:    { start: 0.44, dur: 2.12, ease: 'power2.inOut', what: 'The dog recedes from the camera (scale: covering the screen → the size in the phone)' },
+    gradToDog:    { start: 0.14, dur: 0,    ease: 'none',         what: 'The gradient becomes the view through the screen-covering dog: a dog-shaped window onto the same live gradient (instant and invisible, the dog covers the screen)' },
+    dogRecede:    { start: 0.44, dur: 2.12, ease: 'power2.inOut', what: 'The window shrinks: the dog recedes from the camera (scale: covering the screen → the size in the phone)' },
     dogDrift:     { start: 0.44, dur: 2.12, ease: 'power2.inOut', what: 'The dog drifts on a curve: out to the left, then to the centre (the phone screen)' },
     dogDetail:    { start: 0.97, dur: 0.85, ease: 'power1.inOut', what: 'The helmet glass and the volume shading fade in as the dog gets small (--dog-detail 0 → 1)' },
     settle:       { start: 2.56, dur: 0,    ease: 'none',         what: 'The dog has arrived on the phone screen rect (marker); its legs and tail keep floating' },
-    glowIn:       { start: 2.40, dur: 0.60, ease: 'sine.out',     what: 'As the dog settles a soft round glow lights up around it' },
-    glowSwell:    { start: 2.40, dur: 1.20, ease: 'power2.in',    what: 'The glow swells out of the dog until it fills the screen with light (no line, no band)' },
-    flashIn:      { start: 3.32, dur: 0.28, ease: 'power2.in',    what: 'The screen goes white' },
-    flashPeak:    { start: 3.60, dur: 0,    ease: 'none',         what: 'Flash peak: the phone showcase starts (showcase.play()); dog and space are hidden. Going back: showcase.reset()' },
-    whiteHold:    { start: 3.60, dur: FLASH_HOLD, ease: 'none',   what: 'The screen stays white (global.flashHold)' },
-    whiteFade:    { start: 3.60 + FLASH_HOLD, dur: FLASH_FADE, ease: 'power1.inOut', what: 'The white fades off the phone + App Design title (global.flashFade)' },
-    arrival:      { start: 3.60 + FLASH_HOLD + FLASH_FADE, dur: 0, ease: 'none', what: 'App Design is displayed; native scrolling is released (the showcase keeps playing its own sequence and loops)' },
+    flashIn:      { start: 2.81, dur: 0.04, ease: 'none',         what: 'Camera flash: after a 0.25 s still beat the whole screen snaps to white (about 2 frames, no build-up)' },
+    flashPeak:    { start: 2.85, dur: 0,    ease: 'none',         what: 'Flash peak: the phone showcase starts (showcase.play()); dog and space are hidden. Going back: showcase.reset()' },
+    whiteHold:    { start: 2.85, dur: FLASH_HOLD, ease: 'none',   what: 'The screen stays white (global.flashHold)' },
+    whiteFade:    { start: 2.85 + FLASH_HOLD, dur: FLASH_FADE, ease: 'expo.out', what: 'The white decays fast off the phone + App Design title, like a flashbulb (global.flashFade)' },
+    arrival:      { start: 2.85 + FLASH_HOLD + FLASH_FADE, dur: 0, ease: 'none', what: 'App Design is displayed; native scrolling is released (the showcase keeps playing its own sequence and loops)' },
   },
 
   // Phones play the same timings (the positions and zoom levels differ, see journey.ts DESKTOP / MOBILE).

@@ -105,7 +105,7 @@ the viewport, and the smoke texture.
 - **Average colour `#fb57ba`** (hot pink).
 - Generator: `silhouette.py astronauts` (same run).
 
-## `<Dog class? idle? />`: `src/components/space/Dog.astro`
+## `<Dog class? idle? fill? detail? sync? />`: `src/components/space/Dog.astro`
 - A crisp **silhouette** of the client's labrador in a glass bubble helmet with a back tank
   (`docs/journey/source/dog.png`), **facing left**, filled with pink / magenta / violet / blue smoke from
   `docs/journey/source/smoke.png`. No suit detail, no hose or tether. Same look as the astronauts.
@@ -119,6 +119,17 @@ the viewport, and the smoke texture.
 - Each part has two images: the smoke (`dog-<part>.webp`) and a **volume layer** (`dog-<part>-shade.webp`,
   `img.rb-dog__vol`, half resolution): a soft inner shade along the edges (stronger away from the light, upper
   left) and a thin rim light on the lit edges.
+- **Props** (defaults give the plain smoke dog, unchanged): `fill` = `'smoke'` (default) | `'white'` | `'black'` |
+  `'none'` picks each part's first `<img>`: `dog-<part>.webp`, `dog-<part>-matte.webp`, `dog-<part>-knock.webp`, or
+  no fill image. `detail={false}` omits every `img.rb-dog__vol` and `svg.rb-dog__glass`. `sync="name"` sets
+  `data-dog-sync` on the root. Geometry and `data-dog-part` names are identical in every variant, so copies stack
+  exactly. A copy with `fill !== 'smoke'` or `detail={false}` is decorative: no `role="img"`/`aria-label`, and
+  `aria-hidden="true"`.
+- **Matte assets** (`dog-<part>-matte.webp`: the part's alpha with RGB pure white, same pixel size as the smoke;
+  `dog-<part>-knock.webp`: same alpha, RGB pure black, half the pixel size), six parts each, lossless so the edge
+  stays crisp. Generator: `docs/journey/tools/dog-matte.mjs` (sharp, reads the smoke parts listed in `dog.json`;
+  run `node docs/journey/tools/dog-matte.mjs` from the repo root, it prints every size). Weight: **63,990 bytes**
+  (matte 49,954 + knock 14,036), 12 files.
 - **Glass overlay** `svg.rb-dog__glass` (vector, scales cleanly; geometry in `dog.json.helmet`): the dog's head
   inside the bubble as a darker smoke tone (face with drop ears, nose, eyes; traced from dog.png), a glass sheen, a
   bright thin rim with a faint inner ring, and three curved speculars. Gradient ids are unique per instance.
@@ -129,6 +140,10 @@ the viewport, and the smoke texture.
   ±6°, each as two summed sines with incommensurate periods (4–9 s) and a random phase. Paused off-screen
   (IntersectionObserver), never runs under `prefers-reduced-motion`, and not at all with `idle={false}`
   (`data-dog-idle="false"`): the dog in the phone (`SpaceArt.astro`) is a frozen frame at the rest pose.
+  **Sync groups**: roots in one scope with the same `data-dog-sync` value are one group. The first is the leader
+  (one set of tweens, one visibility observer, the reduced-motion handling); each tween writes the same rotation to
+  the same-named `data-dog-part` in every root of the group. Followers get no tweens, and a second `initDogs()` call
+  does not give them any. Roots without `data-dog-sync` are untouched.
 - Generator: `docs/journey/tools/dog_silhouette.py` (GrabCut + hand-tuned shapes: fitted helmet ellipse, a capsule
   tank and one smooth back line, a redrawn far hind leg, paw undersides; SDF-smoothed ~2 px anti-aliased edge;
   asserts at the end; `--shots DIR` writes the contact sheets). Weight: **210,586 bytes** (smoke 151,896 + volume
@@ -181,7 +196,8 @@ the viewport, and the smoke texture.
 | smoke-pink.webp | 24,050 |
 | **total** | **478,062 (~467 KiB)** |
 
-The dog parts `dog-*.webp` add 210,586 bytes (twelve files). The star tiles are inline in the HTML; the dog's
+The dog parts `dog-*.webp` add 210,586 bytes (twelve files), and the matte/knockout copies add another 63,990 bytes
+(twelve more). The star tiles are inline in the HTML; the dog's
 `silhouette` path (~17 KB) ships in the journey script, which imports `dog.json`.
 
 ## Sources / licences
