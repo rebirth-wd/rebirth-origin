@@ -32,9 +32,15 @@ const glide = (k: number) => {
   const n = f(1);
   return (p: number) => (p <= 0 ? 0 : p >= 1 ? 1 : f(p) / n);
 };
+/** `carry`: for a beat that takes over from another one mid-motion. It starts at the speed the previous beat ended
+ *  with (CARRY.k = that speed as a fraction of this beat's average speed; journey.ts works it out from the measured
+ *  zoom levels) and accelerates from there, so the hand-over has no stop. Used by A.cameraRush after A.cameraTwoShot. */
+export const CARRY = { k: 0.4 };
+const carry = (p: number) => (p <= 0 ? 0 : p >= 1 ? 1 : CARRY.k * p + (1 - CARRY.k) * p ** 4);
 /** Custom eases, registered with GSAP by journey.ts. `name` alone = the default k; `name(k)` = configured. */
 export const EASES: Record<string, ((p: number) => number) & { config?: (k: number) => (p: number) => number }> = {
   glide: Object.assign(glide(6), { config: (k: number) => glide(+k || 6) }),
+  carry,
 };
 
 export type Beat = {
@@ -111,7 +117,7 @@ export const TIMING: JourneyTiming = {
     reach:             { start: 0.36, dur: 1.62, ease: 'power2.inOut', what: 'The reaching arms extend (--reach 0 → 1)' },
     cameraTwoShot:     { start: 0.00, dur: 2.16, ease: 'power2.in',    what: 'Camera push towards both figures, ending on the held two-shot (×3.2 desktop, ×2.1 phone)' },
     cameraFocus:       { start: 0.18, dur: 2.40, ease: 'power2.inOut', what: 'Camera pans so the left chest moves to the two-shot framing point' },
-    cameraRush:        { start: 2.16, dur: 0.84, ease: 'power4.in',    what: 'Final rush into the left chest; the END is the moment the screen is fully smoke' },
+    cameraRush:        { start: 2.16, dur: 0.84, ease: 'carry',        what: 'Final rush into the left chest, continuing at the speed the push ended with (no camera pause); the END is the moment the screen is fully smoke' },
     cameraCentre:      { start: 2.16, dur: 0.84, ease: 'power2.in',    what: 'During the rush the chest moves from the framing point to the exact screen centre' },
     idleCorrection:    { start: 2.16, dur: 0.84, ease: 'sine.inOut',   what: 'The idle keeps floating; its live offset of the hands and the chest window is folded in so they meet exactly' },
     spaceZoom:         { start: 0.00, dur: 3.00, ease: 'power2.in',    what: 'The star field and moon scale 1 → 1.35 about the chest (parallax)' },

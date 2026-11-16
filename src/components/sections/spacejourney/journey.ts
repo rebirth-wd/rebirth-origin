@@ -23,7 +23,7 @@ import { setReach, setIdle, posePoint, idleRollMax } from '../../space/astronaut
 import { initPhoneShowcase } from '../phoneshowcase/controller';
 import dogGeo from '../../space/dog.json';
 import rig from '../../space/rig.json';
-import { TIMING, EASES, resolveTiming, transitionLength, type Beat, type TransitionA, type TransitionB } from './timing';
+import { TIMING, EASES, CARRY, resolveTiming, transitionLength, type Beat, type TransitionA, type TransitionB } from './timing';
 
 gsap.registerPlugin(Observer, SplitText);
 for (const [name, ease] of Object.entries(EASES)) gsap.registerEase(name, ease);
@@ -337,6 +337,11 @@ export function initSpaceJourney(root: HTMLElement) {
       // zoom at fill: the (possibly slightly rolled) chest window must cover the stage
       const rw = SMOKE_RECT.w * wL, rh = SMOKE_RECT.h * hL, co = Math.cos(ROLL_MAX), si = Math.sin(ROLL_MAX);
       sFill = (Math.max((W * co + H * si) / rw, (W * si + H * co) / rh) * 1.03) / (1 - 2 * FEATHER);
+      // 'carry' (A.cameraRush): start the rush at the zoom speed A.cameraTwoShot ends with, so the camera never pauses
+      // between the two (speeds in log-scale per second; k = that speed / the rush's average speed)
+      const pushEase = gsap.parseEase(A.cameraTwoShot.ease), d = 1e-3;
+      const vPush = (((1 - pushEase(1 - d)) / d) * Math.log(cfg.sHold)) / (A.cameraTwoShot.dur || 1);
+      CARRY.k = Math.min(1, Math.max(0, (vPush * A.cameraRush.dur) / Math.max(1e-6, Math.log(sFill) - Math.log(cfg.sHold))));
       space.style.transformOrigin = `${P0.x.toFixed(2)}px ${P0.y.toFixed(2)}px`;
       measureDog();
       // reserve the scrollbar only if the page can scroll at all (content below the stage): no gutter strip otherwise

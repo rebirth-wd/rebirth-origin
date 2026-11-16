@@ -39,7 +39,7 @@ All times are seconds from the start of **that** transition. Rows are sorted by 
 | `A.cameraFocus` | 0.18 | 2.40 | 2.58 | `power2.inOut` | Camera pans so the left chest moves to the two-shot framing point |
 | `A.reach` | 0.36 | 1.62 | 1.98 | `power2.inOut` | The reaching arms extend (--reach 0 → 1) |
 | `A.leftFigureToFront` | 0.75 | — | 0.75 | `none` | Copy gone: the left figure (the zoom target) is lifted in front of the hero layer |
-| `A.cameraRush` | 2.16 | 0.84 | 3.00 | `power4.in` | Final rush into the left chest; the END is the moment the screen is fully smoke |
+| `A.cameraRush` | 2.16 | 0.84 | 3.00 | `carry` | Final rush into the left chest, continuing at the speed the push ended with (no camera pause); the END is the moment the screen is fully smoke |
 | `A.cameraCentre` | 2.16 | 0.84 | 3.00 | `power2.in` | During the rush the chest moves from the framing point to the exact screen centre |
 | `A.idleCorrection` | 2.16 | 0.84 | 3.00 | `sine.inOut` | The idle keeps floating; its live offset of the hands and the chest window is folded in so they meet exactly |
 | `A.smokeIn` | 2.64 | 0.30 | 2.94 | `power1.inOut` | The soft smoke texture cross-fades in over the chest |
