@@ -263,6 +263,9 @@ export function initSpaceJourney(root: HTMLElement) {
     return buildMotion(c.mobile ? MOBILE : DESKTOP, !!c.mobile);
   });
 
+  // the showcase is armed (hidden at t=0) or shown by jump(): release the pre-JS cover guard (SpaceJourney.astro)
+  html.classList.add('sj-ready');
+
   if (debug && !reduce) import('./debug').then((m) => m.mountDebug(handle));
 
   function buildMotion(cfg: Cfg, mobile: boolean) {
